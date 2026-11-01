@@ -5,6 +5,7 @@ This document maps out the quest progression tree of *Compact Claustrophobia*, w
 > **Project Checkpoint Policy ("Go Tall, Not Wide")**:
 > - **We will NOT implement anything beyond Chapter 1 until Chapter 1 is completed and fleshed out.**
 > - Development focuses entirely on building out Chapter 1 in full vertical depth: from the initial Outer Room (meteor pocket) spawn, PSD machine entry, punching walls for dirt dust/pebbles, sneak-pooping, dirt rummaging, bonsai farming, crucible/barrel fluid mechanics, comminution/sieving chains, up through constructing the Modular Compactor and completing Quest #10 (Infinite Tiny Rooms).
+> - See `chapter-1-checkpoints.md` for the sequential subcheckpoints breakdown (Subcheckpoints 1.1 through 1.8).
 > - Chapters 2, 3, and 4 are documented for reference and architectural foresight, but remain completely out of scope for implementation until Chapter 1 provides a fully tested, playable gameplay baseline.
 
 > **Design Choice Cross-Reference**:
