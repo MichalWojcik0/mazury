@@ -2,6 +2,11 @@
 
 This document maps out the quest progression tree of *Compact Claustrophobia*, with quest IDs, pre-requisites, objectives, and unlockable capabilities.
 
+> **Project Checkpoint Policy ("Go Tall, Not Wide")**:
+> - **We will NOT implement anything beyond Chapter 1 until Chapter 1 is completed and fleshed out.**
+> - Development focuses entirely on building out Chapter 1 in full vertical depth: from the initial Outer Room (meteor pocket) spawn, PSD machine entry, punching walls for dirt dust/pebbles, sneak-pooping, dirt rummaging, bonsai farming, crucible/barrel fluid mechanics, comminution/sieving chains, up through constructing the Modular Compactor and completing Quest #10 (Infinite Tiny Rooms).
+> - Chapters 2, 3, and 4 are documented for reference and architectural foresight, but remain completely out of scope for implementation until Chapter 1 provides a fully tested, playable gameplay baseline.
+
 > **Design Choice Cross-Reference**:
 > - All crafting objectives are completed using the **List Crafting Interface** (no 2x2/3x3 crafting grids).
 > - Gameplay is rendered in **Isometric Canvas view**, and up to 3 players progress cooperatively over **deterministic lockstep peer networking**.
@@ -9,7 +14,7 @@ This document maps out the quest progression tree of *Compact Claustrophobia*, w
 
 ---
 
-## Chapter 1: Compact Claustrophobia (The Beginning)
+## Chapter 1: Compact Claustrophobia (The Beginning) [ACTIVE CHECKPOINT SCOPE]
 
 The player initially spawns in the **Outer Room**—an asymmetrical 2x1x(4/5) void pocket encased in a bedrock meteor. After right-clicking the embedded floor machine with the PSD, they shrink into an unbreakable 3x3x3 Compact Machine room. The quest book guides the player through surviving, gathering resources, and escaping the confinement.
 
@@ -122,7 +127,7 @@ The player initially spawns in the **Outer Room**—an asymmetrical 2x1x(4/5) vo
 
 ---
 
-## Chapter 2: Infinite Tiny Space (Industrial Expansion)
+## Chapter 2: Infinite Tiny Space (Industrial Expansion) [DEFERRED UNTIL CHAPTER 1 COMPLETION]
 
 Once the Compactor and Field Projectors are operational, the player constructs larger Compact Machines and begins expanding space exponentially.
 
@@ -144,7 +149,7 @@ Once the Compactor and Field Projectors are operational, the player constructs l
 
 ---
 
-## Chapter 3 & 4: Unlimited Dimensions & Agoraphobia (Endgame)
+## Chapter 3 & 4: Unlimited Dimensions & Agoraphobia (Endgame) [DEFERRED UNTIL CHAPTER 1 COMPLETION]
 
 1. **Chapter 4 - Unlimited Dimensions**:
    - Miniaturize **Giant** (11x11x11) and **Maximum** (13x13x13) Compact Machines using glitched blocks and machine casings.
