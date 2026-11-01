@@ -1,8 +1,16 @@
 # Compact Claustrophobia (Canvas Edition) - Overview & Design Vision
 
-## 1. Project Vision
+## 1. Project Vision & Development Checkpoint Strategy
 
 *Compact Claustrophobia* originally is a Minecraft modpack created by **kamunimaximus** centered around the premise of being trapped in a hyper-confined, unbreakable room (a Compact Machine) and slowly bootstrapping an entire industrial factory and dimension-hopping technology from nothing.
+
+### Core Development Checkpoint: "Go Tall, Not Wide"
+A critical architectural and development principle governs this reimplementation:
+> **Strict Checkpoint Policy**: We will **NOT** implement anything beyond Chapter 1 until Chapter 1 is completely finished, tested, and fleshed out.
+
+- **The Philosophy of Going Tall**: Rather than building shallow, incomplete stubs spanning all four chapters (which risks widespread churn and untestable breadth), we focus all effort on a deep, vertically integrated slice.
+- **Solid Testing Baseline**: Completing Chapter 1 end-to-end provides an immediate, playable gameplay experience (from spawning in the meteor pocket, entering the 3x3 room, wall punching, sneaking/pooping, dirt rummaging, bonsai farming, crucibles, barrels, hammer/sieve comminution, to building the Compactor and crafting the first Tiny Compact Machine).
+- **Validation Before Divergence**: This vertical slice establishes an empirically validated base for testing mechanics, deterministic lockstep networking, list-based crafting, and UI interactions before diverging or expanding into subsequent chapters.
 
 The problem with the original implementation is the substantial bloat and engine friction inherent to Minecraft:
 - Arbitrary 3D procgen overhead when gameplay only takes place within tiny, discrete rooms (3x3 up to 13x13).
