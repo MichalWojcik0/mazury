@@ -10,6 +10,7 @@ In *Compact Claustrophobia*, all building and factory automation takes place ins
 
 | Room Tier | In-Game Name | 3D Modpack Size | Isometric Grid Size | Usable Tiles | Outer Border |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Outer Room** | Overworld Meteor Starting Pocket | Asymmetrical 2 x 1 x (4 / 5) | 2 x 1 | 2 tiles | Solid Bedrock / Meteor Shell |
 | **Tier 1** | Tiny Compact Machine | 3 x 3 x 3 | 3 x 3 | 9 tiles | 5 x 5 (with solid walls) |
 | **Tier 2** | Small Compact Machine | 5 x 5 x 5 | 5 x 5 | 25 tiles | 7 x 7 (with solid walls) |
 | **Tier 3** | Normal Compact Machine | 7 x 7 x 7 | 7 x 7 | 49 tiles | 9 x 9 (with solid walls) |
@@ -17,8 +18,52 @@ In *Compact Claustrophobia*, all building and factory automation takes place ins
 | **Tier 5** | Giant Compact Machine | 11 x 11 x 11 | 11 x 11 | 121 tiles | 13 x 13 (with solid walls) |
 | **Tier 6** | Maximum Compact Machine | 13 x 13 x 13 | 13 x 13 | 169 tiles | 15 x 15 (with solid walls) |
 
-### 1.1 The Starting Room & Wall Distinctions
-The player begins inside a **Tier 1 (Tiny, 3x3)** room.
+### 1.1 The Outer Room (Overworld Meteor Spawn Pocket)
+Before the player enters their first Compact Machine, they spawn inside the **Outer Room**—an ultra-confined, irregular void pocket buried deep within an extraterrestrial meteor (`thestartmeteor.nbt` / `startmeteor.schematic` in the Overworld, Dimension 0).
+
+```
+                      Bedrock Ceiling (y = 7)
+           +-------------------------+-------------------------+
+           |     Column A (Spawn)    |    Column B (Machine)   |
+           +-------------------------+-------------------------+
+  y = 6    | Air                     | Air                     |
+  y = 5    | Torch (on wall)         | Air                     |
+  y = 4    | Air (Player Spawn Head) | Air                     |
+  y = 3    | Air (Player Spawn Feet) | Air                     |
+           +-------------------------+                         |
+  y = 2    | Bedrock Floor           | Compact Machine Block   |
+           +-------------------------+-------------------------+
+  y = 1                              | Bedrock Foundation     |
+                                     +-------------------------+
+              4 Blocks Clearance          5 Blocks Total Height
+                                        (4 Blocks Air above CM)
+```
+
+#### Spatial Architecture & Dimensions:
+- **Horizontal Footprint**: $2 \times 1$ tiles (2 usable coordinate positions, adjacent along one horizontal axis).
+- **Asymmetrical Vertical Profile**:
+  - **Column A (Spawn Tile, e.g. $(x=3, z=2)$)**:
+    - **Floor Elevation**: $y = 2$ (`minecraft:bedrock`).
+    - **Ceiling Elevation**: $y = 7$ (`minecraft:bedrock`).
+    - **Internal Clearance**: **4 blocks tall** ($y = 3, 4, 5, 6$).
+    - **Contents**: The player's initial spawn point is here (standing at $y = 3..4$), lit by a single wall torch (`minecraft:torch`) at $y = 5$.
+  - **Column B (Machine Tile, e.g. $(x=3, z=3)$)**:
+    - **Foundation Elevation**: $y = 1$ (`minecraft:bedrock`).
+    - **Floor Recess**: The **Tier 1 Tiny Compact Machine** block (`compactmachines3:machine`) is embedded at $y = 2$, sunken 1 block lower than the adjacent spawn tile floor.
+    - **Ceiling Elevation**: $y = 7$ (`minecraft:bedrock`).
+    - **Internal Clearance**: **5 blocks tall** from bedrock foundation to ceiling (or 4 blocks of air space directly above the machine block at $y = 3, 4, 5, 6$).
+- **Perimeter & Envelope**:
+  - Enclosed entirely by indestructible **Bedrock** (`minecraft:bedrock`), backed by outer crust layers of **Lavastone** (`chisel:lavastone`), **Netherrack** (`chisel:netherrack`), and burning surface flames (`minecraft:fire`).
+  - No blocks inside this pocket can be mined, dug, or harvested with early tools.
+- **Narrative & Gameplay Role**:
+  - This is the initial spawning chamber where Quest #142 (*"Stuck in a hole"*) and Quest #68 (*"The beginning?"*) take place.
+  - The player starts with (or is given) the **Personal Shrinking Device (PSD)**. Right-clicking the embedded Compact Machine block at the bottom of Column B teleports the player into the 3x3x3 interior (Dimension 144), kicking off Chapter 1 bootstrap gameplay.
+  - If the player uses the PSD to exit the starting machine before establishing external room links or advanced bases, they return directly to this outer 2x1 pocket.
+
+---
+
+### 1.2 The Starting Compact Machine & Wall Distinctions
+Upon activating the PSD on the floor machine block of the Outer Room, the player enters the **Tier 1 (Tiny, 3x3x3)** Compact Machine room.
 
 #### Wall Mechanics & Types (Fidelity to Compact Machines 3):
 A critical distinction from the original Compact Machines 3 mod:
