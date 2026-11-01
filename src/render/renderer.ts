@@ -122,6 +122,8 @@ export interface CanvasContext2DLike {
   fillRect(x: number, y: number, w: number, h: number): void;
   strokeRect(x: number, y: number, w: number, h: number): void;
   fillText(text: string, x: number, y: number): void;
+  arc?(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
+  ellipse?(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number): void;
   fillStyle: string | unknown;
   strokeStyle: string | unknown;
   lineWidth: number;
@@ -131,6 +133,11 @@ export interface CanvasContext2DLike {
  * Stub renderer for the isometric canvas engine.
  * Generates sorted render commands and can render onto an optional Canvas context.
  */
+export interface RenderOptions {
+  /** If true, front walls and ceiling of enclosed rooms are cut away for interior visibility */
+  enableCutaway?: boolean;
+}
+
 export class StubRenderer {
   public camera: CameraConfig;
 
@@ -139,13 +146,33 @@ export class StubRenderer {
   }
 
   /**
+   * Centers camera offsets based on room bounding box and canvas dimensions.
+   */
+  public centerOnRoom(room: Room, canvasWidth: number, canvasHeight: number): void {
+    const centerX = (room.width - 1) / 2;
+    const centerY = (room.height - 1) / 2;
+    const centerZ = (room.depth - 1) / 4;
+
+    const halfW = this.camera.tileWidth / 2;
+    const halfH = this.camera.tileHeight / 2;
+
+    const isoX = (centerX - centerY) * halfW * this.camera.zoom;
+    const isoY = ((centerX + centerY) * halfH - centerZ * this.camera.elevationHeight) * this.camera.zoom;
+
+    this.camera.offsetX = canvasWidth / 2 - isoX;
+    this.camera.offsetY = canvasHeight / 2 - isoY;
+  }
+
+  /**
    * Generates depth-sorted render commands for all voxels and players in a room.
    */
   public generateRenderCommands(
     room: Room,
-    players: Iterable<Player> = []
+    players: Iterable<Player> = [],
+    options: RenderOptions = {}
   ): RenderCommand[] {
     const commands: RenderCommand[] = [];
+    const enableCutaway = options.enableCutaway ?? false;
 
     // Collect all non-air voxels
     for (let z = 0; z < room.depth; z++) {
@@ -153,6 +180,16 @@ export class StubRenderer {
         for (let x = 0; x < room.width; x++) {
           const tile = room.voxels[z]?.[y]?.[x];
           if (!tile || tile.id === "minecraft:air") continue;
+
+          // For enclosed rooms (width > 2 and height > 2), hide front walls and ceiling if cutaway enabled
+          if (enableCutaway && room.width > 2 && room.height > 2) {
+            // Cutaway ceiling
+            if (z >= room.depth - 1) continue;
+            // Cutaway front-facing walls (high x and high y facing viewer)
+            if (x === room.width - 1 || y === room.height - 1) {
+              if (z > 0) continue; // Keep floor z=0
+            }
+          }
 
           const screenCoord = worldToScreen(x, y, z, this.camera);
           const depthKey = computeDepthKey(x, y, z);
@@ -198,9 +235,10 @@ export class StubRenderer {
   public render(
     room: Room,
     players: Iterable<Player> = [],
-    ctx?: CanvasContext2DLike
+    ctx?: CanvasContext2DLike,
+    options: RenderOptions = {}
   ): RenderCommand[] {
-    const commands = this.generateRenderCommands(room, players);
+    const commands = this.generateRenderCommands(room, players, options);
 
     if (ctx) {
       for (const cmd of commands) {
@@ -224,7 +262,21 @@ export class StubRenderer {
     switch (cmd.type) {
       case "DRAW_FLOOR":
       case "DRAW_TILE": {
-        // Draw isometric diamond top face
+        const tileId = cmd.tile?.id;
+
+        // Custom styling for specific tiles
+        if (tileId === "minecraft:torch") {
+          // Render torch as a small glowing post
+          ctx.fillStyle = "#ffdd44";
+          ctx.fillRect(u - 2, v - 12, 4, 10);
+          ctx.fillStyle = "#ff3300";
+          ctx.fillRect(u - 3, v - 15, 6, 4);
+          ctx.fillStyle = "#ffffaa";
+          ctx.fillRect(u - 1, v - 14, 2, 2);
+          break;
+        }
+
+        // Standard block rendering: top isometric diamond
         ctx.beginPath();
         ctx.moveTo(u, v - halfH);
         ctx.lineTo(u + halfW, v);
@@ -232,21 +284,68 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v);
         ctx.closePath();
 
-        ctx.fillStyle = cmd.tile?.type === "solid_wall" ? "#444444" : "#667788";
-        ctx.strokeStyle = "#222222";
-        ctx.lineWidth = 1;
+        if (tileId === "minecraft:bedrock") {
+          ctx.fillStyle = "#2a2a2a";
+          ctx.strokeStyle = "#151515";
+        } else if (tileId === "compactmachines3:machine_tiny") {
+          // Embedded compact machine block
+          ctx.fillStyle = "#1e3a5f";
+          ctx.strokeStyle = "#4da6ff";
+          ctx.lineWidth = 2;
+        } else if (cmd.tile?.type === "solid_wall") {
+          ctx.fillStyle = "#4a4a52";
+          ctx.strokeStyle = "#252528";
+        } else {
+          ctx.fillStyle = "#667788";
+          ctx.strokeStyle = "#222222";
+        }
+
         ctx.fill();
         ctx.stroke();
+
+        // Optional decorative markings on special blocks
+        if (tileId === "compactmachines3:machine_tiny") {
+          // Inner glowing core
+          ctx.beginPath();
+          ctx.arc(u, v, 6 * this.camera.zoom, 0, Math.PI * 2);
+          ctx.fillStyle = "#66ccff";
+          ctx.fill();
+        }
         break;
       }
 
       case "DRAW_PLAYER": {
-        // Draw 2-block tall player marker
+        // Draw 2-block tall player marker with face direction & shadow
         const playerH = 2 * this.camera.elevationHeight * this.camera.zoom;
-        ctx.fillStyle = "#ffaa00";
-        ctx.fillRect(u - 6, v - playerH, 12, playerH);
-        ctx.strokeStyle = "#332200";
-        ctx.strokeRect(u - 6, v - playerH, 12, playerH);
+        const width = 14 * this.camera.zoom;
+
+        // Shadow under feet
+        ctx.beginPath();
+        if (ctx.ellipse) {
+          ctx.ellipse(u, v, width / 2, width / 4, 0, 0, Math.PI * 2);
+        } else if (ctx.arc) {
+          ctx.arc(u, v, width / 2, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fill();
+
+        // Player body
+        ctx.fillStyle = "#3498db"; // Cyan/blue shirt
+        ctx.fillRect(u - width / 2, v - playerH, width, playerH * 0.65);
+        ctx.strokeStyle = "#1b4f72";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(u - width / 2, v - playerH, width, playerH * 0.65);
+
+        // Player head
+        const headH = playerH * 0.35;
+        ctx.fillStyle = "#f5b041"; // Head
+        ctx.fillRect(u - width / 2, v - playerH - headH, width, headH);
+        ctx.strokeStyle = "#b9770e";
+        ctx.strokeRect(u - width / 2, v - playerH - headH, width, headH);
+
+        // Name tag or indicator
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("P1", u - 6, v - playerH - headH - 4);
         break;
       }
 
