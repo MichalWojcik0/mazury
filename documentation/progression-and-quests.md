@@ -2,6 +2,11 @@
 
 This document maps out the quest progression tree of *Compact Claustrophobia*, with quest IDs, pre-requisites, objectives, and unlockable capabilities.
 
+> **Design Choice Cross-Reference**:
+> - All crafting objectives are completed using the **List Crafting Interface** (no 2x2/3x3 crafting grids).
+> - Gameplay is rendered in **Isometric Canvas view**, and up to 3 players progress cooperatively over **deterministic lockstep peer networking**.
+> - Miniaturization and Tunnels follow the accurate **Compact Machines 3** specifications (indestructible border walls vs breakable crafted walls, Tunnel Tool face mapping with 6-face max).
+
 ---
 
 ## Chapter 1: Compact Claustrophobia (The Beginning)
@@ -24,7 +29,7 @@ The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest bo
 (Bonsai oak sapling)
    |
    v
-[#9: Wood's Good] (Planks, Crafting Station)
+[#9: Wood's Good] (Planks, Crafting Station via List Crafting)
    |-----------------------------+-------------------------------+
    |                             |                               |
    v                             v                               v
@@ -51,7 +56,7 @@ The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest bo
                                  |
                                  v
                        [#10: Infinite Tiny Rooms]
-                       (Craft first Compact Machine Wall & Room)
+                       (Compactor crafts Breakable Wall; Field Projector builds Tiny Machine)
 ```
 
 ### Key Quests in Chapter 1:
@@ -65,28 +70,28 @@ The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest bo
 3. **Quest #13 - "The real beginning"**
    - *Prereq*: #68.
    - *Objective*: Obtain 4x `contenttweaker:dirtdust`.
-   - *Method*: Punch the walls with your bare fists.
+   - *Method*: Punch the solid perimeter walls with your bare fists.
 4. **Quest #20 - "Getting your hands dirty"**
    - *Prereq*: #13.
-   - *Objective*: Craft 1x `minecraft:dirt` and rummage it until prepared.
+   - *Objective*: Craft 1x `minecraft:dirt` from the hand-crafting list and rummage it until prepared.
 5. **Quest #32 - "Home grown wood"**
    - *Prereq*: #20.
    - *Objective*: Obtain 1x `arcadialbonsaitrees:bonsai_oak_sapling`.
    - *Method*: Twerk/sneak on soil to accelerate growth, harvest cuttings.
 6. **Quest #9 - "Wood's Good"**
    - *Prereq*: #32.
-   - *Objective*: Craft a `craftingstation:crafting_station` from 4 wood planks.
+   - *Objective*: Craft a `craftingstation:crafting_station` from 4 wood planks (via list crafting).
 7. **Quest #8 - "Soft Pick"**
    - *Prereq*: #9.
-   - *Objective*: Craft a `minecraft:wooden_pickaxe`.
-   - *Unlocks*: Hitting walls drops stone, granite, diorite, and andesite pebbles.
+   - *Objective*: Craft a `minecraft:wooden_pickaxe` (via list crafting).
+   - *Unlocks*: Hitting solid walls drops stone, granite, diorite, and andesite pebbles.
 8. **Quest #25 - "All Cobbled Together"**
    - *Prereq*: #8.
-   - *Objective*: Craft 1x `minecraft:cobblestone` from 4 pebbles.
+   - *Objective*: Craft 1x `minecraft:cobblestone` from 4 pebbles (via list crafting).
 9. **Quest #28 - "Chubby Pick"**
    - *Prereq*: #25.
    - *Objective*: Craft a `minecraft:stone_pickaxe`.
-   - *Unlocks*: Hitting walls drops metal grits (Copper, Iron, Tin, Lead, Beryllium).
+   - *Unlocks*: Hitting solid walls drops metal grits (Copper, Iron, Tin, Lead, Beryllium).
 10. **Quest #22 - "Hammer Time!... sigh.."**
     - *Prereq*: #9.
     - *Objective*: Craft an `exnihilocreatio:hammer_wood`.
@@ -96,10 +101,10 @@ The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest bo
     - Harvest Hemp Fibers $\rightarrow$ String $\rightarrow$ String Mesh $\rightarrow$ Wooden Sieve.
     - Sieve Gravel, Sand, and Dust for bulk iron and tech dusts.
 12. **Quest #27 & #19 - Water Creation**
-    - Craft a Wooden Crucible. Feed leaves/cuttings to melt into water.
+    - Craft a Wooden Crucible from list. Feed leaves/cuttings to melt into water.
     - Craft an Iron Bucket to collect water.
 13. **Quest #12 & #18 - Clay Production**
-    - Craft a Wooden Barrel. Add Water + Dirt $\rightarrow$ Clay.
+    - Craft a Wooden Barrel from list. Add Water + Dirt $\rightarrow$ Clay.
     - Uncraft to clay balls, smelt into bricks.
 14. **Quest #14 - "Decay and Growth"**
     - Craft a NuclearCraft `nuclearcraft:decay_generator`.
@@ -109,20 +114,24 @@ The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest bo
     - Automates wall punching and sifting.
 16. **Quest #23 - "Small Compactor"**
     - Multiblock assembler requiring: 3x Bricks, 1x Modular Controller, 1x Input Bus, 1x Output Bus, 1x Energy Hatch, 1x Glass Pane, 1x Hopper, 1x Upper, 2x Stone Slabs.
-    - Powered by the Decay Generator.
-    - Used to compress raw materials into Compact Machine blocks.
+    - Powered by the Decay Generator (16 RF/t).
+    - Used to compress Modularium into `compactmachines3:wallbreakable`.
+17. **Quest #10 - "Infinite Tiny Rooms"**
+    - Craft Miniaturization Field Projectors.
+    - Construct a 3x3x3 hollow structure of `compactmachines3:wallbreakable` and throw an Ender Pearl catalyst to create the first craftable Compact Machine (Tiny).
 
 ---
 
 ## Chapter 2: Infinite Tiny Space (Industrial Expansion)
 
-Once the Compactor is operational, the player constructs their first crafted Compact Machines and begins expanding space exponentially.
+Once the Compactor and Field Projectors are operational, the player constructs larger Compact Machines and begins expanding space exponentially.
 
 ### Key Milestones:
 1. **Quest #65 - "Finally More Room"**:
-   - Construct a **Small Compact Machine** (5x5x5 internal volume).
+   - Construct a **Small Compact Machine** (5x5x5 internal volume) via Miniaturization Field Projectors (wallbreakable shell + Iron Block core + Ender Pearl catalyst).
 2. **Quest #66 - "A tunnel to other rooms"**:
-   - Craft Compact Machine Tunnels to route items, fluids, and power between nested machines and exterior faces.
+   - Craft a **Tunnel Tool** (`compactmachines3:tunneltool`) via Miniaturization Field.
+   - Right-click solid perimeter walls to configure up to 6 Tunnels mapped to the exterior machine faces (North, South, East, West, Up, Down).
 3. **Quest #80 - "Treated Wood" & Immersive Engineering**:
    - Create Creosote Oil by pyrolyzing coal / charcoal.
    - Immersive Engineering Coke Oven and Blast Furnace for Steel.
@@ -138,7 +147,7 @@ Once the Compactor is operational, the player constructs their first crafted Com
 ## Chapter 3 & 4: Unlimited Dimensions & Agoraphobia (Endgame)
 
 1. **Chapter 4 - Unlimited Dimensions**:
-   - Crafting **Giant** (11x11x11) and **Maximum** (13x13x13) Compact Machines.
+   - Miniaturize **Giant** (11x11x11) and **Maximum** (13x13x13) Compact Machines using glitched blocks and machine casings.
    - NuclearCraft Fission Reactors miniaturized inside 13x13 rooms.
    - Thermal Expansion Cryotheum and Blizz powder production.
 2. **Chapter 3 - Extreme Agoraphobia**:

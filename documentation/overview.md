@@ -9,7 +9,7 @@ The problem with the original implementation is the substantial bloat and engine
 - Hundreds of unused blocks, mobs, biome data, and engine mechanics.
 - Inefficient voxel physics and heavy JVM memory footprint for what is fundamentally a **spatial puzzle and factory automation game**.
 
-The Canvas implementation reimagines Compact Claustrophobia from scratch as a dedicated 2D / top-down / isometric canvas-based factory and spatial management game.
+The Canvas implementation reimagines Compact Claustrophobia from scratch as a dedicated 2D **isometric** canvas-based factory and spatial management game supporting up to 3 players via **deterministic lockstep peer-to-peer networking**.
 
 ---
 
@@ -17,22 +17,27 @@ The Canvas implementation reimagines Compact Claustrophobia from scratch as a de
 
 1. **Focused Spatial Puzzle & Compact Optimization**
    Every tile matters. Starting inside a 3x3 room, every machine placement, pipe routing, and chest is a crucial logistical decision.
-2. **Deterministic, Discrete Factory Engine**
-   Replace loose 3D physics items and block entities with a deterministic, tick-based grid simulation (think *Factorio* meets *Mindustry* with nested dimensions).
-3. **True Modpack Fidelity where it Counts**
-   Preserve the iconic progression arc:
-   - Punching compact walls with bare hands (causing self-damage and hunger).
+2. **Deterministic Lockstep Simulation Engine**
+   - 20 Hz fixed-tick deterministic simulation.
+   - Multiplayer for up to 3 players over peer-to-peer WebRTC data channels with lockstep input synchronization.
+   - Zero non-deterministic physics: reproducible, replayable, and desync-checked factory simulation.
+3. **Isometric Canvas Presentation**
+   - Dedicated 2.5D isometric projection on HTML5 Canvas.
+   - Clean spatial depth and verticality without the performance overhead or visual occlusion of a full first-person 3D voxel engine.
+4. **List-Based Streamlined Crafting**
+   - Replaces Minecraft's arbitrary 2x2 and 3x3 spatial grid layouts with a searchable, list-based crafting system (similar to *Factorio* or *Terraria*).
+   - If the player possesses the required ingredients in their inventory or nearby crafting station containers, items are crafted directly from the list.
+5. **Faithful Compact Machines & Modpack Progression Fidelity**
+   Preserve the iconic progression arc and accurate mod mechanics:
+   - Punching solid compact walls with bare hands (causing self-damage and hunger).
    - Sneaking to produce poop for fertilizer and organic matter.
    - Sifting dirt and rummaging for seeds, pebbles, and saplings.
    - Bonsai farming on prepared dirt.
    - Wooden crucibles and barrels for early water and clay.
    - Sifting gravel, sand, and dust with meshes to acquire ores and minerals.
-   - Crafting modular machinery: the Decay Generator (NuclearCraft) and the Compactor (Modular Machinery).
-   - Miniaturization and crafting larger Compact Machines (Small, Normal, Large, Giant, Maximum) and nesting them within each other.
-4. **Intuitive Controls and High Performance**
-   - Pure HTML5 Canvas rendering at fluid 60 FPS.
-   - Instant room navigation: zooming into compact machine blocks to enter nested rooms, zooming out to return to parent rooms.
-   - Built-in Quest Book and Recipe Viewer (replacing BetterQuesting and JEI) seamlessly integrated into the HUD.
+   - Crafting modular machinery: the Decay Generator (NuclearCraft) and the Compactor (Modular Machinery) to produce `compactmachines3:wallbreakable`.
+   - Miniaturization Field Projector crafting to fabricate larger Compact Machines (Small, Normal, Large, Giant, Maximum) and nesting them within each other.
+   - Proper CM3 Tunnels: exactly 6 external face mappings (North, South, East, West, Up, Down) mapped to perimeter walls via Tunnel Tools.
 
 ---
 
@@ -41,7 +46,7 @@ The Canvas implementation reimagines Compact Claustrophobia from scratch as a de
 ```
 +-------------------------------------------------------------+
 | 1. CONFINED START (3x3 Room)                                |
-|    - Punch unbreakable walls -> Dirt Dust & Gravel Dust     |
+|    - Punch solid unbreakable walls -> Dirt Dust & Gravel    |
 |    - Sneak -> Poop                                          |
 |    - Combine Dirt Dust -> Dirt Block; Rummage for Bonsai     |
 |    - Grow Bonsai on dirt -> Wood Cuttings -> Planks         |
@@ -50,7 +55,7 @@ The Canvas implementation reimagines Compact Claustrophobia from scratch as a de
                                v
 +-------------------------------------------------------------+
 | 2. EARLY SURVIVAL & BASIC TOOLS                             |
-|    - Craft Wooden Pickaxe -> Strike walls for Pebbles       |
+|    - Craft Wooden Pickaxe (from list) -> Strike walls       |
 |    - Pebbles -> Cobblestone -> Stone Pickaxe                |
 |    - Wooden Crucible + Leaves -> Water                      |
 |    - Dirt + Water Barrel -> Clay                            |
@@ -73,28 +78,47 @@ The Canvas implementation reimagines Compact Claustrophobia from scratch as a de
 |    - Auto-Clicker: Automate wall punching and sifting       |
 |    - Hoppers / Item Ducts: Automate item routing            |
 |    - Decay Generator: Early RF power from radioactive decay |
-|    - Small Compactor: Multi-block machine crafting          |
+|    - Modular Compactor: Compresses Modularium into Breakable|
+|      Compact Machine Walls (compactmachines3:wallbreakable) |
 +------------------------------+------------------------------+
                                |
                                v
 +-------------------------------------------------------------+
-| 5. DIMENSIONAL EXPANSION (NESTED ROOMS)                     |
-|    - Compact Walls & Miniaturization recipes                |
-|    - Craft Tiny Compact Machine (3x3)                       |
-|    - Expand to Small (5x5), Normal (7x7), Large (9x9),      |
-|      Giant (11x11), and Maximum (13x13)                     |
-|    - Tunnels & Face Proxies: Transfer power, items, and     |
-|      fluids across room boundaries                          |
-+-------------------------------------------------------------+
+| 5. MINIATURIZATION & DIMENSIONAL EXPANSION (NESTED ROOMS)   |
+|    - Miniaturization Field Projectors (CM3 craft structure) |
+|    - Craft Tiny Machine (3x3), Small (5x5), Normal (7x7),   |
+|      Large (9x9), Giant (11x11), and Maximum (13x13)        |
+|    - Tunnel Tools: Configure up to 6 tunnels on perimeter   |
+|      walls connecting internal lines to external faces      |
+|    - Multi-layered factory logistics across nested machines |
++------------------------------+------------------------------+
 ```
 
 ---
 
-## 4. Documentation Directory Structure
+## 4. Explicit Points of Divergence from Minecraft & Compact Claustrophobia
 
-- `overview.md`: (This document) Vision, game loop, design pillars.
+To prevent ambiguity during design, development, and debugging, the table below documents every intended deviation from the original Minecraft Java modpack. **Any difference not listed here or in this specification should be treated as an accidental discrepancy or bug rather than an intended design choice.**
+
+| Category | Minecraft / Original Modpack | Canvas Reimplementation | Classification | Design Rationale |
+| :--- | :--- | :--- | :--- | :--- |
+| **Perspective & Rendering** | First-person / third-person full 3D voxel engine (OpenGL / JVM). | 2.5D Isometric projection on HTML5 Canvas. | **Design Choice** | Eliminates camera clipping in tight 3x3 rooms, removes voxel rendering bloat, and optimizes clarity for factory layout and conduit management. |
+| **Network Architecture** | Client-Server (dedicated server or integrated singleplayer server) with authoritative ticks, client prediction, and potential desyncs. | Deterministic Lockstep over Peer-to-Peer (WebRTC DataChannels) for 1–3 players. | **Design Choice** | Eliminates central server hosting costs. Perfectly synchronized factory state across peers without ghost item desyncs; ideal for small cooperative factory puzzle solving. |
+| **Crafting Interface** | Spatial grid-based crafting (2x2 inventory grid and 3x3 Crafting Table grid where item placement shapes matter). | List-based crafting (categorized/searchable recipe list with single-click crafting if ingredients are present). | **Design Choice** | Eliminates tedious micro-management of drag-and-drop spatial grids. Matches modern factory games (*Factorio*) while preserving all recipe ingredients, tool requirements, and unlock stages. |
+| **World Generation** | Infinite procgen overworld / void dimension with chunk loading, biomes, and terrain noise. | Strictly isolated, bounded 2D isometric grid rooms loaded in memory as discrete room graphs. | **Design Choice** | Claustrophobia takes place entirely within closed machine boundaries; boundless procgen is unnecessary overhead. |
+| **Physics & Entities** | Floating loose 3D item entities with Newtonian physics, collision volumes, and despawn timers. | Deterministic discrete tile drops or immediate conveyor/hopper ingestion without floating entity physics jitter. | **Design Choice** | Item physics causes lag and clipping in tiny rooms. Deterministic factory routing guarantees predictable automation. |
+| **Compact Machine Tunnels** | In CM3, tunnels are placed onto inside wall blocks using a Tunnel Tool, binding that block to 1 of 6 exterior faces (North, South, East, West, Up, Down). Maximum 6 tunnels per machine. | Exactly identical to CM3: Tunnels placed on perimeter walls via Tunnel Tool, mapped to the 6 exterior machine faces (max 6 active tunnels). | **Fidelity Preserved** | Core CM3 mechanic preserved. (Previously misdocumented as arbitrary conduit pass-throughs; now accurately specified). |
+| **Compact Machine Wall Types** | Solid Compact Machine Wall (`compactmachines3:wall`) forms the room boundary and cannot be broken. Compact Machine Wall (`compactmachines3:wallbreakable`) is crafted in the Compactor and used in Miniaturization recipes. | Strictly matches CM3: The room borders are indestructible solid walls. The Compactor crafts breakable walls for miniaturization recipes. | **Fidelity Preserved** | Accurately distinguishes structural room boundary from the craftable block item. |
+| **Machine Miniaturization** | CM3 uses 4 Field Projectors spaced in a cross to project a craft volume, where multiblock structures are built and a catalyst is thrown into the field. | Miniaturization field crafting simulated via isometric structural placement and catalyst drop (or projector interface). | **Fidelity Preserved** | Faithfully matches the original modpack recipes (e.g. Tiny machine requires 3x3x3 hollow wall structure with Ender Pearl catalyst). |
+| **Player Count** | Arbitrary player count bounded by server RAM. | Fixed at 1 to 3 players max. | **Design Choice** | Lockstep peer-to-peer networks exhibit latency scaling with $O(N^2)$ messaging. Limiting to 3 players ensures ultra-low latency and fits the claustrophobic co-op theme. |
+
+---
+
+## 5. Documentation Directory Structure
+
+- `overview.md`: (This document) Vision, game loop, design pillars, and points of divergence.
 - `mechanics.md`: Detailed interactions (wall punching, sneaking/pooping, rummaging, bonsai growth, barrel/crucible mechanics, sieving, auto clickers).
+- `machines-and-rooms.md`: Room specifications (dimensions, walls, tunnels, nesting), Compact Machines 3 mechanics, and multiblock machine configurations (Compactor, Decay Generator).
+- `recipes-and-tech-tree.md`: Complete list-based recipe catalog, hammer tables, sieving tables, in-world fluid crafting, and miniaturization field recipes.
+- `canvas-architecture.md`: Technical implementation specification (isometric rendering pipeline, deterministic lockstep peer networking, state models, list crafting system).
 - `progression-and-quests.md`: Quest lines, chapter breakdowns, tasks, prereqs, and rewards.
-- `recipes-and-tech-tree.md`: Complete recipe lists, crafting tables, hammer recipes, sieving tables, in-world fluid crafting, and compactor recipes.
-- `machines-and-rooms.md`: Room specifications (dimensions, walls, tunnels, nesting) and multiblock machine configurations (Compactor, Decay Generator).
-- `canvas-architecture.md`: Technical implementation specification for the HTML5 canvas game (state models, loop, grid rendering, automation pipeline, input handling).
