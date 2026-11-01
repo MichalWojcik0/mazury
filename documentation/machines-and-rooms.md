@@ -4,48 +4,78 @@ This document details the spatial architecture, room tiers, inter-room connectiv
 
 ---
 
-## 1. Compact Machine Room Hierarchy
+## 1. Compact Machine Room Hierarchy & Isometric Grids
 
-In *Compact Claustrophobia*, all building and factory automation takes place inside closed cuboidal rooms called Compact Machines. In our Canvas reimplementation, these correspond to discrete 2D spatial grids surrounded by perimeter wall tiles.
+In *Compact Claustrophobia*, all building and factory automation takes place inside closed cuboidal rooms called Compact Machines. In our Canvas reimplementation, each room is modeled as an isometric spatial grid surrounded by perimeter wall tiles.
 
-| Room Tier | Name | Internal Grid Size | Usable Tiles | Outer Border |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1** | Tiny Compact Machine | 3 x 3 | 9 tiles | 5 x 5 (with walls) |
-| **Tier 2** | Small Compact Machine | 5 x 5 | 25 tiles | 7 x 7 (with walls) |
-| **Tier 3** | Normal Compact Machine | 7 x 7 | 49 tiles | 9 x 9 (with walls) |
-| **Tier 4** | Large Compact Machine | 9 x 9 | 81 tiles | 11 x 11 (with walls) |
-| **Tier 5** | Giant Compact Machine | 11 x 11 | 121 tiles | 13 x 13 (with walls) |
-| **Tier 6** | Maximum Compact Machine | 13 x 13 | 169 tiles | 15 x 15 (with walls) |
+| Room Tier | In-Game Name | 3D Modpack Size | Isometric Grid Size | Usable Tiles | Outer Border |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | Tiny Compact Machine | 3 x 3 x 3 | 3 x 3 | 9 tiles | 5 x 5 (with solid walls) |
+| **Tier 2** | Small Compact Machine | 5 x 5 x 5 | 5 x 5 | 25 tiles | 7 x 7 (with solid walls) |
+| **Tier 3** | Normal Compact Machine | 7 x 7 x 7 | 7 x 7 | 49 tiles | 9 x 9 (with solid walls) |
+| **Tier 4** | Large Compact Machine | 9 x 9 x 9 | 9 x 9 | 81 tiles | 11 x 11 (with solid walls) |
+| **Tier 5** | Giant Compact Machine | 11 x 11 x 11 | 11 x 11 | 121 tiles | 13 x 13 (with solid walls) |
+| **Tier 6** | Maximum Compact Machine | 13 x 13 x 13 | 13 x 13 | 169 tiles | 15 x 15 (with solid walls) |
 
-### 1.1 The Starting Room
+### 1.1 The Starting Room & Wall Distinctions
 The player begins inside a **Tier 1 (Tiny, 3x3)** room.
-- The 8 perimeter blocks are unbreakable **Compact Machine Walls** (`compactmachines3:wall`).
-- The center floor tile has a special marked block representing the dimensional anchor / machine core.
-- The player moves within this 3x3 area. Space is at a severe premium.
+
+#### Wall Mechanics & Types (Fidelity to Compact Machines 3):
+A critical distinction from the original Compact Machines 3 mod:
+1. **Solid Compact Machine Wall (`compactmachines3:wall`)**:
+   - The indestructible exterior envelope surrounding every room.
+   - Cannot be mined, broken, or picked up by any tool or machine.
+   - Striking this wall by hand or tool yields dusts, pebbles, and metal grits (the core early bootstrap mechanic).
+   - Serves as the substrate where Tunnels are placed.
+2. **Compact Machine Wall (`compactmachines3:wallbreakable`)**:
+   - A craftable/placeable block item.
+   - Fabricated inside the **Modular Compactor** using Modularium ingots (4x Modularium $\rightarrow$ 1x Wall).
+   - Used as the physical construction block in **Miniaturization Field recipes** to create new Compact Machine hulls.
+   - Can be broken and repositioned like normal blocks.
 
 ---
 
 ## 2. Dimensional Nesting & Navigation
 
 A fundamental feature of the game is **nested spatial recursion**:
-- A Compact Machine is both a physical block that can be placed in an existing room *and* a container holding a larger internal room.
-- **Entering a Room**: Right-clicking or zooming into a placed Compact Machine block transitions the view to that machine's internal room.
-- **Exiting a Room**: Using the Personal Shrinking Device (PSD) or clicking the outer exit portal zooms the player back out to the parent room where the machine block is located.
+- A Compact Machine is both an isometric block that can be placed in an existing room *and* a container holding a larger internal room.
+- **Entering a Room**: Right-clicking or zooming into a placed Compact Machine block with a Personal Shrinking Device (PSD) transitions the player and camera into that machine's internal room.
+- **Exiting a Room**: Using the Personal Shrinking Device (PSD) while inside a room or right-clicking an exit portal teleports the player back out to the parent room directly adjacent to the machine block.
+- **Respawn / Bed Setting**: Using a bed inside a Compact Machine sets the player's respawn position to that machine interior.
 - **Infinite Nesting Depth**: Machine A can contain Machine B, which can contain Machine C.
+- **Multiplayer Visibility**: Up to 3 players can freely inhabit the same machine or disperse across different nested rooms. The HUD shows the current room location and status of all connected peers.
 
 ---
 
 ## 3. Tunnels & Cross-Dimensional Logistical Routing
 
-Compact Machines connect to the outer world via **Tunnels**:
-- Tunnels are specialized wall blocks placed on the perimeter of an internal room.
-- Each tunnel is bound to one of the 6 cardinal directions / faces of the exterior block:
-  - `North`, `South`, `East`, `West`, `Top` (Up), `Bottom` (Down).
-- **Transport Types Supported**:
-  1. **Items**: Hoppers, ducts, or conduits connected to the outer face transfer items directly into/out of the internal tunnel tile.
-  2. **Fluids**: Liquid pipes connect seamlessly across the wall boundary.
-  3. **Energy (RF / FE)**: Power generated in one room can be piped through a tunnel to power machines in other rooms.
-  4. **Signals / Redstone**: Logic switches and comparators transfer activation states.
+Compact Machines 3 connects internal room automation to the outer dimension via **Tunnels**:
+
+### 3.1 Tunnel Mechanics & 6-Face Limitation
+- **Placement**: Tunnels are **not** standalone crafted conduit blocks placed on the floor. Instead, they are created by right-clicking a **Solid Compact Machine Wall** (`compactmachines3:wall`) on the room perimeter using a **Tunnel Tool** (`compactmachines3:tunneltool`) or **Redstone Tunnel Tool** (`compactmachines3:redstonetunneltool`).
+- **Strict Face Binding**: Each machine block in the exterior world has exactly 6 faces:
+  - `DOWN` (Bottom)
+  - `UP` (Top)
+  - `NORTH`
+  - `SOUTH`
+  - `WEST`
+  - `EAST`
+- **Maximum 6 Tunnels**: Each exterior face can be bound to **at most one** inside wall tunnel. Therefore, a Compact Machine can have at most **6 active tunnels**.
+- **Configuration**:
+  - Right-clicking an existing tunnel with a Tunnel Tool cycles through available unassigned exterior faces.
+  - Sneak-right-clicking with the tool removes the tunnel and returns the tool/clears the binding.
+
+### 3.2 Types of Tunnels
+1. **Standard Tunnel (`compactmachines3:tunnel`)**:
+   - Placed using the **Tunnel Tool** (`compactmachines3:tunneltool`).
+   - Bidirectional proxy using Forge Capability routing:
+     - **Items**: Hoppers, ducts, conveyors, or conduits connected to the exterior face push/pull directly to/from the inside tunnel tile.
+     - **Fluids**: Fluid pipes move liquids seamlessly across the wall boundary.
+     - **Energy (RF / FE / Forge Energy)**: Power generated inside the room can be piped outside, or external generators can feed machines inside.
+2. **Redstone Tunnel (`compactmachines3:redstonetunnel`)**:
+   - Placed using the **Redstone Tunnel Tool** (`compactmachines3:redstonetunneltool`).
+   - Specifically transfers redstone activation levels (0 to 15) across the wall boundary.
+   - Directional mode: Configured to either **Input** (exterior signal read into inside room) or **Output** (inside signal emitted to exterior machine face).
 
 ---
 
@@ -75,14 +105,27 @@ The multiblock factory required to build advanced materials and machine hulls.
 
 **Assembled State & Operation**:
 - When placed in the required pattern, the Controller activates (indicator turns green).
-- Connecting the Energy Input Hatch to a Decay Generator feeds power.
-- Inserting Modularium into the Input Bus automatically begins compression into Compact Machine blocks.
+- Connecting the Energy Input Hatch to a Decay Generator feeds power (16 RF/t).
+- Inserting 4x Modularium Ingots into the Input Bus automatically compresses them into 1x **Compact Machine Wall** (`compactmachines3:wallbreakable`).
+- *Note*: The compactor crafts the breakable walls (`wallbreakable`), which are subsequent ingredients for the Miniaturization Field Projector to produce machine rooms.
 
 ---
 
-## 5. Factory Automation Infrastructure
+## 5. Miniaturization Field Projectors
+
+Compact Machines 3 crafts machine room blocks and miniaturized components using **Miniaturization Field Projectors**:
+- **Setup**: 4 Miniaturization Field Projectors (`compactmachines3:fieldprojector`) placed facing each other in a cardinal cross, defining a crafting volume ($3 \times 3 \times 3$ or $5 \times 5 \times 5$).
+- **Process**:
+  1. The player builds the required physical block structure inside the projected field volume.
+  2. The player throws or drops the designated **Catalyst** item (e.g. `minecraft:ender_pearl`) into the center of the field.
+  3. The field projectors energize, consume the structure over a duration (e.g. 400 ticks / 20 seconds), and synthesize the finished Compact Machine item or component.
+
+---
+
+## 6. Factory Automation Infrastructure
 
 To fit complex industrial lines inside tiny rooms, the game provides ultra-compact logistics:
 - **Click Machines (Auto-Clickers)**: 1-tile automation of left-click or right-click interactions.
 - **Thermal Expansion Itemducts & Servos**: Configurable 1-tile transparent item transport tubes with whitelist/blacklist filters.
 - **Ender IO Conduits**: Allow Item, Fluid, and Power lines to occupy the **exact same tile**! This is the ultimate tool for compact 3x3 and 5x5 automation.
+- **Tunnels**: Route these conduits directly to exterior faces (up to 6 total).
