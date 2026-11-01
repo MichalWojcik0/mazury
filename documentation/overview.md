@@ -134,6 +134,7 @@ To prevent ambiguity during design, development, and debugging, the table below 
 ## 5. Documentation Directory Structure
 
 - `overview.md`: (This document) Vision, game loop, design pillars, and points of divergence.
+- `chapter-1-checkpoints.md`: Sequential subcheckpoint implementation roadmap for Chapter 1 (path to wood, farming, mining, sieving, smelting, fluids, automation).
 - `mechanics.md`: Detailed interactions (wall punching, sneaking/pooping, rummaging, bonsai growth, barrel/crucible mechanics, sieving, auto clickers).
 - `machines-and-rooms.md`: Room specifications (dimensions, walls, tunnels, nesting), Compact Machines 3 mechanics, and multiblock machine configurations (Compactor, Decay Generator).
 - `recipes-and-tech-tree.md`: Complete list-based recipe catalog, hammer tables, sieving tables, in-world fluid crafting, and miniaturization field recipes.
