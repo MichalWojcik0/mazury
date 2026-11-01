@@ -11,12 +11,12 @@ This document maps out the quest progression tree of *Compact Claustrophobia*, w
 
 ## Chapter 1: Compact Claustrophobia (The Beginning)
 
-The player starts inside an unbreakable 3x3x3 Compact Machine room. The quest book guides the player through surviving, gathering resources, and escaping the confinement.
+The player initially spawns in the **Outer Room**—an asymmetrical 2x1x(4/5) void pocket encased in a bedrock meteor. After right-clicking the embedded floor machine with the PSD, they shrink into an unbreakable 3x3x3 Compact Machine room. The quest book guides the player through surviving, gathering resources, and escaping the confinement.
 
 ```
-[#142: Stuck in a Hole] (Free Personal Shrinking Device)
+[#142: Stuck in a Hole] (Spawn in 2x1 meteor pocket; receive PSD)
          |
-[#68: The Beginning?] (Interact with floor block / PSD)
+[#68: The Beginning?] (Click embedded floor machine in 5-tall column -> enter 3x3 Tiny room)
          |
 [#13: The Real Beginning] (Collect 4x Dirt Dust from walls)
     /                 \

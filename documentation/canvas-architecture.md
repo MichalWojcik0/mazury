@@ -79,10 +79,11 @@ type RoomId = string;
 interface Room {
   id: RoomId;
   name: string;
-  tier: 1 | 2 | 3 | 4 | 5 | 6; // Tiny (3x3) to Maximum (13x13)
+  tier: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Outer Room (Meteor Pocket), 1-6 = Tiny (3x3) to Maximum (13x13)
   width: number;
   height: number;
-  depth: number; // Vertical dimensions (Z levels, e.g. 3 to 13)
+  depth: number; // Maximum vertical bounding dimension (Z/elevation levels)
+  columnHeights?: Record<string, { floorZ: number; ceilingZ: number }>; // For non-uniform / asymmetrical rooms like Outer Room 2x1x(4/5)
   voxels: Tile[][][]; // 3D voxel grid indexed as [z][y][x]
   parentRoomId?: RoomId;
   parentBlockCoord?: { x: number; y: number; z: number };

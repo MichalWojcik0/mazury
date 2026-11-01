@@ -45,6 +45,14 @@ The Canvas implementation reimagines Compact Claustrophobia from scratch as a de
 
 ```
 +-------------------------------------------------------------+
+| 0. METEOR SPAWN POCKET (Outer Room 2x1x(4/5))               |
+|    - Spawn in 4-tall column with bedrock & torch            |
+|    - Right-click embedded Compact Machine in 5-tall column  |
+|      using Personal Shrinking Device (PSD) to shrink inside |
++------------------------------+------------------------------+
+                               |
+                               v
++-------------------------------------------------------------+
 | 1. CONFINED START (3x3 Room)                                |
 |    - Punch solid unbreakable walls -> Dirt Dust & Gravel    |
 |    - Sneak -> Poop                                          |
