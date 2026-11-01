@@ -4,6 +4,18 @@ This document specifies the exact mechanics implemented in the game, derived fro
 
 ---
 
+## 0. Player Interaction & Voxel Targeting Mechanics
+
+As detailed in the architecture specification (`canvas-architecture.md`), the 2-block-tall player character reaches into **4 distinct vertical layers** relative to their position:
+- **Layer 3**: Above Head ($z_p + 2$, 9 interactable blocks)
+- **Layer 2**: Upper Body ($z_p + 1$, 8 interactable blocks surrounding player)
+- **Layer 1**: Lower Body ($z_p$, 8 interactable blocks surrounding player)
+- **Layer 0**: Below Feet ($z_p - 1$, 9 interactable blocks)
+
+Interactions against walls, machines, sieves, crucibles, and barrels require targeting an unblocked block in one of these 4 layers. The player selects one of the 4 layers (via layer widget, mouse wheel, or hotkeys) and then unambiguously selects the block via screen click, SVG aux reticle, or numpad keys 1–9 (unless intervening blocks obstruct physical reach).
+
+---
+
 ## 1. Wall Scraping / Punching Mechanics
 
 The player starts inside an unbreakable **Solid Compact Machine Wall** (`compactmachines3:wall`) perimeter in an isometric room view. Interacting with the walls is the primary bootstrap mechanic.

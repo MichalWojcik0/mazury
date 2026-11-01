@@ -52,7 +52,9 @@ type InputAction =
   | { type: "MOVE"; dx: number; dy: number }
   | { type: "START_SNEAK" }
   | { type: "STOP_SNEAK" }
-  | { type: "INTERACT_TILE"; x: number; y: number; button: "PRIMARY" | "SECONDARY" }
+  | { type: "SELECT_LAYER"; layerIndex: 0 | 1 | 2 | 3 }
+  | { type: "INTERACT_TILE"; x: number; y: number; z: number; button: "PRIMARY" | "SECONDARY" }
+  | { type: "INTERACT_GRID_SLOT"; slot: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; button: "PRIMARY" | "SECONDARY" }
   | { type: "CRAFT_RECIPE"; recipeId: string; count: number }
   | { type: "TRANSFER_ITEM"; source: ContainerRef; target: ContainerRef; slot: number }
   | { type: "USE_PSD"; targetRoomId?: string };
@@ -80,15 +82,17 @@ interface Room {
   tier: 1 | 2 | 3 | 4 | 5 | 6; // Tiny (3x3) to Maximum (13x13)
   width: number;
   height: number;
-  tiles: Tile[][];
+  depth: number; // Vertical dimensions (Z levels, e.g. 3 to 13)
+  voxels: Tile[][][]; // 3D voxel grid indexed as [z][y][x]
   parentRoomId?: RoomId;
-  parentBlockCoord?: { x: number; y: number };
+  parentBlockCoord?: { x: number; y: number; z: number };
 }
 
 interface Tile {
   id: string; // "compact_wall", "dirt", "wooden_crucible", "sieve", etc.
-  type: "solid_wall" | "floor" | "machine" | "conduit" | "tunnel";
+  type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel";
   passable: boolean;
+  occluding?: boolean; // Blocks line of sight / targeting to blocks behind it
   metadata?: Record<string, any>;
   inventory?: Inventory;
   fluidTank?: FluidTank;
@@ -107,8 +111,11 @@ interface Player {
   isSneaking: boolean;
   sneakTimer: number;   // Ticks accumulated towards poop generation
   currentRoomId: RoomId;
-  x: number;            // Sub-tile or tile position in current room
+  x: number;            // Sub-tile or tile coordinate in current room
   y: number;
+  z: number;            // Vertical coordinate of feet (occupies z and z + 1)
+  height: 2;            // Player character is strictly 2 blocks tall
+  selectedLayerIndex: 0 | 1 | 2 | 3; // Selected interaction layer relative to player
   inventory: Inventory; // 36 main slots + 9 hotbar slots + armor/offhand
   selectedHotbarIndex: number;
 }
@@ -168,21 +175,35 @@ Isometric rendering requires strict painter's algorithm ordering:
   $$\text{DepthKey} = (x + y) \cdot K + z$$
 - Tiles, dropped items, machines, conduits, and players (0, 1, 2) are drawn back-to-front to guarantee correct occlusion of isometric walls and multi-height machines.
 
-### 5.3 Layered Canvas Strategy
-1. **Terrain & Floor Layer**:
-   - Renders room floor tiles, grid markers, and room boundaries.
-2. **Isometric Structure & Entity Layer**:
-   - Perimeter solid compact walls (`compactmachines3:wall`) with isometric extrusion.
-   - Machine blocks, bonsai trees, sieves, crucibles, barrels, conduits.
-   - Player sprites (up to 3 players) with directional isometric animations (facing NW, NE, SW, SE).
-   - Subtle fluid animations and item transport visualization.
-3. **Atmosphere & Lighting Layer**:
-   - Claustrophobic vignette effect, dim neon glowstone shadows, and industrial dust motes.
-4. **HUD & Modal UI Overlay**:
-   - Player Health, Hunger, and Hotbar.
-   - Teammate status indicators (health/hunger/room location of connected peers).
-   - Tooltips for targeted isometric tile.
-   - Modal views: List Crafting Panel, Quest Book, Machine GUIs, and Recipe Viewer.
+### 5.3 Layered Architecture: Canvas & HTML/SVG UI Stack
+
+The interface architecture decouples visual voxel simulation rendering from reactive user interaction and controls by utilizing a layered DOM structure:
+
+```
++-------------------------------------------------------------------------+
+| TOP UI LAYER (HTML5 / SVG DOM Overlay, pointer-events: none / auto)     |
+| - Layer Selection Widget & Elevation Controls                           |
+| - Auxiliary 3x3 Interaction Reticle (SVG diamond / grid projected)      |
+| - Interactive HUD: Health / Hunger / Hotbar / Quest Book / Modals       |
+| - Target Block Highlighting, Hover Tooltips & Numpad Key Overlays       |
++-------------------------------------------------------------------------+
+| CANVAS LAYER (HTML5 Canvas 2D / WebGL)                                  |
+| - Sub-layer 3: Atmosphere & Lighting (Vignette, Glow, Shading)          |
+| - Sub-layer 2: Depth-Sorted Isometric Voxels, Machines, Entities        |
+| - Sub-layer 1: Room Floor Grid & Ground Baselines                       |
++-------------------------------------------------------------------------+
+```
+
+1. **Canvas Layer (Simulation & Scene Rendering)**:
+   - **Sub-layer 1 (Floor Grid)**: Renders room floor tiles, coordinate markers, and foundation boundaries.
+   - **Sub-layer 2 (Voxel World & Entities)**: Perimeter solid walls (`compactmachines3:wall`), machines, conduits, bonsai trees, fluids, and 2-block-tall player sprites depth-sorted front-to-back according to `DepthKey`.
+   - **Sub-layer 3 (Atmosphere & Shadows)**: Ambient occlusion between adjacent blocks, dim neon machine lighting, and claustrophobic vignette.
+
+2. **Top UI Layer (HTML5 & SVG Overlay)**:
+   - Positioned directly above the Canvas container with `position: absolute; inset: 0; pointer-events: none;`.
+   - Specific interactive UI elements (widgets, hotbars, dialogs, auxiliary grid cells) declare `pointer-events: auto;`.
+   - Utilizes SVG path projections for crisp isometric highlight outlines, reticles, direction vectors, and crosshairs matching current canvas camera transformations.
+   - Renders the **Layer Selection Widget** and **Auxiliary 3x3 Interaction Grid**, enabling direct mouse interaction and touch/stylus support in addition to keyboard hotkeys.
 
 ### 5.4 Camera & Zoom Transition System
 - Smooth camera interpolation when zooming into a Compact Machine block:
@@ -194,9 +215,95 @@ Isometric rendering requires strict painter's algorithm ordering:
 
 ---
 
-## 6. List-Based Crafting System
+## 6. Player Spatial Interaction & Voxel Selection Architecture
 
-### 6.1 Contrast with Grid Crafting
+Isometric 2.5D projection creates depth ambiguity along the line of sight (a single screen pixel can correspond to multiple $(x, y, z)$ voxels). In a confined factory environment where precision tile manipulation is essential, the game resolves this via a deterministic, two-stage **Layer + Block Selection Model** rendered through the HTML/SVG top UI layer.
+
+### 6.1 Player Physical Model & The 4 Interaction Layers
+
+The player character occupies an isometric footprint of $1 \times 1$ tile and is **2 blocks tall** in world vertical coordinates:
+- Feet elevation: $z_{\text{player}}$
+- Head elevation: $z_{\text{player}} + 1$
+
+From their current position $(x_p, y_p, z_p)$, the player can reach exactly **4 vertical layers** adjacent to their body:
+
+```
++-------------------------------------------------------------------------+
+| Layer Index | Relative Z Offset | Designation       | Interactable Slots|
+| :---        | :---              | :---              | :---              |
+| **Layer 3** | $z_p + 2$         | Above Head / Roof | 9 blocks (3x3)   |
+| **Layer 2** | $z_p + 1$         | Upper Body / Head | 8 blocks (3x3 - C)|
+| **Layer 1** | $z_p$             | Lower Body / Feet | 8 blocks (3x3 - C)|
+| **Layer 0** | $z_p - 1$         | Below Feet / Floor| 9 blocks (3x3)   |
++-------------------------------------------------------------------------+
+```
+*(Where `C` denotes the center tile $(0, 0)$ occupied by the player character's own collision body).*
+
+### 6.2 Reach Geometry & 8–9 Interactable Blocks per Layer
+
+Each of the 4 layers forms a $3 \times 3$ horizontal bounding footprint around the player:
+$$\Delta x \in \{-1, 0, +1\}, \quad \Delta y \in \{-1, 0, +1\}$$
+
+1. **Layers Above and Below (Layers 0 and 3)**:
+   - Provide up to **9 interactable block locations** per layer (8 surrounding neighbors plus the tile directly below the feet or directly above the head).
+2. **Body Layers (Layers 1 and 2)**:
+   - Provide up to **8 interactable block locations** per layer surrounding the player horizontally (North, South, East, West, and diagonals). The center $(0, 0)$ slot is occupied by the player entity itself and cannot be interacted with.
+
+### 6.3 Obstruction & Line-of-Sight ("Unless Blocks in the Way")
+
+In the confined quarters of a Compact Machine, tiles may be physically occluded or obstructed:
+1. **Physical Occlusion / Line-of-Sight Raycasting**:
+   - A block in the $3 \times 3$ grid is interactable only if there is an unblocked ray from the player's center of mass $(x_p + 0.5, y_p + 0.5, z_p + 1.0)$ to the target block $(x_p + \Delta x, y_p + \Delta y, z_{\text{layer}})$.
+   - If an intervening solid block (e.g. solid compact wall, full machine chassis) completely blocks physical access or tool reach, the targeted slot is marked as **Obstructed** (`passable: false`, `obstructed: true`).
+2. **Visual Feedback in UI Layer**:
+   - Obstructed blocks are dimmed or flagged with a strike-through pattern in the SVG/HTML overlay, preventing accidental misclicks and giving immediate feedback that access is blocked.
+
+### 6.4 Two-Stage Selection Mechanism
+
+To make block targeting completely unambiguous, interaction is split into two distinct steps:
+
+```
+[ Step 1: Select 1 of 4 Layers ] ===> [ Step 2: Select 1 of 8-9 Blocks ]
+  - Layer 3: Above Head (Roof)           - Direct On-Screen Click (Canvas/SVG)
+  - Layer 2: Upper Body (Head)           - Aux SVG Reticle Widget Click
+  - Layer 1: Lower Body (Feet)           - Numpad Keys [1] - [9]
+  - Layer 0: Below Feet (Floor)
+```
+
+#### Step 1: Layer Selection (Choosing 1 of 4 Options)
+The active layer index $L \in \{0, 1, 2, 3\}$ is chosen through any of the following intuitive input methods:
+- **Auxiliary HTML/SVG Layer Selector**: A compact, vertical 4-tier stack widget anchored beside the player or in the HUD showing the 4 layer silhouettes (`Roof`, `Head`, `Feet`, `Floor`).
+- **Mouse Wheel / Modifier**: `Shift + Scroll` or `Alt + Scroll` steps through the 4 vertical interaction layers.
+- **Dedicated Hotkeys**:
+  - `[` and `]` (or `PageUp` / `PageDown`, `R` / `F`) step between adjacent layers.
+  - Or direct layer shortcuts: `F1`–`F4` or holding modifier keys.
+- **Persistent Isometric Visual Plane**: The currently selected layer displays an isometric projection slice (a faint SVG diamond plane) at the active $z$-level, highlighting which vertical slice of the room is currently being targeted.
+
+#### Step 2: Block Selection within the Active Layer
+Once the layer is selected, the specific block is chosen without ambiguity:
+1. **Direct On-Screen Selection (Canvas / SVG Overlays)**:
+   - The player hovers or clicks directly on the screen. Because the active $z$-plane is locked, the mouse coordinates $(u, v)$ mathematically invert to a single unique $(x, y)$ coordinate at that $z$.
+   - The SVG top UI layer draws an active isometric bounding box over the hovered block.
+2. **Auxiliary 3x3 Widget (Aux Widget)**:
+   - An on-screen HTML/SVG widget rendered either near the screen corner or anchored isometrically around the player avatar.
+   - Represents the active $3 \times 3$ layer footprint as a clean diamond or 9-cell keypad layout.
+   - Clicking any cell targets that relative tile.
+3. **Numeric Keypad (Numpad 1–9) Direct Mapping**:
+   - The 9 physical keys on a standard numpad map 1:1 to the $3 \times 3$ grid relative to the player's isometric orientation:
+     ```
+     [ 7: NW ]  [ 8: N  ]  [ 9: NE ]
+     [ 4: W  ]  [ 5: C  ]  [ 6: E  ]
+     [ 1: SW ]  [ 2: S  ]  [ 3: SE ]
+     ```
+   - Pressing `Numpad 8` strikes/interacts with the tile directly north at the active layer.
+   - Pressing `Numpad 5` targets the center tile (on Layer 0: floor under feet; on Layer 3: ceiling above head; on Layers 1–2: self/inventory).
+   - This provides instant, blindingly fast single-keystroke interaction without relying on pixel-hunting in cramped 3x3x3 rooms.
+
+---
+
+## 7. List-Based Crafting System
+
+### 7.1 Contrast with Grid Crafting
 Minecraft requires arranging items into 2x2 or 3x3 grids in arbitrary spatial patterns. In this canvas reimplementation:
 - **Crafting is Done from a List**: The player opens the Crafting Menu (`C` or via Crafting Station interaction).
 - **Categorized & Searchable**: Recipes are grouped into categories (Tools, Basic, Metallurgy, Machines, Logistics, Miniaturization) and filterable via search bar.
@@ -220,15 +327,15 @@ interface ListRecipe {
 
 ---
 
-## 7. Integrated UI & Recipe Viewer
+## 8. Integrated UI & Recipe Viewer
 
-### 7.1 Integrated Quest Book
+### 8.1 Integrated Quest Book
 - Overlay panel accessible via hotkey (`Q` or `Tab`) or clicking the book icon in HUD.
 - Displays quest chapters (Chapter 1: Claustrophobia, Chapter 2: Infinite Tiny Space, etc.).
 - Interactive node graph showing completed, available, and locked quests with prereq connecting lines.
 - Synchronized across all connected peers in deterministic lockstep.
 
-### 7.2 Recipe & Usage Viewer (JEI Equivalent)
+### 8.2 Recipe & Usage Viewer (JEI Equivalent)
 - Searchable side panel listing all in-game items.
 - Hovering an item and pressing `R` shows all recipes that produce it (List Crafting, Hammer, Sieve, Crucible, Compactor, Miniaturization Field).
 - Pressing `U` shows all recipes where the item is an ingredient.
