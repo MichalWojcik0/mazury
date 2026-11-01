@@ -6,3 +6,4 @@ export * from "./mechanics/wall-punching.ts";
 export * from "./mechanics/sneak-poop.ts";
 export * from "./crafting/list-crafting.ts";
 export * from "./quests/quest-manager.ts";
+export * from "./render/renderer.ts";
