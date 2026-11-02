@@ -96,7 +96,8 @@ export type RenderCommandType =
   | "DRAW_TILE"
   | "DRAW_WALL_SIDE"
   | "DRAW_PLAYER"
-  | "DRAW_HIGHLIGHT";
+  | "DRAW_HIGHLIGHT"
+  | "DRAW_LAYER_OUTLINE";
 
 export interface RenderCommand {
   type: RenderCommandType;
@@ -139,6 +140,12 @@ export interface CanvasContext2DLike {
 export interface RenderOptions {
   /** If true, front walls and ceiling of enclosed rooms are cut away for interior visibility */
   enableCutaway?: boolean;
+  /** Active selected layer Z elevation in world space (e.g. player.z + selectedLayerIndex - 1) */
+  selectedLayerZ?: number;
+  /** If true, draws the 3D isometric wireframe outline for the selected layer */
+  showLayerOutline?: boolean;
+  /** 3D world coordinate of currently targeted/selected block to outline */
+  highlightCoord?: Vec3 | null;
 }
 
 export class StubRenderer {
@@ -488,6 +495,37 @@ export class StubRenderer {
     // Sort back-to-front by depthKey (ascending)
     commands.sort((a, b) => a.depthKey - b.depthKey);
 
+    // Layer 3D wireframe outline and block 3D wireframe highlight
+    const layerZ = options.selectedLayerZ;
+    if (typeof layerZ === "number" && (options.showLayerOutline ?? true)) {
+      const centerScreen = worldToScreen((room.width - 1) / 2, (room.height - 1) / 2, layerZ, this.camera);
+      commands.push({
+        type: "DRAW_LAYER_OUTLINE",
+        depthKey: Infinity - 2,
+        worldCoord: { x: 0, y: 0, z: layerZ },
+        screenCoord: centerScreen,
+        metadata: {
+          width: room.width,
+          height: room.height,
+          layerZ,
+        },
+      });
+    }
+
+    if (options.highlightCoord) {
+      const { x, y, z } = options.highlightCoord;
+      const screenCoord = worldToScreen(x, y, z, this.camera);
+      commands.push({
+        type: "DRAW_HIGHLIGHT",
+        depthKey: Infinity - 1,
+        worldCoord: { x, y, z },
+        screenCoord,
+        metadata: {
+          highlightCoord: { x, y, z },
+        },
+      });
+    }
+
     return commands;
   }
 
@@ -547,35 +585,40 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v);
         ctx.closePath();
 
-        if (tileId === "minecraft:bedrock") {
-          ctx.fillStyle = "#2a2a2a";
-          ctx.strokeStyle = "#151515";
-          ctx.lineWidth = 1;
-        } else if (tileId === "compactmachines3:machine_tiny") {
-          ctx.fillStyle = "#1e3a5f";
-          ctx.strokeStyle = "#4da6ff";
-          ctx.lineWidth = 2;
-        } else if (cmd.tile?.type === "solid_wall") {
-          ctx.fillStyle = "#3a3c42";
-          ctx.strokeStyle = "#25272c";
-          ctx.lineWidth = 1;
+        if (tileId === "compactmachines3:wall" || (cmd.type === "DRAW_FLOOR" && cmd.tile?.type === "solid_wall")) {
+          // Render textured floor tile
+          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH);
         } else {
-          ctx.fillStyle = "#4a4c54";
-          ctx.strokeStyle = "#2b2d33";
-          ctx.lineWidth = 1;
-        }
-
-        ctx.fill();
-        ctx.stroke();
-
-        // Optional decorative markings on special blocks
-        if (tileId === "compactmachines3:machine_tiny") {
-          ctx.beginPath();
-          if (ctx.arc) {
-            ctx.arc(u, v, 6 * this.camera.zoom, 0, Math.PI * 2);
+          if (tileId === "minecraft:bedrock") {
+            ctx.fillStyle = "#2a2a2a";
+            ctx.strokeStyle = "#151515";
+            ctx.lineWidth = 1;
+          } else if (tileId === "compactmachines3:machine_tiny") {
+            ctx.fillStyle = "#1e3a5f";
+            ctx.strokeStyle = "#4da6ff";
+            ctx.lineWidth = 2;
+          } else if (cmd.tile?.type === "solid_wall") {
+            ctx.fillStyle = "#3a3c42";
+            ctx.strokeStyle = "#25272c";
+            ctx.lineWidth = 1;
+          } else {
+            ctx.fillStyle = "#4a4c54";
+            ctx.strokeStyle = "#2b2d33";
+            ctx.lineWidth = 1;
           }
-          ctx.fillStyle = "#66ccff";
+
           ctx.fill();
+          ctx.stroke();
+
+          // Optional decorative markings on special blocks
+          if (tileId === "compactmachines3:machine_tiny") {
+            ctx.beginPath();
+            if (ctx.arc) {
+              ctx.arc(u, v, 6 * this.camera.zoom, 0, Math.PI * 2);
+            }
+            ctx.fillStyle = "#66ccff";
+            ctx.fill();
+          }
         }
         break;
       }
@@ -631,6 +674,8 @@ export class StubRenderer {
       }
 
       case "DRAW_HIGHLIGHT": {
+        // Draw complete 3D wireframe bounding cube/voxel (all 12 edges: top diamond, bottom diamond, 4 vertical edge struts)
+        // Top diamond (z + 1 surface)
         ctx.beginPath();
         ctx.moveTo(u, v - halfH);
         ctx.lineTo(u + halfW, v);
@@ -638,12 +683,187 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v);
         ctx.closePath();
 
+        // Bottom diamond (z surface: 1 elevation level down on screen, i.e., +elevH)
+        ctx.moveTo(u, v - halfH + elevH);
+        ctx.lineTo(u + halfW, v + elevH);
+        ctx.lineTo(u, v + halfH + elevH);
+        ctx.lineTo(u - halfW, v + elevH);
+        ctx.closePath();
+
+        // 4 vertical corner struts connecting top to bottom
+        // Top vertex strut
+        ctx.moveTo(u, v - halfH);
+        ctx.lineTo(u, v - halfH + elevH);
+        // Right vertex strut
+        ctx.moveTo(u + halfW, v);
+        ctx.lineTo(u + halfW, v + elevH);
+        // Bottom vertex strut
+        ctx.moveTo(u, v + halfH);
+        ctx.lineTo(u, v + halfH + elevH);
+        // Left vertex strut
+        ctx.moveTo(u - halfW, v);
+        ctx.lineTo(u - halfW, v + elevH);
+
         ctx.strokeStyle = "#00ffff";
         ctx.lineWidth = 2;
         ctx.stroke();
         break;
       }
+
+      case "DRAW_LAYER_OUTLINE": {
+        // Draw 3D wireframe bounding slab for the selected layer
+        const width = (cmd.metadata?.width as number) ?? 3;
+        const height = (cmd.metadata?.height as number) ?? 3;
+        const layerZ = (cmd.metadata?.layerZ as number) ?? 0;
+
+        // The layer occupies vertical extent from layerZ to layerZ + 1 in world coords.
+        // Top surface of the layer is at elevation layerZ + 1 (drawn with standard block top anchor at z=layerZ).
+        // Bottom surface of the layer is 1 elevation down (+elevH in screen coordinates).
+        const pTop = worldToScreen(0, 0, layerZ, this.camera);
+        const topU = pTop.u;
+        const topV = pTop.v - halfH;
+
+        const pRight = worldToScreen(width - 1, 0, layerZ, this.camera);
+        const rightU = pRight.u + halfW;
+        const rightV = pRight.v;
+
+        const pBottom = worldToScreen(width - 1, height - 1, layerZ, this.camera);
+        const bottomU = pBottom.u;
+        const bottomV = pBottom.v + halfH;
+
+        const pLeft = worldToScreen(0, height - 1, layerZ, this.camera);
+        const leftU = pLeft.u - halfW;
+        const leftV = pLeft.v;
+
+        // 1. Top perimeter wireframe
+        ctx.beginPath();
+        ctx.moveTo(topU, topV);
+        ctx.lineTo(rightU, rightV);
+        ctx.lineTo(bottomU, bottomV);
+        ctx.lineTo(leftU, leftV);
+        ctx.closePath();
+
+        // 2. Bottom perimeter wireframe (elevH lower)
+        ctx.moveTo(topU, topV + elevH);
+        ctx.lineTo(rightU, rightV + elevH);
+        ctx.lineTo(bottomU, bottomV + elevH);
+        ctx.lineTo(leftU, leftV + elevH);
+        ctx.closePath();
+
+        // 3. Four vertical corner struts
+        ctx.moveTo(topU, topV);
+        ctx.lineTo(topU, topV + elevH);
+        ctx.moveTo(rightU, rightV);
+        ctx.lineTo(rightU, rightV + elevH);
+        ctx.moveTo(bottomU, bottomV);
+        ctx.lineTo(bottomU, bottomV + elevH);
+        ctx.moveTo(leftU, leftV);
+        ctx.lineTo(leftU, leftV + elevH);
+
+        ctx.strokeStyle = "rgba(97, 175, 239, 0.85)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 4. Subtle inner grid wireframe lines across the layer slab
+        ctx.beginPath();
+        for (let x = 1; x < width; x++) {
+          const startPt = worldToScreen(x, 0, layerZ, this.camera);
+          const endPt = worldToScreen(x, height - 1, layerZ, this.camera);
+          // Top grid line
+          ctx.moveTo(startPt.u - halfW, startPt.v);
+          ctx.lineTo(endPt.u, endPt.v + halfH);
+          // Bottom grid line
+          ctx.moveTo(startPt.u - halfW, startPt.v + elevH);
+          ctx.lineTo(endPt.u, endPt.v + halfH + elevH);
+        }
+        for (let y = 1; y < height; y++) {
+          const startPt = worldToScreen(0, y, layerZ, this.camera);
+          const endPt = worldToScreen(width - 1, y, layerZ, this.camera);
+          // Top grid line
+          ctx.moveTo(startPt.u + halfW, startPt.v);
+          ctx.lineTo(endPt.u, endPt.v + halfH);
+          // Bottom grid line
+          ctx.moveTo(startPt.u + halfW, startPt.v + elevH);
+          ctx.lineTo(endPt.u, endPt.v + halfH + elevH);
+        }
+        ctx.strokeStyle = "rgba(97, 175, 239, 0.3)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        break;
+      }
     }
+
+    ctx.restore();
+  }
+
+  /**
+   * Renders the top horizontal isometric diamond of a block, textured with the Compact Machine wall texture.
+   */
+  private renderTexturedTopDiamond(
+    ctx: CanvasContext2DLike,
+    u: number,
+    v: number,
+    halfW: number,
+    halfH: number
+  ): void {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(u, v - halfH);
+    ctx.lineTo(u + halfW, v);
+    ctx.lineTo(u, v + halfH);
+    ctx.lineTo(u - halfW, v);
+    ctx.closePath();
+
+    const canClip =
+      typeof ctx.clip === "function" &&
+      typeof ctx.transform === "function" &&
+      this.wallImage &&
+      this.wallImageLoaded;
+
+    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && this.wallImage) {
+      ctx.clip();
+
+      const imgW = this.wallImage.naturalWidth || 16;
+      const imgH = this.wallImage.naturalHeight || 16;
+
+      ctx.transform(halfW / imgW, halfH / imgW, -halfW / imgH, halfH / imgH, u, v - halfH);
+      ctx.drawImage(this.wallImage, 0, 0, imgW, imgH);
+
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(u, v - halfH);
+      ctx.lineTo(u + halfW, v);
+      ctx.lineTo(u, v + halfH);
+      ctx.lineTo(u - halfW, v);
+      ctx.closePath();
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.fill();
+      ctx.strokeStyle = "#25272c";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    ctx.fillStyle = "#3a3c42";
+    ctx.fill();
+    ctx.strokeStyle = "#25272c";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.beginPath();
+    const insetW = halfW * 0.7;
+    const insetH = halfH * 0.7;
+    ctx.moveTo(u, v - insetH);
+    ctx.lineTo(u + insetW, v);
+    ctx.lineTo(u, v + insetH);
+    ctx.lineTo(u - insetW, v);
+    ctx.closePath();
+    ctx.strokeStyle = "#474a54";
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     ctx.restore();
   }

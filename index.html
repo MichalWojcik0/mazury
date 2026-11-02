@@ -282,6 +282,13 @@
       opacity: 0.6;
     }
 
+    .reticle-cell.selected {
+      background: #2b5876;
+      border-color: #00ffff;
+      color: #00ffff;
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+    }
+
     .bottom-bar {
       display: flex;
       justify-content: space-between;
@@ -560,7 +567,7 @@
   </div>
 
   <script type="module">
-    import { GameEngine, StubRenderer } from "./dist/bundle.js";
+    import { GameEngine, StubRenderer, resolveTargetCoord } from "./dist/bundle.js";
 
     // Initialize Game Engine (deterministic 20 Hz simulation)
     const engine = new GameEngine(1337);
@@ -655,6 +662,16 @@
         }
       }
 
+      // Update reticle buttons selected state
+      document.querySelectorAll(".reticle-cell").forEach((cell) => {
+        const slot = parseInt(cell.getAttribute("data-slot"), 10);
+        if (p.selectedSlot && slot === p.selectedSlot) {
+          cell.classList.add("selected");
+        } else {
+          cell.classList.remove("selected");
+        }
+      });
+
       if (p.currentRoomId === "outer_room") {
         hudQuestTitle.textContent = "Quest #142: Stuck in a hole";
         hudQuestDesc.textContent =
@@ -713,11 +730,28 @@
       }
     });
 
-    // Aux Reticle click bindings
+    function selectSlot(slot) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "SELECT_SLOT", slot },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    // Aux Reticle click and hover preview bindings
     document.querySelectorAll(".reticle-cell").forEach((cell) => {
+      cell.addEventListener("mouseenter", () => {
+        const slot = parseInt(cell.getAttribute("data-slot"), 10);
+        if (slot) selectSlot(slot);
+      });
       cell.addEventListener("click", () => {
         const slot = parseInt(cell.getAttribute("data-slot"), 10);
-        if (slot) interactSlot(slot);
+        if (slot) {
+          selectSlot(slot);
+          interactSlot(slot);
+        }
       });
     });
 
@@ -788,9 +822,13 @@
         case "7":
         case "8":
         case "9": {
+          const slot = parseInt(e.key, 10);
           if (e.code.startsWith("Numpad") || e.location === 3) {
-            interactSlot(parseInt(e.key, 10));
+            selectSlot(slot);
+            interactSlot(slot);
             e.preventDefault();
+          } else {
+            selectSlot(slot);
           }
           break;
         }
@@ -821,10 +859,25 @@
 
       ctx.clearRect(0, 0, logicalW, logicalH);
 
-      if (room) {
+      if (room && p) {
         // Auto-center camera for current room
         renderer.centerOnRoom(room, logicalW, logicalH);
-        renderer.render(room, engine.players.values(), ctx, { enableCutaway: true });
+
+        // Active layer Z elevation in world space (player.z + selectedLayerIndex - 1)
+        const selectedLayerZ = p.z + p.selectedLayerIndex - 1;
+
+        // Targeted block coordinate if a slot is selected
+        let highlightCoord = null;
+        if (p.selectedSlot) {
+          highlightCoord = resolveTargetCoord(p, p.selectedSlot);
+        }
+
+        renderer.render(room, engine.players.values(), ctx, {
+          enableCutaway: true,
+          selectedLayerZ,
+          showLayerOutline: true,
+          highlightCoord,
+        });
       }
 
       requestAnimationFrame(renderLoop);

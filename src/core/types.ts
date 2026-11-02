@@ -51,6 +51,7 @@ export interface Player {
   z: number;
   height: 2; // Exactly 2 blocks tall
   selectedLayerIndex: 0 | 1 | 2 | 3; // 0: Below Feet, 1: Lower Body, 2: Upper Body, 3: Above Head
+  selectedSlot?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // Currently targeted reticle/block slot
   inventory: Inventory;
   equippedItem?: string;
 }
@@ -69,6 +70,7 @@ export type InputAction =
   | { type: "START_SNEAK" }
   | { type: "STOP_SNEAK" }
   | { type: "SELECT_LAYER"; layerIndex: 0 | 1 | 2 | 3 }
+  | { type: "SELECT_SLOT"; slot?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 }
   | { type: "INTERACT_TILE"; slot: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; button: "PRIMARY" | "SECONDARY" }
   | { type: "CRAFT_RECIPE"; recipeId: string; count: number }
   | { type: "EQUIP_ITEM"; itemId?: string }
