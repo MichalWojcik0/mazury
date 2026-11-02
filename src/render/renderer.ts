@@ -241,8 +241,11 @@ export class StubRenderer {
       }
 
       // 3. Render back-facing interior boundary wall faces:
-      // NORTH wall: along y = 0, facing +Y into the room across x = 0..width-1, z = 0..depth-1
-      // For each (x, z), it renders the "left" face looking toward the room interior.
+      // In isometric projection, the bottom edge of a wall block at elevation `z` aligns with the floor at `z - 1`.
+      // Therefore, the 3 wall layers standing above the floor (z = 0) are located at elevation z_world = z + 1 (1..depth).
+      //
+      // NORTH wall: boundary column at y = -1, facing +Y into the room across x = 0..width-1, z = 0..depth-1.
+      // Rendered as "left" face.
       const northFace = room.faces.NORTH;
       for (let z = 0; z < room.depth; z++) {
         for (let x = 0; x < room.width; x++) {
@@ -251,14 +254,13 @@ export class StubRenderer {
             type: "solid_wall",
             passable: false,
           };
-          // Screen coordinate of internal tile (x, 0, z)
-          const screenCoord = worldToScreen(x, 0, z, this.camera);
-          // Positioned at y = 0, facing +Y into the room
-          const depthKey = computeDepthKey(x, -0.3, z);
+          const wallZ = z + 1;
+          const screenCoord = worldToScreen(x, -1, wallZ, this.camera);
+          const depthKey = computeDepthKey(x, -1 + 0.3, wallZ);
           commands.push({
             type: "DRAW_WALL_SIDE",
             depthKey,
-            worldCoord: { x, y: 0, z },
+            worldCoord: { x, y: -1, z: wallZ },
             screenCoord,
             tile,
             metadata: { face: "left" },
@@ -266,8 +268,8 @@ export class StubRenderer {
         }
       }
 
-      // WEST wall: along x = 0, facing +X into the room across y = 0..height-1, z = 0..depth-1
-      // For each (y, z), it renders the "right" face looking toward the room interior.
+      // WEST wall: boundary column at x = -1, facing +X into the room across y = 0..height-1, z = 0..depth-1.
+      // Rendered as "right" face.
       const westFace = room.faces.WEST;
       for (let z = 0; z < room.depth; z++) {
         for (let y = 0; y < room.height; y++) {
@@ -276,14 +278,13 @@ export class StubRenderer {
             type: "solid_wall",
             passable: false,
           };
-          // Screen coordinate of internal tile (0, y, z)
-          const screenCoord = worldToScreen(0, y, z, this.camera);
-          // Positioned at x = 0, facing +X into the room
-          const depthKey = computeDepthKey(-0.3, y, z);
+          const wallZ = z + 1;
+          const screenCoord = worldToScreen(-1, y, wallZ, this.camera);
+          const depthKey = computeDepthKey(-1 + 0.3, y, wallZ);
           commands.push({
             type: "DRAW_WALL_SIDE",
             depthKey,
-            worldCoord: { x: 0, y, z },
+            worldCoord: { x: -1, y, z: wallZ },
             screenCoord,
             tile,
             metadata: { face: "right" },
