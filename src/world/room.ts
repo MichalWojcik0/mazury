@@ -1,4 +1,4 @@
-import type { Room, Tile, Vec3, Player } from "../core/types.ts";
+import type { Room, Tile, Vec3, Player, MachineFace } from "../core/types.ts";
 
 /**
  * Creates the Outer Room: An asymmetrical 2x1 footprint with non-uniform heights.
@@ -58,15 +58,33 @@ export function createOuterRoom(): Room {
 }
 
 /**
+ * Helper to create an N x N face grid of solid compact machine wall tiles.
+ */
+function createWallFaceGrid(size: number): Tile[][] {
+  const grid: Tile[][] = [];
+  for (let r = 0; r < size; r++) {
+    grid[r] = [];
+    for (let c = 0; c < size; c++) {
+      grid[r][c] = {
+        id: "compactmachines3:wall",
+        type: "solid_wall",
+        passable: false,
+        occluding: true,
+      };
+    }
+  }
+  return grid;
+}
+
+/**
  * Creates a standard Tier 1 (Tiny) Compact Machine room:
- * - 3x3x3 internal air space (x: 1..3, y: 1..3, z: 1..3).
- * - Enclosed in indestructible solid walls (`compactmachines3:wall`).
- * - Total bounding box: 5x5x5.
+ * - 3x3x3 internal air space (x: 0..2, y: 0..2, z: 0..2).
+ * - Enclosed in 6 discrete 3x3 boundary faces (`DOWN`, `UP`, `NORTH`, `SOUTH`, `WEST`, `EAST`).
  */
 export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentRoomId = "outer_room"): Room {
-  const width = 5;
-  const height = 5;
-  const depth = 5;
+  const width = 3;
+  const height = 3;
+  const depth = 3;
 
   const voxels: Tile[][][] = [];
   for (let z = 0; z < depth; z++) {
@@ -74,28 +92,23 @@ export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentR
     for (let y = 0; y < height; y++) {
       voxels[z][y] = [];
       for (let x = 0; x < width; x++) {
-        const isBorder =
-          x === 0 || x === width - 1 ||
-          y === 0 || y === height - 1 ||
-          z === 0 || z === depth - 1;
-
-        if (isBorder) {
-          voxels[z][y][x] = {
-            id: "compactmachines3:wall",
-            type: "solid_wall",
-            passable: false,
-            occluding: true,
-          };
-        } else {
-          voxels[z][y][x] = {
-            id: "minecraft:air",
-            type: "air",
-            passable: true,
-          };
-        }
+        voxels[z][y][x] = {
+          id: "minecraft:air",
+          type: "air",
+          passable: true,
+        };
       }
     }
   }
+
+  const faces: Record<MachineFace, Tile[][]> = {
+    DOWN: createWallFaceGrid(3),
+    UP: createWallFaceGrid(3),
+    NORTH: createWallFaceGrid(3),
+    SOUTH: createWallFaceGrid(3),
+    WEST: createWallFaceGrid(3),
+    EAST: createWallFaceGrid(3),
+  };
 
   return {
     id,
@@ -107,7 +120,65 @@ export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentR
     parentRoomId,
     parentBlockCoord: { x: 1, y: 0, z: 0 },
     voxels,
+    faces,
   };
+}
+
+/**
+ * Resolves which face and tile is targeted when a target coordinate falls on or outside
+ * a Compact Machine room boundary.
+ *
+ * For a room with size (width, height, depth):
+ * - z < 0 -> face DOWN, [y][x]
+ * - z >= depth -> face UP, [y][x]
+ * - y < 0 -> face NORTH, [z][x]
+ * - y >= height -> face SOUTH, [z][x]
+ * - x < 0 -> face WEST, [z][y]
+ * - x >= width -> face EAST, [z][y]
+ */
+export function resolveBoundaryTile(room: Room, coord: Vec3): { face: MachineFace; tile: Tile } | null {
+  if (!room.faces) return null;
+
+  const { x, y, z } = coord;
+
+  if (z < 0) {
+    const clampedX = Math.max(0, Math.min(room.width - 1, x));
+    const clampedY = Math.max(0, Math.min(room.height - 1, y));
+    const tile = room.faces.DOWN?.[clampedY]?.[clampedX];
+    return tile ? { face: "DOWN", tile } : null;
+  }
+  if (z >= room.depth) {
+    const clampedX = Math.max(0, Math.min(room.width - 1, x));
+    const clampedY = Math.max(0, Math.min(room.height - 1, y));
+    const tile = room.faces.UP?.[clampedY]?.[clampedX];
+    return tile ? { face: "UP", tile } : null;
+  }
+  if (y < 0) {
+    const clampedX = Math.max(0, Math.min(room.width - 1, x));
+    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
+    const tile = room.faces.NORTH?.[clampedZ]?.[clampedX];
+    return tile ? { face: "NORTH", tile } : null;
+  }
+  if (y >= room.height) {
+    const clampedX = Math.max(0, Math.min(room.width - 1, x));
+    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
+    const tile = room.faces.SOUTH?.[clampedZ]?.[clampedX];
+    return tile ? { face: "SOUTH", tile } : null;
+  }
+  if (x < 0) {
+    const clampedY = Math.max(0, Math.min(room.height - 1, y));
+    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
+    const tile = room.faces.WEST?.[clampedZ]?.[clampedY];
+    return tile ? { face: "WEST", tile } : null;
+  }
+  if (x >= room.width) {
+    const clampedY = Math.max(0, Math.min(room.height - 1, y));
+    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
+    const tile = room.faces.EAST?.[clampedZ]?.[clampedY];
+    return tile ? { face: "EAST", tile } : null;
+  }
+
+  return null;
 }
 
 /**

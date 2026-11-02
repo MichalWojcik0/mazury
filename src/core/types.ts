@@ -12,6 +12,8 @@ export interface Item {
 
 export type Inventory = Map<string, number>;
 
+export type MachineFace = "DOWN" | "UP" | "NORTH" | "SOUTH" | "WEST" | "EAST";
+
 export interface Tile {
   id: string;
   type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel";
@@ -30,6 +32,7 @@ export interface Room {
   // Non-uniform floor/ceiling support for asymmetrical rooms like Outer Room 2x1x(4/5)
   columnHeights?: Record<string, { floorZ: number; ceilingZ: number }>;
   voxels: Tile[][][]; // indexed as [z][y][x]
+  faces?: Record<MachineFace, Tile[][]>; // 6 boundary faces for Compact Machine rooms (e.g. 6x 3x3)
   parentRoomId?: RoomId;
   parentBlockCoord?: { x: number; y: number; z: number };
 }

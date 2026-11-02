@@ -56,30 +56,30 @@ test("Subcheckpoint 1.1: Personal Shrinking Device transitions into Tiny Compact
   engine.stepTick();
 
   assert.equal(player.currentRoomId, "room_tiny_1");
-  assert.equal(player.x, 2);
-  assert.equal(player.y, 2);
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 1);
   assert.equal(player.z, 1);
 
   // Walk around inside tiny compact machine (North, South, East, West)
-  // Walk North (dy = -1) -> (2, 1, 1)
+  // Walk North (dy = -1) -> (1, 0, 1)
   engine.enqueueInput({
     tick: 3,
     playerId: 0,
     action: { type: "MOVE", dx: 0, dy: -1 },
   });
   engine.stepTick();
-  assert.equal(player.x, 2);
-  assert.equal(player.y, 1);
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 0);
 
-  // Try walking into solid perimeter wall at y=0
+  // Try walking out of bounds past North perimeter boundary (dy = -1 from y = 0)
   engine.enqueueInput({
     tick: 4,
     playerId: 0,
     action: { type: "MOVE", dx: 0, dy: -1 },
   });
   engine.stepTick();
-  assert.equal(player.x, 2);
-  assert.equal(player.y, 1); // Blocked by compactmachines3:wall
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 0); // Blocked by room boundary
 
   // Activate PSD inside room_tiny_1 to exit back to outer room
   engine.enqueueInput({
