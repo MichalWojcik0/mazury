@@ -1,5 +1,6 @@
 import type { Player, Room, Tile } from "../core/types.ts";
 import type { Vec3 } from "../core/math.ts";
+import { COMPACT_WALL_TEXTURE_DATA_URL } from "./textures.ts";
 
 /**
  * Screen pixel coordinate.
@@ -72,8 +73,6 @@ export function screenToWorld(
   const unscaledIsoX = (u - offsetX) / zoom;
   const unscaledIsoY = (v - offsetY) / zoom + z * elevationHeight;
 
-  // unscaledIsoX = (x - y) * halfW => (x - y) = unscaledIsoX / halfW
-  // unscaledIsoY = (x + y) * halfH => (x + y) = unscaledIsoY / halfH
   const term1 = unscaledIsoX / halfW;
   const term2 = unscaledIsoY / halfH;
 
@@ -92,7 +91,12 @@ export function computeDepthKey(x: number, y: number, z: number, k: number = 100
   return (x + y) * k + z;
 }
 
-export type RenderCommandType = "DRAW_FLOOR" | "DRAW_TILE" | "DRAW_PLAYER" | "DRAW_HIGHLIGHT";
+export type RenderCommandType =
+  | "DRAW_FLOOR"
+  | "DRAW_TILE"
+  | "DRAW_WALL_SIDE"
+  | "DRAW_PLAYER"
+  | "DRAW_HIGHLIGHT";
 
 export interface RenderCommand {
   type: RenderCommandType;
@@ -113,14 +117,17 @@ export interface CanvasContext2DLike {
   restore(): void;
   translate(x: number, y: number): void;
   scale(x: number, y: number): void;
+  transform?(a: number, b: number, c: number, d: number, e: number, f: number): void;
   beginPath(): void;
   moveTo(x: number, y: number): void;
   lineTo(x: number, y: number): void;
   closePath(): void;
+  clip?(): void;
   fill(): void;
   stroke(): void;
   fillRect(x: number, y: number, w: number, h: number): void;
   strokeRect(x: number, y: number, w: number, h: number): void;
+  drawImage?(image: unknown, dx: number, dy: number, dw?: number, dh?: number): void;
   fillText(text: string, x: number, y: number): void;
   arc?(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
   ellipse?(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number): void;
@@ -129,10 +136,6 @@ export interface CanvasContext2DLike {
   lineWidth: number;
 }
 
-/**
- * Stub renderer for the isometric canvas engine.
- * Generates sorted render commands and can render onto an optional Canvas context.
- */
 export interface RenderOptions {
   /** If true, front walls and ceiling of enclosed rooms are cut away for interior visibility */
   enableCutaway?: boolean;
@@ -140,9 +143,29 @@ export interface RenderOptions {
 
 export class StubRenderer {
   public camera: CameraConfig;
+  public wallImage: HTMLImageElement | null = null;
+  private wallImageLoaded = false;
 
   constructor(camera: Partial<CameraConfig> = {}) {
     this.camera = { ...DEFAULT_CAMERA_CONFIG, ...camera };
+    this.initWallTexture();
+  }
+
+  private initWallTexture(): void {
+    if (typeof Image !== "undefined") {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          this.wallImageLoaded = true;
+        };
+        img.src = COMPACT_WALL_TEXTURE_DATA_URL;
+        this.wallImage = img;
+      } catch {
+        // Fallback for non-browser environments
+        this.wallImage = null;
+      }
+    }
   }
 
   /**
@@ -192,10 +215,90 @@ export class StubRenderer {
           }
 
           const screenCoord = worldToScreen(x, y, z, this.camera);
-          const depthKey = computeDepthKey(x, y, z);
 
+          // Floor tiles (e.g. ground at z=0 or explicitly typed floor)
+          if (tile.type === "floor" || (z === 0 && tile.type !== "solid_wall")) {
+            const depthKey = computeDepthKey(x, y, z);
+            commands.push({
+              type: "DRAW_FLOOR",
+              depthKey,
+              worldCoord: { x, y, z },
+              screenCoord,
+              tile,
+            });
+            continue;
+          }
+
+          // Solid wall blocks: render using side faces, not top faces!
+          if (tile.type === "solid_wall" || tile.id === "compactmachines3:wall") {
+            // Floor layer z=0 of the room bounding box:
+            // When cutaway is active or in a room with a floor at z=0, the walkable/internal floor tiles
+            // or bottom baseline are visible. If it's the bottom floor slab (z=0), render as floor foundation.
+            if (z === 0) {
+              const depthKey = computeDepthKey(x, y, z);
+              commands.push({
+                type: "DRAW_FLOOR",
+                depthKey,
+                worldCoord: { x, y, z },
+                screenCoord,
+                tile,
+              });
+              continue;
+            }
+
+            // Wall elevation (z > 0): render visible interior/exterior vertical side faces
+            // Determine which vertical faces are visible:
+            // Right side face (facing +X): visible if tile in front (+X) is air/passable
+            const tileInFrontX = room.voxels[z]?.[y]?.[x + 1];
+            const hasRightSideFace = !tileInFrontX || tileInFrontX.type === "air" || tileInFrontX.passable || x === 0;
+
+            // Left side face (facing +Y): visible if tile in front (+Y) is air/passable
+            const tileInFrontY = room.voxels[z]?.[y + 1]?.[x];
+            const hasLeftSideFace = !tileInFrontY || tileInFrontY.type === "air" || tileInFrontY.passable || y === 0;
+
+            if (hasRightSideFace) {
+              const depthKey = computeDepthKey(x + 0.3, y, z);
+              commands.push({
+                type: "DRAW_WALL_SIDE",
+                depthKey,
+                worldCoord: { x, y, z },
+                screenCoord,
+                tile,
+                metadata: { face: "right" },
+              });
+            }
+
+            if (hasLeftSideFace) {
+              const depthKey = computeDepthKey(x, y + 0.3, z);
+              commands.push({
+                type: "DRAW_WALL_SIDE",
+                depthKey,
+                worldCoord: { x, y, z },
+                screenCoord,
+                tile,
+                metadata: { face: "left" },
+              });
+            }
+
+            // If neither side face was flagged (e.g. single column test), add both
+            if (!hasRightSideFace && !hasLeftSideFace) {
+              const depthKey = computeDepthKey(x, y, z);
+              commands.push({
+                type: "DRAW_WALL_SIDE",
+                depthKey,
+                worldCoord: { x, y, z },
+                screenCoord,
+                tile,
+                metadata: { face: "both" },
+              });
+            }
+            continue;
+          }
+
+          // Other tiles (machines, torches, etc.)
+          const depthKey = computeDepthKey(x, y, z);
           commands.push({
-            type: tile.type === "floor" ? "DRAW_FLOOR" : "DRAW_TILE",
+            type: "DRAW_TILE",
             depthKey,
             worldCoord: { x, y, z },
             screenCoord,
@@ -209,9 +312,13 @@ export class StubRenderer {
     for (const player of players) {
       if (player.currentRoomId !== room.id) continue;
 
-      const screenCoord = worldToScreen(player.x, player.y, player.z, this.camera);
-      // Player base at feet z, player center of mass at z + 0.5 to sort cleanly against adjacent tiles
-      const depthKey = computeDepthKey(player.x, player.y, player.z + 0.5);
+      // In the coordinate system:
+      // A player standing at (x, y) with feet resting on the floor (z=0) is at z=1.
+      // The floor tile top surface center is at worldToScreen(player.x, player.y, player.z - 1).
+      // Placing player feet anchor at the floor surface centers the player in the diamond!
+      const screenCoord = worldToScreen(player.x, player.y, player.z - 1, this.camera);
+      // Player base at feet z - 1, depth key slightly higher than floor to sort immediately above floor
+      const depthKey = computeDepthKey(player.x, player.y, player.z - 0.4);
 
       commands.push({
         type: "DRAW_PLAYER",
@@ -255,6 +362,7 @@ export class StubRenderer {
   public executeCommand(cmd: RenderCommand, ctx: CanvasContext2DLike): void {
     const halfW = (this.camera.tileWidth / 2) * this.camera.zoom;
     const halfH = (this.camera.tileHeight / 2) * this.camera.zoom;
+    const elevH = this.camera.elevationHeight * this.camera.zoom;
     const { u, v } = cmd.screenCoord;
 
     ctx.save();
@@ -266,7 +374,6 @@ export class StubRenderer {
 
         // Custom styling for specific tiles
         if (tileId === "minecraft:torch") {
-          // Render torch as a small glowing post
           ctx.fillStyle = "#ffdd44";
           ctx.fillRect(u - 2, v - 12, 4, 10);
           ctx.fillStyle = "#ff3300";
@@ -287,17 +394,19 @@ export class StubRenderer {
         if (tileId === "minecraft:bedrock") {
           ctx.fillStyle = "#2a2a2a";
           ctx.strokeStyle = "#151515";
+          ctx.lineWidth = 1;
         } else if (tileId === "compactmachines3:machine_tiny") {
-          // Embedded compact machine block
           ctx.fillStyle = "#1e3a5f";
           ctx.strokeStyle = "#4da6ff";
           ctx.lineWidth = 2;
         } else if (cmd.tile?.type === "solid_wall") {
-          ctx.fillStyle = "#4a4a52";
-          ctx.strokeStyle = "#252528";
+          ctx.fillStyle = "#3a3c42";
+          ctx.strokeStyle = "#25272c";
+          ctx.lineWidth = 1;
         } else {
-          ctx.fillStyle = "#667788";
-          ctx.strokeStyle = "#222222";
+          ctx.fillStyle = "#4a4c54";
+          ctx.strokeStyle = "#2b2d33";
+          ctx.lineWidth = 1;
         }
 
         ctx.fill();
@@ -305,11 +414,27 @@ export class StubRenderer {
 
         // Optional decorative markings on special blocks
         if (tileId === "compactmachines3:machine_tiny") {
-          // Inner glowing core
           ctx.beginPath();
-          ctx.arc(u, v, 6 * this.camera.zoom, 0, Math.PI * 2);
+          if (ctx.arc) {
+            ctx.arc(u, v, 6 * this.camera.zoom, 0, Math.PI * 2);
+          }
           ctx.fillStyle = "#66ccff";
           ctx.fill();
+        }
+        break;
+      }
+
+      case "DRAW_WALL_SIDE": {
+        const face = cmd.metadata?.face as string | undefined;
+        const drawFace = (side: "left" | "right") => {
+          this.renderWallSideFace(ctx, u, v, halfW, halfH, elevH, side);
+        };
+
+        if (face === "right" || face === "both") {
+          drawFace("right");
+        }
+        if (face === "left" || face === "both") {
+          drawFace("left");
         }
         break;
       }
@@ -319,7 +444,7 @@ export class StubRenderer {
         const playerH = 2 * this.camera.elevationHeight * this.camera.zoom;
         const width = 14 * this.camera.zoom;
 
-        // Shadow under feet
+        // Shadow directly on the center of the floor tile diamond
         ctx.beginPath();
         if (ctx.ellipse) {
           ctx.ellipse(u, v, width / 2, width / 4, 0, 0, Math.PI * 2);
@@ -329,7 +454,7 @@ export class StubRenderer {
         ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
         ctx.fill();
 
-        // Player body
+        // Player body: feet anchor at (u, v), standing upward
         ctx.fillStyle = "#3498db"; // Cyan/blue shirt
         ctx.fillRect(u - width / 2, v - playerH, width, playerH * 0.65);
         ctx.strokeStyle = "#1b4f72";
@@ -362,6 +487,126 @@ export class StubRenderer {
         ctx.stroke();
         break;
       }
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Renders a vertical side face of a wall block, textured with the Compact Machine wall texture.
+   *
+   * @param side "left" (facing +Y, from (u-halfW, v) to (u, v+halfH))
+   *             or "right" (facing +X, from (u, v+halfH) to (u+halfW, v))
+   */
+  private renderWallSideFace(
+    ctx: CanvasContext2DLike,
+    u: number,
+    v: number,
+    halfW: number,
+    halfH: number,
+    elevH: number,
+    side: "left" | "right"
+  ): void {
+    ctx.save();
+    ctx.beginPath();
+
+    if (side === "left") {
+      // Left vertical wall face:
+      // (u - halfW, v) -> (u, v + halfH) -> (u, v + halfH + elevH) -> (u - halfW, v + elevH)
+      ctx.moveTo(u - halfW, v);
+      ctx.lineTo(u, v + halfH);
+      ctx.lineTo(u, v + halfH + elevH);
+      ctx.lineTo(u - halfW, v + elevH);
+      ctx.closePath();
+    } else {
+      // Right vertical wall face:
+      // (u, v + halfH) -> (u + halfW, v) -> (u + halfW, v + elevH) -> (u, v + halfH + elevH)
+      ctx.moveTo(u, v + halfH);
+      ctx.lineTo(u + halfW, v);
+      ctx.lineTo(u + halfW, v + elevH);
+      ctx.lineTo(u, v + halfH + elevH);
+      ctx.closePath();
+    }
+
+    // Clip to the quad so textured image maps strictly inside the wall face
+    const canClip = typeof ctx.clip === "function" && typeof ctx.transform === "function" && this.wallImage && this.wallImageLoaded;
+
+    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && this.wallImage) {
+      ctx.clip();
+
+      // Apply affine transform to map square (16x16) texture onto the isometric quad:
+      // Quad baseline:
+      // If left: origin at (u - halfW, v). Vector along X = (halfW, halfH). Vector along Y = (0, elevH).
+      // If right: origin at (u, v + halfH). Vector along X = (halfW, -halfH). Vector along Y = (0, elevH).
+      const imgW = this.wallImage.naturalWidth || 16;
+      const imgH = this.wallImage.naturalHeight || 16;
+
+      if (side === "left") {
+        ctx.transform(halfW / imgW, halfH / imgW, 0, elevH / imgH, u - halfW, v);
+      } else {
+        ctx.transform(halfW / imgW, -halfH / imgW, 0, elevH / imgH, u, v + halfH);
+      }
+
+      ctx.drawImage(this.wallImage, 0, 0, imgW, imgH);
+
+      // Restore to draw borders and isometric shadow overlay
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      if (side === "left") {
+        ctx.moveTo(u - halfW, v);
+        ctx.lineTo(u, v + halfH);
+        ctx.lineTo(u, v + halfH + elevH);
+        ctx.lineTo(u - halfW, v + elevH);
+        ctx.closePath();
+        // Left face is slightly darker (standard isometric diffuse lighting: 85%)
+        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      } else {
+        ctx.moveTo(u, v + halfH);
+        ctx.lineTo(u + halfW, v);
+        ctx.lineTo(u + halfW, v + elevH);
+        ctx.lineTo(u, v + halfH + elevH);
+        ctx.closePath();
+        // Right face has ambient light
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+      }
+      ctx.fill();
+      ctx.strokeStyle = "#25272c";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // High quality vector/pattern fallback if image texture is not ready or in mock context
+    if (side === "left") {
+      ctx.fillStyle = "#33363e"; // Base machine wall tone
+      ctx.fill();
+
+      // Subtle machine panel inner borders
+      ctx.strokeStyle = "#474a54";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Center decorative metallic panel line
+      ctx.beginPath();
+      ctx.moveTo(u - halfW / 2, v + halfH / 2);
+      ctx.lineTo(u - halfW / 2, v + halfH / 2 + elevH);
+      ctx.strokeStyle = "#22242a";
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#3e424c"; // Right face slightly brighter
+      ctx.fill();
+
+      ctx.strokeStyle = "#525763";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(u + halfW / 2, v + halfH / 2);
+      ctx.lineTo(u + halfW / 2, v + halfH / 2 + elevH);
+      ctx.strokeStyle = "#22242a";
+      ctx.stroke();
     }
 
     ctx.restore();

@@ -56,24 +56,27 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 12px;
+      gap: 16px;
     }
 
     .hud-card {
-      background: rgba(18, 22, 28, 0.85);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(18, 22, 28, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
-      padding: 12px 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      padding: 12px 18px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
     }
 
     .title-badge {
       font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
       color: #61afef;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .subtitle-badge {
@@ -82,8 +85,8 @@
     }
 
     .room-info {
-      font-size: 14px;
-      margin-top: 6px;
+      font-size: 13px;
+      margin-top: 8px;
       display: flex;
       gap: 16px;
     }
@@ -92,10 +95,50 @@
       color: #98c379;
     }
 
+    /* Player stats (Hearts & Hunger) */
+    .stats-container {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #abb2bf;
+    }
+
+    .hearts-bar, .hunger-bar {
+      display: flex;
+      gap: 2px;
+    }
+
+    .icon-heart {
+      color: #e06c75;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .icon-hunger {
+      color: #d19a66;
+      font-size: 13px;
+      line-height: 1;
+    }
+
     .status-badge {
       display: inline-block;
       padding: 2px 8px;
       background: #282c34;
+      border: 1px solid #3e4451;
       border-radius: 4px;
       font-family: monospace;
       font-size: 12px;
@@ -103,12 +146,12 @@
     }
 
     .quest-card {
-      max-width: 340px;
+      max-width: 360px;
     }
 
     .quest-title {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       color: #e5c07b;
       margin-bottom: 4px;
     }
@@ -116,7 +159,127 @@
     .quest-desc {
       font-size: 12px;
       color: #abb2bf;
-      line-height: 1.4;
+      line-height: 1.45;
+    }
+
+    .middle-overlay {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    /* Vertical 4-Layer Selection Widget */
+    .layer-selector-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(18, 22, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .widget-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #828997;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .layer-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 12px;
+      background: #21252b;
+      border: 1px solid #3e4451;
+      border-radius: 5px;
+      color: #abb2bf;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-width: 130px;
+    }
+
+    .layer-btn:hover {
+      background: #2c313a;
+      color: #ffffff;
+      border-color: #61afef;
+    }
+
+    .layer-btn.active {
+      background: #2b5876;
+      border-color: #61afef;
+      color: #ffffff;
+      box-shadow: 0 0 8px rgba(97, 175, 239, 0.35);
+    }
+
+    .layer-btn .hotkey {
+      font-family: monospace;
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    /* 3x3 Auxiliary Reticle Widget */
+    .aux-reticle-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: rgba(18, 22, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .reticle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 34px);
+      grid-template-rows: repeat(3, 34px);
+      gap: 4px;
+    }
+
+    .reticle-cell {
+      background: #21252b;
+      border: 1px solid #3e4451;
+      border-radius: 4px;
+      color: #abb2bf;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      font-family: monospace;
+    }
+
+    .reticle-cell:hover:not(:disabled) {
+      background: #3e4451;
+      color: #61afef;
+      border-color: #61afef;
+      transform: scale(1.05);
+    }
+
+    .reticle-cell:active:not(:disabled) {
+      transform: scale(0.95);
+      background: #61afef;
+      color: #12161c;
+    }
+
+    .reticle-cell.player-cell {
+      background: #282c34;
+      border-color: #e5c07b;
+      color: #e5c07b;
+      opacity: 0.6;
     }
 
     .bottom-bar {
@@ -166,6 +329,52 @@
     button.ui-btn:active {
       transform: scale(0.95);
       background: #21252b;
+    }
+
+    /* Inventory / Hotbar Panel */
+    .inventory-panel {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(18, 22, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .inv-slot {
+      width: 44px;
+      height: 44px;
+      background: #21252b;
+      border: 2px solid #3e4451;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .inv-slot.selected {
+      border-color: #61afef;
+      box-shadow: 0 0 8px rgba(97, 175, 239, 0.4);
+    }
+
+    .inv-slot-icon {
+      font-size: 18px;
+    }
+
+    .inv-slot-qty {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #e5c07b;
+      font-family: monospace;
     }
 
     .psd-action-panel {
@@ -222,12 +431,32 @@
       <!-- Top HUD Header -->
       <div class="top-bar">
         <div class="hud-card ui-interactive">
-          <div class="title-badge">COMPACT CLAUSTROPHOBIA</div>
-          <div class="subtitle-badge">Subcheckpoint 1.1: Walking & Personal Shrinking Device</div>
+          <div class="title-badge">
+            <span>COMPACT CLAUSTROPHOBIA</span>
+          </div>
+          <div class="subtitle-badge">Chapter 1 &bull; 2.5D Isometric Simulation</div>
           <div class="room-info">
             <span>Room: <strong id="hud-room-name">Meteor Spawn Pocket</strong></span>
             <span>Coords: <strong id="hud-coords">(0, 0, 1)</strong></span>
-            <span>Equipped: <span class="status-badge" id="hud-equipped">Personal Shrinking Device</span></span>
+            <span>Layer: <strong id="hud-layer-name">Feet (L1)</strong></span>
+          </div>
+
+          <!-- Stats: Health & Hunger -->
+          <div class="stats-container">
+            <div class="stat-row">
+              <span class="stat-label">HP:</span>
+              <div class="hearts-bar" id="hud-hearts">
+                <span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span>
+                <span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span><span class="icon-heart">❤</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Food:</span>
+              <div class="hunger-bar" id="hud-hunger">
+                <span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span>
+                <span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span><span class="icon-hunger">🍗</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -239,7 +468,47 @@
         </div>
       </div>
 
-      <!-- Bottom Controls and Actions -->
+      <!-- Middle Side Floating Widgets -->
+      <div class="middle-overlay">
+        <!-- 4-Layer Selection Widget -->
+        <div class="layer-selector-card ui-interactive">
+          <div class="widget-title">Target Layer</div>
+          <button class="layer-btn" data-layer="3" id="layer-btn-3">
+            <span>3: Ceiling</span>
+            <span class="hotkey">[F4]</span>
+          </button>
+          <button class="layer-btn" data-layer="2" id="layer-btn-2">
+            <span>2: Head</span>
+            <span class="hotkey">[F3]</span>
+          </button>
+          <button class="layer-btn active" data-layer="1" id="layer-btn-1">
+            <span>1: Feet</span>
+            <span class="hotkey">[F2]</span>
+          </button>
+          <button class="layer-btn" data-layer="0" id="layer-btn-0">
+            <span>0: Floor</span>
+            <span class="hotkey">[F1]</span>
+          </button>
+        </div>
+
+        <!-- 3x3 Interaction Reticle (Numpad 1..9) -->
+        <div class="aux-reticle-card ui-interactive">
+          <div class="widget-title">Target Reticle</div>
+          <div class="reticle-grid">
+            <button class="reticle-cell" data-slot="7" title="North-West (Numpad 7)">7</button>
+            <button class="reticle-cell" data-slot="8" title="North (Numpad 8)">8</button>
+            <button class="reticle-cell" data-slot="9" title="North-East (Numpad 9)">9</button>
+            <button class="reticle-cell" data-slot="4" title="West (Numpad 4)">4</button>
+            <button class="reticle-cell player-cell" data-slot="5" id="reticle-slot-5" title="Center (Numpad 5)">●</button>
+            <button class="reticle-cell" data-slot="6" title="East (Numpad 6)">6</button>
+            <button class="reticle-cell" data-slot="1" title="South-West (Numpad 1)">1</button>
+            <button class="reticle-cell" data-slot="2" title="South (Numpad 2)">2</button>
+            <button class="reticle-cell" data-slot="3" title="South-East (Numpad 3)">3</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Controls, Quick Inventory, and Actions -->
       <div class="bottom-bar">
         <div class="controls-panel ui-interactive">
           <div class="dpad-container">
@@ -255,13 +524,35 @@
           </div>
         </div>
 
+        <!-- Quick Inventory / Hotbar -->
+        <div class="inventory-panel ui-interactive" id="hud-inventory">
+          <div class="inv-slot selected" title="Personal Shrinking Device">
+            <span class="inv-slot-icon">📱</span>
+            <span class="inv-slot-qty">1</span>
+          </div>
+          <div class="inv-slot" title="Dirt Dust">
+            <span class="inv-slot-icon">🟤</span>
+            <span class="inv-slot-qty" id="inv-dirtdust-qty">0</span>
+          </div>
+          <div class="inv-slot" title="Dirt Block">
+            <span class="inv-slot-icon">🧱</span>
+            <span class="inv-slot-qty" id="inv-dirt-qty">0</span>
+          </div>
+          <div class="inv-slot" title="Organic Poop">
+            <span class="inv-slot-icon">💩</span>
+            <span class="inv-slot-qty" id="inv-poop-qty">0</span>
+          </div>
+        </div>
+
         <div class="psd-action-panel ui-interactive">
           <button class="psd-btn" id="btn-use-psd">
             ⚡ Use Personal Shrinking Device (P / Space)
           </button>
           <div class="hud-card legend-card">
-            Keys: <span class="key-badge">W/A/S/D</span> or <span class="key-badge">Arrows</span> to Walk &bull;
-            <span class="key-badge">P</span> or <span class="key-badge">Space</span> to Shrink / Traverse
+            Walk: <span class="key-badge">WASD</span> &bull;
+            Layer: <span class="key-badge">F1-F4</span> / <span class="key-badge">[ ]</span> &bull;
+            Target: <span class="key-badge">Numpad 1-9</span> &bull;
+            Shrink: <span class="key-badge">P/Space</span>
           </div>
         </div>
       </div>
@@ -286,8 +577,23 @@
     // UI elements
     const hudRoomName = document.getElementById("hud-room-name");
     const hudCoords = document.getElementById("hud-coords");
+    const hudLayerName = document.getElementById("hud-layer-name");
     const hudQuestTitle = document.getElementById("hud-quest-title");
     const hudQuestDesc = document.getElementById("hud-quest-desc");
+    const hudHearts = document.getElementById("hud-hearts");
+    const hudHunger = document.getElementById("hud-hunger");
+    const invDirtdustQty = document.getElementById("inv-dirtdust-qty");
+    const invDirtQty = document.getElementById("inv-dirt-qty");
+    const invPoopQty = document.getElementById("inv-poop-qty");
+
+    const layerButtons = [
+      document.getElementById("layer-btn-0"),
+      document.getElementById("layer-btn-1"),
+      document.getElementById("layer-btn-2"),
+      document.getElementById("layer-btn-3"),
+    ];
+
+    const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
 
     function resizeCanvas() {
       canvas.width = canvas.clientWidth * window.devicePixelRatio;
@@ -304,6 +610,50 @@
       const room = engine.rooms.get(p.currentRoomId);
       hudRoomName.textContent = room ? room.name : p.currentRoomId;
       hudCoords.textContent = `(${p.x}, ${p.y}, ${p.z})`;
+      hudLayerName.textContent = layerLabels[p.selectedLayerIndex] || `L${p.selectedLayerIndex}`;
+
+      // Layer selection buttons state
+      layerButtons.forEach((btn, idx) => {
+        if (btn) {
+          if (idx === p.selectedLayerIndex) {
+            btn.classList.add("active");
+          } else {
+            btn.classList.remove("active");
+          }
+        }
+      });
+
+      // Health and Hunger display
+      const heartsCount = Math.ceil(p.health / 2);
+      let heartsHtml = "";
+      for (let i = 0; i < 10; i++) {
+        heartsHtml += `<span class="icon-heart" style="opacity: ${i < heartsCount ? 1 : 0.25}">❤</span>`;
+      }
+      hudHearts.innerHTML = heartsHtml;
+
+      const hungerCount = Math.ceil(p.hunger / 2);
+      let hungerHtml = "";
+      for (let i = 0; i < 10; i++) {
+        hungerHtml += `<span class="icon-hunger" style="opacity: ${i < hungerCount ? 1 : 0.25}">🍗</span>`;
+      }
+      hudHunger.innerHTML = hungerHtml;
+
+      // Inventory quantities
+      if (invDirtdustQty) invDirtdustQty.textContent = p.inventory.get("contenttweaker:dirtdust") || 0;
+      if (invDirtQty) invDirtQty.textContent = p.inventory.get("minecraft:dirt") || 0;
+      if (invPoopQty) invPoopQty.textContent = p.inventory.get("cropdusting:poop") || 0;
+
+      // Reticle center button disabled for body layers (1 and 2)
+      const reticleCenter = document.getElementById("reticle-slot-5");
+      if (reticleCenter) {
+        if (p.selectedLayerIndex === 1 || p.selectedLayerIndex === 2) {
+          reticleCenter.setAttribute("disabled", "true");
+          reticleCenter.style.opacity = "0.3";
+        } else {
+          reticleCenter.removeAttribute("disabled");
+          reticleCenter.style.opacity = "1";
+        }
+      }
 
       if (p.currentRoomId === "outer_room") {
         hudQuestTitle.textContent = "Quest #142: Stuck in a hole";
@@ -312,8 +662,28 @@
       } else {
         hudQuestTitle.textContent = "Quest #68: The beginning?";
         hudQuestDesc.textContent =
-          "Inside the 3x3 Tiny Compact Machine! Walk around inside, or activate the PSD again to exit back to the Outer Room.";
+          "Inside the 3x3 Tiny Compact Machine! Punch the side walls (Numpad 1-9) to gather dirt dust, or use PSD to exit.";
       }
+    }
+
+    function selectLayer(layerIndex) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "SELECT_LAYER", layerIndex },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    function interactSlot(slot) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "INTERACT_TILE", slot, button: "PRIMARY" },
+      });
+      engine.stepTick();
+      updateHUD();
     }
 
     function movePlayer(dx, dy) {
@@ -336,8 +706,24 @@
       updateHUD();
     }
 
+    // Layer selector button click bindings
+    layerButtons.forEach((btn, idx) => {
+      if (btn) {
+        btn.addEventListener("click", () => selectLayer(idx));
+      }
+    });
+
+    // Aux Reticle click bindings
+    document.querySelectorAll(".reticle-cell").forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const slot = parseInt(cell.getAttribute("data-slot"), 10);
+        if (slot) interactSlot(slot);
+      });
+    });
+
     // Keyboard handlers
     window.addEventListener("keydown", (e) => {
+      const p = engine.players.get(0);
       switch (e.key) {
         case "ArrowUp":
         case "w":
@@ -369,6 +755,45 @@
           usePSD();
           e.preventDefault();
           break;
+        case "F1":
+          selectLayer(0);
+          e.preventDefault();
+          break;
+        case "F2":
+          selectLayer(1);
+          e.preventDefault();
+          break;
+        case "F3":
+          selectLayer(2);
+          e.preventDefault();
+          break;
+        case "F4":
+          selectLayer(3);
+          e.preventDefault();
+          break;
+        case "[":
+          if (p) selectLayer(Math.max(0, p.selectedLayerIndex - 1));
+          e.preventDefault();
+          break;
+        case "]":
+          if (p) selectLayer(Math.min(3, p.selectedLayerIndex + 1));
+          e.preventDefault();
+          break;
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9": {
+          if (e.code.startsWith("Numpad") || e.location === 3) {
+            interactSlot(parseInt(e.key, 10));
+            e.preventDefault();
+          }
+          break;
+        }
       }
     });
 
@@ -383,6 +808,8 @@
     window.__gameEngine = engine;
     window.__movePlayer = movePlayer;
     window.__usePSD = usePSD;
+    window.__selectLayer = selectLayer;
+    window.__interactSlot = interactSlot;
 
     // Render loop
     function renderLoop() {
