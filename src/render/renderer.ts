@@ -197,44 +197,190 @@ export class StubRenderer {
     const commands: RenderCommand[] = [];
     const enableCutaway = options.enableCutaway ?? false;
 
-    // Collect all non-air voxels
-    for (let z = 0; z < room.depth; z++) {
+    // If room has discrete boundary faces (e.g. Compact Machine rooms: width x height interior + 6 faces)
+    if (room.faces) {
+      // 1. Render bottom boundary face (DOWN) as the floor at z = 0
+      const downFace = room.faces.DOWN;
       for (let y = 0; y < room.height; y++) {
         for (let x = 0; x < room.width; x++) {
-          const tile = room.voxels[z]?.[y]?.[x];
-          if (!tile || tile.id === "minecraft:air") continue;
+          const tile = downFace?.[y]?.[x] ?? {
+            id: "compactmachines3:wall",
+            type: "solid_wall",
+            passable: false,
+          };
+          const screenCoord = worldToScreen(x, y, 0, this.camera);
+          const depthKey = computeDepthKey(x, y, 0);
+          commands.push({
+            type: "DRAW_FLOOR",
+            depthKey,
+            worldCoord: { x, y, z: 0 },
+            screenCoord,
+            tile,
+          });
+        }
+      }
 
-          // For enclosed rooms (width > 2 and height > 2), hide front walls and ceiling if cutaway enabled
-          if (enableCutaway && room.width > 2 && room.height > 2) {
-            // Cutaway ceiling
-            if (z >= room.depth - 1) continue;
-            // Cutaway front-facing walls (high x and high y facing viewer)
-            if (x === room.width - 1 || y === room.height - 1) {
-              if (z > 0) continue; // Keep floor z=0
-            }
-          }
+      // 2. Render internal room voxels (machines, placed blocks, etc.)
+      for (let z = 0; z < room.depth; z++) {
+        for (let y = 0; y < room.height; y++) {
+          for (let x = 0; x < room.width; x++) {
+            const tile = room.voxels[z]?.[y]?.[x];
+            if (!tile || tile.id === "minecraft:air") continue;
 
-          const screenCoord = worldToScreen(x, y, z, this.camera);
-
-          // Floor tiles (e.g. ground at z=0 or explicitly typed floor)
-          if (tile.type === "floor" || (z === 0 && tile.type !== "solid_wall")) {
+            const screenCoord = worldToScreen(x, y, z, this.camera);
             const depthKey = computeDepthKey(x, y, z);
             commands.push({
-              type: "DRAW_FLOOR",
+              type: "DRAW_TILE",
               depthKey,
               worldCoord: { x, y, z },
               screenCoord,
               tile,
             });
-            continue;
           }
+        }
+      }
 
-          // Solid wall blocks: render using side faces, not top faces!
-          if (tile.type === "solid_wall" || tile.id === "compactmachines3:wall") {
-            // Floor layer z=0 of the room bounding box:
-            // When cutaway is active or in a room with a floor at z=0, the walkable/internal floor tiles
-            // or bottom baseline are visible. If it's the bottom floor slab (z=0), render as floor foundation.
-            if (z === 0) {
+      // 3. Render back-facing interior boundary wall faces:
+      // In isometric projection, the bottom edge of a wall block at elevation `z` aligns with the floor at `z - 1`.
+      // Therefore, the 3 wall layers standing above the floor (z = 0) are located at elevation z_world = z + 1 (1..depth).
+      //
+      // NORTH wall: boundary column at y = -1, facing +Y into the room across x = 0..width-1, z = 0..depth-1.
+      // Rendered as "left" face.
+      const northFace = room.faces.NORTH;
+      for (let z = 0; z < room.depth; z++) {
+        for (let x = 0; x < room.width; x++) {
+          const tile = northFace?.[z]?.[x] ?? {
+            id: "compactmachines3:wall",
+            type: "solid_wall",
+            passable: false,
+          };
+          const wallZ = z + 1;
+          const screenCoord = worldToScreen(x, -1, wallZ, this.camera);
+          const depthKey = computeDepthKey(x, -1 + 0.3, wallZ);
+          commands.push({
+            type: "DRAW_WALL_SIDE",
+            depthKey,
+            worldCoord: { x, y: -1, z: wallZ },
+            screenCoord,
+            tile,
+            metadata: { face: "left" },
+          });
+        }
+      }
+
+      // WEST wall: boundary column at x = -1, facing +X into the room across y = 0..height-1, z = 0..depth-1.
+      // Rendered as "right" face.
+      const westFace = room.faces.WEST;
+      for (let z = 0; z < room.depth; z++) {
+        for (let y = 0; y < room.height; y++) {
+          const tile = westFace?.[z]?.[y] ?? {
+            id: "compactmachines3:wall",
+            type: "solid_wall",
+            passable: false,
+          };
+          const wallZ = z + 1;
+          const screenCoord = worldToScreen(-1, y, wallZ, this.camera);
+          const depthKey = computeDepthKey(-1 + 0.3, y, wallZ);
+          commands.push({
+            type: "DRAW_WALL_SIDE",
+            depthKey,
+            worldCoord: { x: -1, y, z: wallZ },
+            screenCoord,
+            tile,
+            metadata: { face: "right" },
+          });
+        }
+      }
+
+      // Front walls (SOUTH, EAST) and ceiling (UP) are only rendered if cutaway is disabled
+      if (!enableCutaway) {
+        // SOUTH wall: along y = height - 1, facing -Y
+        const southFace = room.faces.SOUTH;
+        for (let z = 0; z < room.depth; z++) {
+          for (let x = 0; x < room.width; x++) {
+            const tile = southFace?.[z]?.[x] ?? {
+              id: "compactmachines3:wall",
+              type: "solid_wall",
+              passable: false,
+            };
+            const screenCoord = worldToScreen(x, room.height - 1, z, this.camera);
+            const depthKey = computeDepthKey(x, room.height - 1 + 0.3, z);
+            commands.push({
+              type: "DRAW_WALL_SIDE",
+              depthKey,
+              worldCoord: { x, y: room.height - 1, z },
+              screenCoord,
+              tile,
+              metadata: { face: "left" },
+            });
+          }
+        }
+
+        // EAST wall: along x = width - 1, facing -X
+        const eastFace = room.faces.EAST;
+        for (let z = 0; z < room.depth; z++) {
+          for (let y = 0; y < room.height; y++) {
+            const tile = eastFace?.[z]?.[y] ?? {
+              id: "compactmachines3:wall",
+              type: "solid_wall",
+              passable: false,
+            };
+            const screenCoord = worldToScreen(room.width - 1, y, z, this.camera);
+            const depthKey = computeDepthKey(room.width - 1 + 0.3, y, z);
+            commands.push({
+              type: "DRAW_WALL_SIDE",
+              depthKey,
+              worldCoord: { x: room.width - 1, y, z },
+              screenCoord,
+              tile,
+              metadata: { face: "right" },
+            });
+          }
+        }
+
+        // UP ceiling
+        const upFace = room.faces.UP;
+        for (let y = 0; y < room.height; y++) {
+          for (let x = 0; x < room.width; x++) {
+            const tile = upFace?.[y]?.[x] ?? {
+              id: "compactmachines3:wall",
+              type: "solid_wall",
+              passable: false,
+            };
+            const screenCoord = worldToScreen(x, y, room.depth, this.camera);
+            const depthKey = computeDepthKey(x, y, room.depth);
+            commands.push({
+              type: "DRAW_FLOOR",
+              depthKey,
+              worldCoord: { x, y, z: room.depth },
+              screenCoord,
+              tile,
+            });
+          }
+        }
+      }
+    } else {
+      // Standard voxel room (e.g. Outer Room 2x1x(4/5))
+      for (let z = 0; z < room.depth; z++) {
+        for (let y = 0; y < room.height; y++) {
+          for (let x = 0; x < room.width; x++) {
+            const tile = room.voxels[z]?.[y]?.[x];
+            if (!tile || tile.id === "minecraft:air") continue;
+
+            // For enclosed rooms (width > 2 and height > 2), hide front walls and ceiling if cutaway enabled
+            if (enableCutaway && room.width > 2 && room.height > 2) {
+              // Cutaway ceiling
+              if (z >= room.depth - 1) continue;
+              // Cutaway front-facing walls (high x and high y facing viewer)
+              if (x === room.width - 1 || y === room.height - 1) {
+                if (z > 0) continue; // Keep floor z=0
+              }
+            }
+
+            const screenCoord = worldToScreen(x, y, z, this.camera);
+
+            // Floor tiles (e.g. ground at z=0 or explicitly typed floor)
+            if (tile.type === "floor" || (z === 0 && tile.type !== "solid_wall")) {
               const depthKey = computeDepthKey(x, y, z);
               commands.push({
                 type: "DRAW_FLOOR",
@@ -246,64 +392,74 @@ export class StubRenderer {
               continue;
             }
 
-            // Wall elevation (z > 0): render visible interior/exterior vertical side faces
-            // Determine which vertical faces are visible:
-            // Right side face (facing +X): visible if tile in front (+X) is air/passable
-            const tileInFrontX = room.voxels[z]?.[y]?.[x + 1];
-            const hasRightSideFace = !tileInFrontX || tileInFrontX.type === "air" || tileInFrontX.passable || x === 0;
+            // Solid wall blocks: render using side faces, not top faces!
+            if (tile.type === "solid_wall" || tile.id === "compactmachines3:wall") {
+              if (z === 0) {
+                const depthKey = computeDepthKey(x, y, z);
+                commands.push({
+                  type: "DRAW_FLOOR",
+                  depthKey,
+                  worldCoord: { x, y, z },
+                  screenCoord,
+                  tile,
+                });
+                continue;
+              }
 
-            // Left side face (facing +Y): visible if tile in front (+Y) is air/passable
-            const tileInFrontY = room.voxels[z]?.[y + 1]?.[x];
-            const hasLeftSideFace = !tileInFrontY || tileInFrontY.type === "air" || tileInFrontY.passable || y === 0;
+              const tileInFrontX = room.voxels[z]?.[y]?.[x + 1];
+              const hasRightSideFace = !tileInFrontX || tileInFrontX.type === "air" || tileInFrontX.passable || x === 0;
 
-            if (hasRightSideFace) {
-              const depthKey = computeDepthKey(x + 0.3, y, z);
-              commands.push({
-                type: "DRAW_WALL_SIDE",
-                depthKey,
-                worldCoord: { x, y, z },
-                screenCoord,
-                tile,
-                metadata: { face: "right" },
-              });
+              const tileInFrontY = room.voxels[z]?.[y + 1]?.[x];
+              const hasLeftSideFace = !tileInFrontY || tileInFrontY.type === "air" || tileInFrontY.passable || y === 0;
+
+              if (hasRightSideFace) {
+                const depthKey = computeDepthKey(x + 0.3, y, z);
+                commands.push({
+                  type: "DRAW_WALL_SIDE",
+                  depthKey,
+                  worldCoord: { x, y, z },
+                  screenCoord,
+                  tile,
+                  metadata: { face: "right" },
+                });
+              }
+
+              if (hasLeftSideFace) {
+                const depthKey = computeDepthKey(x, y + 0.3, z);
+                commands.push({
+                  type: "DRAW_WALL_SIDE",
+                  depthKey,
+                  worldCoord: { x, y, z },
+                  screenCoord,
+                  tile,
+                  metadata: { face: "left" },
+                });
+              }
+
+              if (!hasRightSideFace && !hasLeftSideFace) {
+                const depthKey = computeDepthKey(x, y, z);
+                commands.push({
+                  type: "DRAW_WALL_SIDE",
+                  depthKey,
+                  worldCoord: { x, y, z },
+                  screenCoord,
+                  tile,
+                  metadata: { face: "both" },
+                });
+              }
+              continue;
             }
 
-            if (hasLeftSideFace) {
-              const depthKey = computeDepthKey(x, y + 0.3, z);
-              commands.push({
-                type: "DRAW_WALL_SIDE",
-                depthKey,
-                worldCoord: { x, y, z },
-                screenCoord,
-                tile,
-                metadata: { face: "left" },
-              });
-            }
-
-            // If neither side face was flagged (e.g. single column test), add both
-            if (!hasRightSideFace && !hasLeftSideFace) {
-              const depthKey = computeDepthKey(x, y, z);
-              commands.push({
-                type: "DRAW_WALL_SIDE",
-                depthKey,
-                worldCoord: { x, y, z },
-                screenCoord,
-                tile,
-                metadata: { face: "both" },
-              });
-            }
-            continue;
+            // Other tiles (machines, torches, etc.)
+            const depthKey = computeDepthKey(x, y, z);
+            commands.push({
+              type: "DRAW_TILE",
+              depthKey,
+              worldCoord: { x, y, z },
+              screenCoord,
+              tile,
+            });
           }
-
-          // Other tiles (machines, torches, etc.)
-          const depthKey = computeDepthKey(x, y, z);
-          commands.push({
-            type: "DRAW_TILE",
-            depthKey,
-            worldCoord: { x, y, z },
-            screenCoord,
-            tile,
-          });
         }
       }
     }

@@ -1,6 +1,6 @@
 import { DeterministicRNG } from "./math.ts";
 import type { Player, Room, PlayerInputPacket, InputAction } from "./types.ts";
-import { createOuterRoom, createTinyCompactMachineRoom, resolveTargetCoord } from "../world/room.ts";
+import { createOuterRoom, createTinyCompactMachineRoom, resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
 import { CHAPTER_1_RECIPES, executeCraft } from "../crafting/list-crafting.ts";
@@ -147,8 +147,8 @@ export class GameEngine {
           const tinyRoom = this.rooms.get("room_tiny_1");
           if (tinyRoom) {
             player.currentRoomId = tinyRoom.id;
-            player.x = 2; // Center of 3x3 internal room (bounds 1..3)
-            player.y = 2;
+            player.x = 1; // Center of 3x3 internal room (bounds 0..2)
+            player.y = 1;
             player.z = 1;
             this.questTracker.triggerEvent("ENTERED_MACHINE");
           }
@@ -172,7 +172,13 @@ export class GameEngine {
         const targetCoord = resolveTargetCoord(player, action.slot);
         if (!targetCoord) break;
 
-        const targetTile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+        let targetTile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+        if (!targetTile && room.faces) {
+          const boundary = resolveBoundaryTile(room, targetCoord);
+          if (boundary) {
+            targetTile = boundary.tile;
+          }
+        }
         if (!targetTile) break;
 
         if (action.button === "PRIMARY") {

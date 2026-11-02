@@ -26,8 +26,8 @@ test("Outer Room geometry and PSD shrinking transition into 3x3 Compact Machine"
   engine.stepTick();
 
   assert.equal(player.currentRoomId, "room_tiny_1");
-  assert.equal(player.x, 2);
-  assert.equal(player.y, 2);
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 1);
   assert.equal(player.z, 1);
 });
 
@@ -74,6 +74,27 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
   assert.equal(result.success, true);
   assert.equal(result.damageTaken, 1);
   assert.equal(result.drops[0].id, "contenttweaker:dirtdust");
+
+  // Punch boundary wall in Tiny Compact Machine via INTERACT_TILE
+  const tinyRoom = engine.rooms.get("room_tiny_1")!;
+  player.currentRoomId = tinyRoom.id;
+  player.x = 1;
+  player.y = 1;
+  player.z = 1;
+  player.selectedLayerIndex = 1;
+
+  // Player moves North to y = 0 to stand next to the North wall boundary
+  player.y = 0;
+  player.equippedItem = undefined;
+  const initialInvDust = player.inventory.get("contenttweaker:dirtdust") ?? 0;
+  // Punch North boundary wall (slot 8 -> y = -1, North boundary face)
+  engine.enqueueInput({
+    tick: 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 8, button: "PRIMARY" },
+  });
+  engine.stepTick();
+  assert.equal(player.inventory.get("contenttweaker:dirtdust"), initialInvDust + 1);
 
   // Wooden pickaxe punch
   player.equippedItem = "minecraft:wooden_pickaxe";

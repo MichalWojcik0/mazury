@@ -138,4 +138,12 @@ test("StubRenderer executes commands on a CanvasContext2D stub", () => {
   assert.ok(operations.includes("beginPath"));
   assert.ok(operations.includes("fill"));
   assert.ok(operations.includes("stroke"));
+
+  // Verify Tiny Room renders exactly 3x3 floor (9 floor commands) and 3x3 walls (18 wall faces)
+  const cutawayCommands = renderer.generateRenderCommands(room, [], { enableCutaway: true });
+  const floorCommands = cutawayCommands.filter((c) => c.type === "DRAW_FLOOR");
+  const wallCommands = cutawayCommands.filter((c) => c.type === "DRAW_WALL_SIDE");
+
+  assert.equal(floorCommands.length, 9, "Tiny compact room should render exactly 3x3 floor tiles");
+  assert.equal(wallCommands.length, 18, "Tiny compact room should render two 3x3 wall face arrays (North & West)");
 });
