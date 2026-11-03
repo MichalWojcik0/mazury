@@ -597,6 +597,10 @@ export class StubRenderer {
             ctx.fillStyle = "#1e3a5f";
             ctx.strokeStyle = "#4da6ff";
             ctx.lineWidth = 2;
+          } else if (tileId === "minecraft:dirt") {
+            ctx.fillStyle = "#866043"; // Rich earthy brown for dirt block
+            ctx.strokeStyle = "#5c3d26";
+            ctx.lineWidth = 1;
           } else if (cmd.tile?.type === "solid_wall") {
             ctx.fillStyle = "#3a3c42";
             ctx.strokeStyle = "#25272c";

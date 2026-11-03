@@ -4,6 +4,7 @@ import {
   createEmptyInventory,
   addItem,
   countItem,
+  removeItem,
   moveToTop,
   moveToBottom,
   swapSlots,
@@ -231,6 +232,44 @@ export class GameEngine {
 
             for (const drop of punchResult.drops) {
               addItem(player.inventory, drop.id, drop.count);
+            }
+          }
+        } else if (action.button === "SECONDARY") {
+          // Block placement or item interaction
+          const equipped = player.equippedItem;
+          if (equipped) {
+            // Check if placing a block
+            const isPlaceable = equipped === "minecraft:dirt" || equipped === "craftingstation:crafting_station";
+            if (isPlaceable) {
+              // Can only place if target is within room voxel bounds and is passable / air
+              if (
+                targetCoord.x >= 0 &&
+                targetCoord.x < room.width &&
+                targetCoord.y >= 0 &&
+                targetCoord.y < room.height &&
+                targetCoord.z >= 0 &&
+                targetCoord.z < room.depth
+              ) {
+                const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+                // Do not place inside solid blocks, and do not place where player is occupying space
+                const overlapsPlayer =
+                  targetCoord.x === player.x &&
+                  targetCoord.y === player.y &&
+                  (targetCoord.z === player.z || targetCoord.z === player.z + 1);
+
+                if (existingVoxel && (existingVoxel.passable || existingVoxel.id === "minecraft:air") && !overlapsPlayer) {
+                  // Consume 1 item from inventory
+                  const removed = removeItem(player.inventory, equipped, 1);
+                  if (removed > 0) {
+                    room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+                      id: equipped,
+                      type: equipped === "minecraft:dirt" ? "floor" : "machine",
+                      passable: false,
+                    };
+                    this.updateActiveEquipped(player);
+                  }
+                }
+              }
             }
           }
         }

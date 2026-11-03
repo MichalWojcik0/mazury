@@ -12,10 +12,13 @@ export interface PunchResult {
 /**
  * Handles striking solid Compact Machine walls according to modpack rules:
  * - Bare Fists:
- *   - Drops 1x Dirt Dust (`contenttweaker:dirtdust`)
- *   - 25% chance of 1x Gravel (`minecraft:gravel`)
+ *   - Requires player.health > 1 (safety guard: minimum 1 HP remains)
  *   - Deals 1 self-damage (0.5 heart)
- *   - Adds 0.05 exhaustion
+ *   - Adds 0.6 exhaustion
+ *   - Drops (weighted):
+ *     - 70% chance of 1x Dirt Dust (`contenttweaker:dirtdust`)
+ *     - 20% chance of 1x Gravel Dust (`contenttweaker:graveldust`)
+ *     - 10% chance of nothing / miss
  * - Wooden Pickaxe:
  *   - Drops 1x Stone Pebble (100%), with chances for Granite, Diorite, Andesite
  *   - Consumes tool durability (adds exhaustion 0.02)
@@ -32,16 +35,30 @@ export function strikeWall(player: Player, targetTile: Tile, rng: DeterministicR
   const tool = player.equippedItem;
 
   if (!tool) {
-    // Bare hands
-    const drops: Item[] = [{ id: "contenttweaker:dirtdust", count: 1 }];
-    if (rng.next() < 0.25) {
-      drops.push({ id: "minecraft:gravel", count: 1 });
+    // Safety guard: cannot harm oneself when health <= 1 HP
+    if (player.health <= 1) {
+      return {
+        success: false,
+        drops: [],
+        damageTaken: 0,
+        exhaustionAdded: 0,
+        reason: "You are too bruised up to hit the wall any further ;C",
+      };
     }
+
+    const roll = rng.next();
+    const drops: Item[] = [];
+    if (roll < 0.7) {
+      drops.push({ id: "contenttweaker:dirtdust", count: 1 });
+    } else if (roll < 0.9) {
+      drops.push({ id: "contenttweaker:graveldust", count: 1 });
+    } // roll >= 0.9 is 10% miss / no drop
+
     return {
       success: true,
       drops,
       damageTaken: 1,
-      exhaustionAdded: 0.05,
+      exhaustionAdded: 0.6,
     };
   }
 

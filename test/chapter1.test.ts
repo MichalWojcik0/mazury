@@ -70,11 +70,13 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
     passable: false,
   };
 
-  // Fist punch (player has equippedItem: psd by default, so unequip first to test bare hands)
+  // Fist punch with deterministic seed
+  const deterministicRng = new DeterministicRNG(42); // 0.6011 (< 0.70) -> dirtdust
   player.equippedItem = undefined;
-  const result = strikeWall(player, solidWallTile, rng);
+  const result = strikeWall(player, solidWallTile, deterministicRng);
   assert.equal(result.success, true);
   assert.equal(result.damageTaken, 1);
+  assert.equal(result.exhaustionAdded, 0.6);
   assert.equal(result.drops[0].id, "contenttweaker:dirtdust");
 
   // Punch boundary wall in Tiny Compact Machine via INTERACT_TILE
@@ -90,6 +92,7 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
   player.equippedItem = undefined;
   const initialInvDust = countItem(player.inventory, "contenttweaker:dirtdust");
   // Punch North boundary wall (slot 8 -> y = -1, North boundary face)
+  // Engine RNG with seed 1234 gives 0.0732 (< 0.7) for first roll
   engine.enqueueInput({
     tick: 1,
     playerId: 0,
