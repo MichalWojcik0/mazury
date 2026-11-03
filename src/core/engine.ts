@@ -1,5 +1,13 @@
 import { DeterministicRNG } from "./math.ts";
 import type { Player, Room, PlayerInputPacket, InputAction } from "./types.ts";
+import {
+  createEmptyInventory,
+  addItem,
+  countItem,
+  moveToTop,
+  moveToBottom,
+  swapSlots,
+} from "../inventory/inventory.ts";
 import { createOuterRoom, createTinyCompactMachineRoom, resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
@@ -31,8 +39,8 @@ export class GameEngine {
     this.rooms.set(tinyRoom.id, tinyRoom);
 
     // Initialize Player 0 in outer room column 0,0
-    const inv = new Map<string, number>();
-    inv.set("compactmachines3:psd", 1); // Starting item
+    const inv = createEmptyInventory();
+    addItem(inv, "compactmachines3:psd", 1); // Starting item in slot 0
 
     const p0: Player = {
       id: 0,
@@ -48,6 +56,8 @@ export class GameEngine {
       z: 1, // Standing on bedrock at z=0
       height: 2,
       selectedLayerIndex: 1, // Feet/lower layer
+      selectedQuickSlotIndex: 0, // Quick slot 0 active
+      equippedItem: "compactmachines3:psd",
       inventory: inv,
     };
 
@@ -76,8 +86,7 @@ export class GameEngine {
       // Sneak ticking & poop generation
       const sneakRes = updateSneak(player);
       if (sneakRes.poopProduced && sneakRes.drop) {
-        const currentCount = player.inventory.get(sneakRes.drop.id) ?? 0;
-        player.inventory.set(sneakRes.drop.id, currentCount + sneakRes.drop.count);
+        addItem(player.inventory, sneakRes.drop.id, sneakRes.drop.count);
       }
       player.exhaustion += sneakRes.exhaustionAdded;
 
@@ -119,6 +128,33 @@ export class GameEngine {
       case "EQUIP_ITEM":
         player.equippedItem = action.itemId;
         break;
+
+      case "SELECT_QUICK_SLOT": {
+        if (action.index >= 0 && action.index < 9) {
+          player.selectedQuickSlotIndex = action.index;
+          const slotItem = player.inventory[action.index];
+          player.equippedItem = slotItem ? slotItem.id : undefined;
+        }
+        break;
+      }
+
+      case "MOVE_ITEM_TO_TOP": {
+        moveToTop(player.inventory, action.slotIndex);
+        this.updateActiveEquipped(player);
+        break;
+      }
+
+      case "MOVE_ITEM_TO_BOTTOM": {
+        moveToBottom(player.inventory, action.slotIndex);
+        this.updateActiveEquipped(player);
+        break;
+      }
+
+      case "SWAP_INVENTORY_SLOTS": {
+        swapSlots(player.inventory, action.fromIndex, action.toIndex);
+        this.updateActiveEquipped(player);
+        break;
+      }
 
       case "MOVE": {
         const room = this.rooms.get(player.currentRoomId);
@@ -194,8 +230,7 @@ export class GameEngine {
             player.exhaustion += punchResult.exhaustionAdded;
 
             for (const drop of punchResult.drops) {
-              const count = player.inventory.get(drop.id) ?? 0;
-              player.inventory.set(drop.id, count + drop.count);
+              addItem(player.inventory, drop.id, drop.count);
             }
           }
         }
@@ -207,10 +242,18 @@ export class GameEngine {
         if (!recipe) break;
 
         // In Chapter 1, check if player has crafting station in room or inventory
-        const hasStation = (player.inventory.get("craftingstation:crafting_station") ?? 0) > 0;
+        const hasStation = countItem(player.inventory, "craftingstation:crafting_station") > 0;
         executeCraft(recipe, player.inventory, hasStation);
+        this.updateActiveEquipped(player);
         break;
       }
+    }
+  }
+
+  private updateActiveEquipped(player: Player): void {
+    if (player.selectedQuickSlotIndex !== undefined && player.selectedQuickSlotIndex >= 0 && player.selectedQuickSlotIndex < 9) {
+      const activeStack = player.inventory[player.selectedQuickSlotIndex];
+      player.equippedItem = activeStack ? activeStack.id : undefined;
     }
   }
 }

@@ -10,7 +10,17 @@ export interface Item {
   count: number;
 }
 
-export type Inventory = Map<string, number>;
+export type ItemStack = Item;
+
+/**
+ * 36-slot fixed list inventory. Each slot holds an ItemStack or null if empty.
+ */
+export type InventoryList = (ItemStack | null)[];
+
+/**
+ * Legacy/compatibility inventory type alias, supporting InventoryList or Map.
+ */
+export type Inventory = InventoryList;
 
 export type MachineFace = "DOWN" | "UP" | "NORTH" | "SOUTH" | "WEST" | "EAST";
 
@@ -52,7 +62,8 @@ export interface Player {
   height: 2; // Exactly 2 blocks tall
   selectedLayerIndex: 0 | 1 | 2 | 3; // 0: Below Feet, 1: Lower Body, 2: Upper Body, 3: Above Head
   selectedSlot?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // Currently targeted reticle/block slot
-  inventory: Inventory;
+  selectedQuickSlotIndex?: number; // 0..8 index of top 9 slots for quick selection
+  inventory: InventoryList;
   equippedItem?: string;
 }
 
@@ -74,6 +85,10 @@ export type InputAction =
   | { type: "INTERACT_TILE"; slot: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; button: "PRIMARY" | "SECONDARY" }
   | { type: "CRAFT_RECIPE"; recipeId: string; count: number }
   | { type: "EQUIP_ITEM"; itemId?: string }
+  | { type: "SELECT_QUICK_SLOT"; index: number }
+  | { type: "MOVE_ITEM_TO_TOP"; slotIndex: number }
+  | { type: "MOVE_ITEM_TO_BOTTOM"; slotIndex: number }
+  | { type: "SWAP_INVENTORY_SLOTS"; fromIndex: number; toIndex: number }
   | { type: "USE_PSD" };
 
 export interface PlayerInputPacket {

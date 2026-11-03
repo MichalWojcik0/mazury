@@ -1,5 +1,6 @@
 export * from "./core/types.ts";
 export * from "./core/math.ts";
+export * from "./inventory/inventory.ts";
 export * from "./core/engine.ts";
 export * from "./world/room.ts";
 export * from "./mechanics/wall-punching.ts";

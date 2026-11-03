@@ -4,6 +4,15 @@ This document specifies the exact mechanics implemented in the game, derived fro
 
 ---
 
+## 0.1 Inventory List & Quick Selection Hotbar
+
+The player inventory is modeled as a deterministic ordered list of **36 slots**:
+- **Stack Constraints**: Each slot holds an `ItemStack` (`{ id, count }`) up to the item's maximum stack size (default 64; unstackable items such as tools and PSD limit to 1). Adding items merges into existing stacks before occupying empty slots.
+- **Top 9 Quick Selection**: The first 9 slots (indices 0..8) are displayed in the HUD as the quick selection hotbar. Selecting an active slot (via keys 1–9 or mouse click) equips that item for tool-assisted actions.
+- **Hover Reordering Feature**: In the UI, hovering over any populated item reveals little arrow controls (▲ / ▼) to move the item stack to the very top (index 0) or bottom of the list.
+
+---
+
 ## 0. Player Interaction & Voxel Targeting Mechanics
 
 As detailed in the architecture specification (`canvas-architecture.md`), the 2-block-tall player character reaches into **4 distinct vertical layers** relative to their position:

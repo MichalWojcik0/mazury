@@ -117,7 +117,7 @@ interface Player {
   z: number;            // Vertical coordinate of feet (occupies z and z + 1)
   height: 2;            // Player character is strictly 2 blocks tall
   selectedLayerIndex: 0 | 1 | 2 | 3; // Selected interaction layer relative to player
-  inventory: Inventory; // 36 main slots + 9 hotbar slots + armor/offhand
+  inventory: InventoryList; // 36-slot fixed list inventory (top 9 slots are quick selection hotbar)
   selectedHotbarIndex: number;
 }
 ```

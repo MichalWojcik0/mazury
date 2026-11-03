@@ -1,11 +1,21 @@
-import type { Inventory } from "../core/types.ts";
+import type { InventoryList } from "../core/types.ts";
+import { countItem } from "../inventory/inventory.ts";
+
+export type QuestInventory = InventoryList | Map<string, number>;
+
+function getCount(inv: QuestInventory, itemId: string): number {
+  if (inv instanceof Map) {
+    return inv.get(itemId) ?? 0;
+  }
+  return countItem(inv, itemId);
+}
 
 export interface Quest {
   id: number;
   title: string;
   description: string;
   prerequisites: number[];
-  checkCompleted: (inventory: Inventory, completedQuests: Set<number>, eventFlags?: Set<string>) => boolean;
+  checkCompleted: (inventory: QuestInventory, completedQuests: Set<number>, eventFlags?: Set<string>) => boolean;
 }
 
 export const CHAPTER_1_QUESTS: Quest[] = [
@@ -14,7 +24,7 @@ export const CHAPTER_1_QUESTS: Quest[] = [
     title: "Stuck in a hole",
     description: "Introductory quest. You spawn in a 2x1 bedrock meteor pocket.",
     prerequisites: [],
-    checkCompleted: (inv) => (inv.get("compactmachines3:psd") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "compactmachines3:psd") >= 1,
   },
   {
     id: 68,
@@ -28,49 +38,49 @@ export const CHAPTER_1_QUESTS: Quest[] = [
     title: "The real beginning",
     description: "Obtain 4x Dirt Dust by punching the solid walls.",
     prerequisites: [68],
-    checkCompleted: (inv) => (inv.get("contenttweaker:dirtdust") ?? 0) >= 4,
+    checkCompleted: (inv) => getCount(inv, "contenttweaker:dirtdust") >= 4,
   },
   {
     id: 20,
     title: "Getting your hands dirty",
     description: "Craft 1x Dirt from the hand-crafting list.",
     prerequisites: [13],
-    checkCompleted: (inv) => (inv.get("minecraft:dirt") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "minecraft:dirt") >= 1,
   },
   {
     id: 29,
     title: "Eat Poop and DON'T die",
     description: "Sneak for 5 seconds to produce poop.",
     prerequisites: [13],
-    checkCompleted: (inv) => (inv.get("cropdusting:poop") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "cropdusting:poop") >= 1,
   },
   {
     id: 9,
     title: "Wood's Good",
     description: "Craft a Crafting Station from 4 wood planks.",
     prerequisites: [20],
-    checkCompleted: (inv) => (inv.get("craftingstation:crafting_station") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "craftingstation:crafting_station") >= 1,
   },
   {
     id: 8,
     title: "Soft Pick",
     description: "Craft a Wooden Pickaxe to harvest pebbles from the walls.",
     prerequisites: [9],
-    checkCompleted: (inv) => (inv.get("minecraft:wooden_pickaxe") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "minecraft:wooden_pickaxe") >= 1,
   },
   {
     id: 25,
     title: "All Cobbled Together",
     description: "Craft 1x Cobblestone from 4 pebbles.",
     prerequisites: [8],
-    checkCompleted: (inv) => (inv.get("minecraft:cobblestone") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "minecraft:cobblestone") >= 1,
   },
   {
     id: 28,
     title: "Chubby Pick",
     description: "Craft a Stone Pickaxe to extract metal grits from the walls.",
     prerequisites: [25],
-    checkCompleted: (inv) => (inv.get("minecraft:stone_pickaxe") ?? 0) >= 1,
+    checkCompleted: (inv) => getCount(inv, "minecraft:stone_pickaxe") >= 1,
   },
 ];
 
@@ -87,7 +97,7 @@ export class QuestTracker {
     this.eventFlags.add(flag);
   }
 
-  evaluateQuests(inventory: Inventory): number[] {
+  evaluateQuests(inventory: QuestInventory): number[] {
     const newlyCompleted: number[] = [];
 
     for (const quest of CHAPTER_1_QUESTS) {
