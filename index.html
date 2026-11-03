@@ -338,8 +338,41 @@
       background: #21252b;
     }
 
-    /* Inventory / Hotbar Panel */
-    .inventory-panel {
+    /* Inventory Section */
+    .inventory-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    .inventory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .inv-toggle-btn {
+      background: #21252b;
+      border: 1px solid #3e4451;
+      color: #61afef;
+      border-radius: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .inv-toggle-btn:hover {
+      background: #2c313a;
+      border-color: #61afef;
+    }
+
+    /* Top 9 Quick Selection / Hotbar Panel */
+    .quick-inventory-panel {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -365,9 +398,14 @@
       transition: all 0.15s ease;
     }
 
-    .inv-slot.selected {
+    .inv-slot:hover {
       border-color: #61afef;
-      box-shadow: 0 0 8px rgba(97, 175, 239, 0.4);
+    }
+
+    .inv-slot.selected {
+      border-color: #00ffff;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.45);
+      background: #283344;
     }
 
     .inv-slot-icon {
@@ -382,6 +420,107 @@
       font-weight: 700;
       color: #e5c07b;
       font-family: monospace;
+    }
+
+    .inv-slot-index {
+      position: absolute;
+      top: 2px;
+      left: 3px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #5c6370;
+      font-family: monospace;
+    }
+
+    /* Little arrows appearing next to hovered item */
+    .slot-arrows {
+      position: absolute;
+      top: -18px;
+      display: none;
+      gap: 2px;
+      background: rgba(18, 22, 28, 0.95);
+      border: 1px solid #61afef;
+      border-radius: 4px;
+      padding: 1px 3px;
+      z-index: 50;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .inv-slot:hover .slot-arrows {
+      display: flex;
+    }
+
+    .arrow-btn {
+      background: none;
+      border: none;
+      color: #abb2bf;
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0 2px;
+      line-height: 1;
+      font-family: monospace;
+    }
+
+    .arrow-btn:hover {
+      color: #00ffff;
+      font-weight: bold;
+    }
+
+    /* Full 36-slot List Inventory Drawer */
+    .full-inventory-drawer {
+      display: none;
+      position: absolute;
+      bottom: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 22, 28, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      width: 440px;
+      backdrop-filter: blur(12px);
+    }
+
+    .full-inventory-drawer.open {
+      display: block;
+    }
+
+    .drawer-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #61afef;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .inventory-grid-36 {
+      display: grid;
+      grid-template-columns: repeat(9, 42px);
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .inventory-grid-36 .inv-slot {
+      width: 42px;
+      height: 42px;
+    }
+
+    .quick-slots-divider {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #828997;
+      margin: 4px 0 2px 0;
+      border-top: 1px dashed #3e4451;
+      padding-top: 4px;
     }
 
     .psd-action-panel {
@@ -498,7 +637,7 @@
           </button>
         </div>
 
-        <!-- 3x3 Interaction Reticle (Numpad 1..9) -->
+        <!-- 3x3 Auxiliary Reticle Widget -->
         <div class="aux-reticle-card ui-interactive">
           <div class="widget-title">Target Reticle</div>
           <div class="reticle-grid">
@@ -531,23 +670,27 @@
           </div>
         </div>
 
-        <!-- Quick Inventory / Hotbar -->
-        <div class="inventory-panel ui-interactive" id="hud-inventory">
-          <div class="inv-slot selected" title="Personal Shrinking Device">
-            <span class="inv-slot-icon">📱</span>
-            <span class="inv-slot-qty">1</span>
+        <!-- Inventory Container -->
+        <div class="inventory-section ui-interactive">
+          <!-- Full 36-slot Drawer -->
+          <div class="full-inventory-drawer" id="full-inv-drawer">
+            <div class="drawer-title-row">
+              <span>Inventory (36 Slots)</span>
+              <button class="inv-toggle-btn" id="btn-close-full-inv">✕ Close</button>
+            </div>
+            <div class="inventory-grid-36" id="grid-36-slots">
+              <!-- Dynamically rendered 36 slots -->
+            </div>
           </div>
-          <div class="inv-slot" title="Dirt Dust">
-            <span class="inv-slot-icon">🟤</span>
-            <span class="inv-slot-qty" id="inv-dirtdust-qty">0</span>
+
+          <div class="inventory-header">
+            <span class="widget-title" style="text-align: left; margin: 0;">Quick Use (Top 9 Slots)</span>
+            <button class="inv-toggle-btn" id="btn-toggle-inv">📦 Full Inventory [E]</button>
           </div>
-          <div class="inv-slot" title="Dirt Block">
-            <span class="inv-slot-icon">🧱</span>
-            <span class="inv-slot-qty" id="inv-dirt-qty">0</span>
-          </div>
-          <div class="inv-slot" title="Organic Poop">
-            <span class="inv-slot-icon">💩</span>
-            <span class="inv-slot-qty" id="inv-poop-qty">0</span>
+
+          <!-- Top 9 Quick Selection / Hotbar -->
+          <div class="quick-inventory-panel" id="hud-quick-inventory">
+            <!-- Dynamically rendered top 9 slots -->
           </div>
         </div>
 
@@ -559,7 +702,7 @@
             Walk: <span class="key-badge">WASD</span> &bull;
             Layer: <span class="key-badge">F1-F4</span> / <span class="key-badge">[ ]</span> &bull;
             Target: <span class="key-badge">Numpad 1-9</span> &bull;
-            Shrink: <span class="key-badge">P/Space</span>
+            Inv: <span class="key-badge">E</span> / <span class="key-badge">1-9</span>
           </div>
         </div>
       </div>
@@ -589,9 +732,13 @@
     const hudQuestDesc = document.getElementById("hud-quest-desc");
     const hudHearts = document.getElementById("hud-hearts");
     const hudHunger = document.getElementById("hud-hunger");
-    const invDirtdustQty = document.getElementById("inv-dirtdust-qty");
-    const invDirtQty = document.getElementById("inv-dirt-qty");
-    const invPoopQty = document.getElementById("inv-poop-qty");
+    const hudQuickInventory = document.getElementById("hud-quick-inventory");
+    const fullInvDrawer = document.getElementById("full-inv-drawer");
+    const grid36Slots = document.getElementById("grid-36-slots");
+    const btnToggleInv = document.getElementById("btn-toggle-inv");
+    const btnCloseFullInv = document.getElementById("btn-close-full-inv");
+
+    let isInventoryDrawerOpen = false;
 
     const layerButtons = [
       document.getElementById("layer-btn-0"),
@@ -602,6 +749,33 @@
 
     const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
 
+    // Item display metadata: Icons and human-readable names
+    const ITEM_ICONS = {
+      "compactmachines3:psd": { icon: "📱", name: "Personal Shrinking Device" },
+      "contenttweaker:dirtdust": { icon: "🟤", name: "Dirt Dust" },
+      "minecraft:dirt": { icon: "🧱", name: "Dirt Block" },
+      "minecraft:gravel": { icon: "⚪", name: "Gravel" },
+      "cropdusting:poop": { icon: "💩", name: "Organic Poop" },
+      "contenttweaker:poopfuel": { icon: "🔥", name: "Poop Fuel" },
+      "minecraft:planks": { icon: "🪵", name: "Oak Planks" },
+      "minecraft:stick": { icon: "🥢", name: "Stick" },
+      "craftingstation:crafting_station": { icon: "🪑", name: "Crafting Station" },
+      "minecraft:wooden_pickaxe": { icon: "⛏️", name: "Wooden Pickaxe" },
+      "minecraft:stone_pickaxe": { icon: "⛏️", name: "Stone Pickaxe" },
+      "minecraft:cobblestone": { icon: "🪨", name: "Cobblestone" },
+      "exnihilocreatio:item_pebble:0": { icon: "🪨", name: "Stone Pebble" },
+      "exnihilocreatio:item_pebble:1": { icon: "🪨", name: "Granite Pebble" },
+      "exnihilocreatio:item_pebble:2": { icon: "🪨", name: "Diorite Pebble" },
+      "exnihilocreatio:item_pebble:3": { icon: "🪨", name: "Andesite Pebble" },
+      "exnihilocreatio:item_ore_iron:0": { icon: "⚙️", name: "Iron Grit" },
+      "exnihilocreatio:item_ore_copper:0": { icon: "🥉", name: "Copper Grit" },
+    };
+
+    function getItemDisplay(itemId) {
+      if (!itemId) return { icon: "", name: "" };
+      return ITEM_ICONS[itemId] || { icon: "📦", name: itemId };
+    }
+
     function resizeCanvas() {
       canvas.width = canvas.clientWidth * window.devicePixelRatio;
       canvas.height = canvas.clientHeight * window.devicePixelRatio;
@@ -609,6 +783,107 @@
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
+
+    function renderInventorySlot(item, slotIndex, isSelected, showArrows = true) {
+      const display = item ? getItemDisplay(item.id) : null;
+      const title = item ? `${display.name} (${item.count})` : `Slot ${slotIndex + 1} (Empty)`;
+
+      const slotEl = document.createElement("div");
+      slotEl.className = `inv-slot ${isSelected ? "selected" : ""}`;
+      slotEl.title = title;
+      slotEl.setAttribute("data-slot-index", slotIndex);
+
+      const indexLabel = document.createElement("span");
+      indexLabel.className = "inv-slot-index";
+      indexLabel.textContent = slotIndex + 1;
+      slotEl.appendChild(indexLabel);
+
+      if (item) {
+        const iconEl = document.createElement("span");
+        iconEl.className = "inv-slot-icon";
+        iconEl.textContent = display.icon;
+        slotEl.appendChild(iconEl);
+
+        const qtyEl = document.createElement("span");
+        qtyEl.className = "inv-slot-qty";
+        qtyEl.textContent = item.count;
+        slotEl.appendChild(qtyEl);
+
+        if (showArrows) {
+          // Hover arrow container
+          const arrowsEl = document.createElement("div");
+          arrowsEl.className = "slot-arrows";
+
+          // Arrow to move to top
+          const topBtn = document.createElement("button");
+          topBtn.className = "arrow-btn";
+          topBtn.title = "Move to Top (Slot 1)";
+          topBtn.textContent = "▲";
+          topBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            moveItemToTop(slotIndex);
+          });
+          arrowsEl.appendChild(topBtn);
+
+          // Arrow to move to bottom
+          const bottomBtn = document.createElement("button");
+          bottomBtn.className = "arrow-btn";
+          bottomBtn.title = "Move to Bottom (Slot 36)";
+          bottomBtn.textContent = "▼";
+          bottomBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            moveItemToBottom(slotIndex);
+          });
+          arrowsEl.appendChild(bottomBtn);
+
+          slotEl.appendChild(arrowsEl);
+        }
+      }
+
+      slotEl.addEventListener("click", () => {
+        if (slotIndex < 9) {
+          selectQuickSlot(slotIndex);
+        }
+      });
+
+      return slotEl;
+    }
+
+    function updateInventoryUI(player) {
+      if (!player) return;
+
+      // 1. Render Top 9 Quick Slots
+      hudQuickInventory.innerHTML = "";
+      for (let i = 0; i < 9; i++) {
+        const item = player.inventory[i];
+        const isSelected = player.selectedQuickSlotIndex === i;
+        const slotEl = renderInventorySlot(item, i, isSelected, true);
+        hudQuickInventory.appendChild(slotEl);
+      }
+
+      // 2. Render Full 36 Slots (when drawer is visible or updating)
+      grid36Slots.innerHTML = "";
+      for (let i = 0; i < 36; i++) {
+        const item = player.inventory[i];
+        const isSelected = player.selectedQuickSlotIndex === i;
+        const slotEl = renderInventorySlot(item, i, isSelected, true);
+        grid36Slots.appendChild(slotEl);
+      }
+    }
+
+    function toggleInventoryDrawer(open) {
+      isInventoryDrawerOpen = open !== undefined ? open : !isInventoryDrawerOpen;
+      if (isInventoryDrawerOpen) {
+        fullInvDrawer.classList.add("open");
+        btnToggleInv.textContent = "✕ Close [E]";
+      } else {
+        fullInvDrawer.classList.remove("open");
+        btnToggleInv.textContent = "📦 Full Inventory [E]";
+      }
+    }
+
+    btnToggleInv.addEventListener("click", () => toggleInventoryDrawer());
+    btnCloseFullInv.addEventListener("click", () => toggleInventoryDrawer(false));
 
     function updateHUD() {
       const p = engine.players.get(0);
@@ -645,10 +920,8 @@
       }
       hudHunger.innerHTML = hungerHtml;
 
-      // Inventory quantities
-      if (invDirtdustQty) invDirtdustQty.textContent = p.inventory.get("contenttweaker:dirtdust") || 0;
-      if (invDirtQty) invDirtQty.textContent = p.inventory.get("minecraft:dirt") || 0;
-      if (invPoopQty) invPoopQty.textContent = p.inventory.get("cropdusting:poop") || 0;
+      // Update Inventory
+      updateInventoryUI(p);
 
       // Reticle center button disabled for body layers (1 and 2)
       const reticleCenter = document.getElementById("reticle-slot-5");
@@ -688,6 +961,36 @@
         tick: engine.currentTick + 1,
         playerId: 0,
         action: { type: "SELECT_LAYER", layerIndex },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    function selectQuickSlot(index) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "SELECT_QUICK_SLOT", index },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    function moveItemToTop(slotIndex) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "MOVE_ITEM_TO_TOP", slotIndex },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    function moveItemToBottom(slotIndex) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "MOVE_ITEM_TO_BOTTOM", slotIndex },
       });
       engine.stepTick();
       updateHUD();
@@ -783,6 +1086,11 @@
           movePlayer(1, 0);
           e.preventDefault();
           break;
+        case "e":
+        case "E":
+          toggleInventoryDrawer();
+          e.preventDefault();
+          break;
         case "p":
         case "P":
         case " ":
@@ -828,7 +1136,8 @@
             interactSlot(slot);
             e.preventDefault();
           } else {
-            selectSlot(slot);
+            // Quick select hotbar slot 0..8
+            selectQuickSlot(slot - 1);
           }
           break;
         }
@@ -848,6 +1157,10 @@
     window.__usePSD = usePSD;
     window.__selectLayer = selectLayer;
     window.__interactSlot = interactSlot;
+    window.__selectQuickSlot = selectQuickSlot;
+    window.__moveItemToTop = moveItemToTop;
+    window.__moveItemToBottom = moveItemToBottom;
+    window.__toggleInventoryDrawer = toggleInventoryDrawer;
 
     // Render loop
     function renderLoop() {

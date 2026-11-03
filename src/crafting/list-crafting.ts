@@ -1,4 +1,5 @@
-import type { ListRecipe, Inventory } from "../core/types.ts";
+import type { ListRecipe, InventoryList } from "../core/types.ts";
+import { countItem, removeItem, addItem } from "../inventory/inventory.ts";
 
 /**
  * Chapter 1 List Crafting Recipes.
@@ -118,15 +119,25 @@ export const CHAPTER_1_RECIPES: ListRecipe[] = [
 ];
 
 /**
+ * Helper to get available count whether inventory is an InventoryList or Map.
+ */
+function getItemCount(inventory: InventoryList | Map<string, number>, itemId: string): number {
+  if (inventory instanceof Map) {
+    return inventory.get(itemId) ?? 0;
+  }
+  return countItem(inventory, itemId);
+}
+
+/**
  * Checks if the inventory contains all required ingredients for the recipe.
  */
-export function canCraft(recipe: ListRecipe, inventory: Inventory, hasCraftingStation: boolean): boolean {
+export function canCraft(recipe: ListRecipe, inventory: InventoryList | Map<string, number>, hasCraftingStation: boolean): boolean {
   if (recipe.requiredStation === "crafting_station" && !hasCraftingStation) {
     return false;
   }
 
   for (const input of recipe.inputs) {
-    const available = inventory.get(input.itemId) ?? 0;
+    const available = getItemCount(inventory, input.itemId);
     if (available < input.count) {
       return false;
     }
@@ -138,26 +149,39 @@ export function canCraft(recipe: ListRecipe, inventory: Inventory, hasCraftingSt
 /**
  * Executes a list-based craft: deducts inputs and adds outputs to inventory.
  */
-export function executeCraft(recipe: ListRecipe, inventory: Inventory, hasCraftingStation: boolean): boolean {
+export function executeCraft(recipe: ListRecipe, inventory: InventoryList | Map<string, number>, hasCraftingStation: boolean): boolean {
   if (!canCraft(recipe, inventory, hasCraftingStation)) {
     return false;
   }
 
-  // Deduct inputs
-  for (const input of recipe.inputs) {
-    const current = inventory.get(input.itemId)!;
-    const remaining = current - input.count;
-    if (remaining > 0) {
-      inventory.set(input.itemId, remaining);
-    } else {
-      inventory.delete(input.itemId);
+  if (inventory instanceof Map) {
+    // Deduct inputs
+    for (const input of recipe.inputs) {
+      const current = inventory.get(input.itemId)!;
+      const remaining = current - input.count;
+      if (remaining > 0) {
+        inventory.set(input.itemId, remaining);
+      } else {
+        inventory.delete(input.itemId);
+      }
     }
+
+    // Add outputs
+    for (const output of recipe.outputs) {
+      const current = inventory.get(output.itemId) ?? 0;
+      inventory.set(output.itemId, current + output.count);
+    }
+    return true;
   }
 
-  // Add outputs
+  // Deduct inputs from InventoryList
+  for (const input of recipe.inputs) {
+    removeItem(inventory, input.itemId, input.count);
+  }
+
+  // Add outputs to InventoryList
   for (const output of recipe.outputs) {
-    const current = inventory.get(output.itemId) ?? 0;
-    inventory.set(output.itemId, current + output.count);
+    addItem(inventory, output.itemId, output.count);
   }
 
   return true;

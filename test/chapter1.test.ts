@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { GameEngine } from "../src/core/engine.ts";
+import { countItem } from "../src/inventory/inventory.ts";
 import { resolveTargetCoord } from "../src/world/room.ts";
 import { strikeWall } from "../src/mechanics/wall-punching.ts";
 import { updateSneak, SNEAK_POOP_THRESHOLD_TICKS } from "../src/mechanics/sneak-poop.ts";
@@ -14,7 +15,7 @@ test("Outer Room geometry and PSD shrinking transition into 3x3 Compact Machine"
   const player = engine.players.get(0)!;
 
   assert.equal(player.currentRoomId, "outer_room");
-  assert.equal(player.inventory.get("compactmachines3:psd"), 1);
+  assert.equal(countItem(player.inventory, "compactmachines3:psd"), 1);
 
   // Transition into tiny room via PSD
   engine.enqueueInput({
@@ -69,7 +70,8 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
     passable: false,
   };
 
-  // Fist punch
+  // Fist punch (player has equippedItem: psd by default, so unequip first to test bare hands)
+  player.equippedItem = undefined;
   const result = strikeWall(player, solidWallTile, rng);
   assert.equal(result.success, true);
   assert.equal(result.damageTaken, 1);
@@ -86,7 +88,7 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
   // Player moves North to y = 0 to stand next to the North wall boundary
   player.y = 0;
   player.equippedItem = undefined;
-  const initialInvDust = player.inventory.get("contenttweaker:dirtdust") ?? 0;
+  const initialInvDust = countItem(player.inventory, "contenttweaker:dirtdust");
   // Punch North boundary wall (slot 8 -> y = -1, North boundary face)
   engine.enqueueInput({
     tick: 1,
@@ -94,7 +96,7 @@ test("Wall punching mechanics: bare hands cause damage and drop dirt dust", () =
     action: { type: "INTERACT_TILE", slot: 8, button: "PRIMARY" },
   });
   engine.stepTick();
-  assert.equal(player.inventory.get("contenttweaker:dirtdust"), initialInvDust + 1);
+  assert.equal(countItem(player.inventory, "contenttweaker:dirtdust"), initialInvDust + 1);
 
   // Wooden pickaxe punch
   player.equippedItem = "minecraft:wooden_pickaxe";
