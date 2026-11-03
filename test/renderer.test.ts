@@ -147,3 +147,70 @@ test("StubRenderer executes commands on a CanvasContext2D stub", () => {
   assert.equal(floorCommands.length, 9, "Tiny compact room should render exactly 3x3 floor tiles");
   assert.equal(wallCommands.length, 18, "Tiny compact room should render two 3x3 wall face arrays (North & West)");
 });
+
+test("StubRenderer generates 3D wireframe layer outline and block highlight commands", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+
+  const commands = renderer.generateRenderCommands(room, [], {
+    enableCutaway: true,
+    selectedLayerZ: 1,
+    showLayerOutline: true,
+    highlightCoord: { x: 1, y: 0, z: 1 },
+  });
+
+  const layerOutlineCmd = commands.find((c) => c.type === "DRAW_LAYER_OUTLINE");
+  assert.ok(layerOutlineCmd, "DRAW_LAYER_OUTLINE command should be generated");
+  assert.equal(layerOutlineCmd.metadata?.layerZ, 1);
+  assert.equal(layerOutlineCmd.metadata?.width, 3);
+  assert.equal(layerOutlineCmd.metadata?.height, 3);
+
+  const highlightCmd = commands.find((c) => c.type === "DRAW_HIGHLIGHT");
+  assert.ok(highlightCmd, "DRAW_HIGHLIGHT command should be generated");
+  assert.deepEqual(highlightCmd.worldCoord, { x: 1, y: 0, z: 1 });
+});
+
+test("StubRenderer executes 3D wireframe layer outline, block highlight, and floor texture on canvas context", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+
+  const operations: string[] = [];
+  const strokes: string[] = [];
+
+  const mockCtx: CanvasContext2DLike = {
+    save: () => operations.push("save"),
+    restore: () => operations.push("restore"),
+    translate: () => operations.push("translate"),
+    scale: () => operations.push("scale"),
+    beginPath: () => operations.push("beginPath"),
+    moveTo: () => operations.push("moveTo"),
+    lineTo: () => operations.push("lineTo"),
+    closePath: () => operations.push("closePath"),
+    fill: () => operations.push("fill"),
+    stroke: () => {
+      operations.push("stroke");
+      strokes.push(String(mockCtx.strokeStyle));
+    },
+    fillRect: () => operations.push("fillRect"),
+    strokeRect: () => operations.push("strokeRect"),
+    fillText: () => operations.push("fillText"),
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  renderer.render(room, [], mockCtx, {
+    enableCutaway: true,
+    selectedLayerZ: 1,
+    showLayerOutline: true,
+    highlightCoord: { x: 1, y: 0, z: 1 },
+  });
+
+  // Verify cyan stroke for 3D wireframe voxel highlight
+  assert.ok(strokes.includes("#00ffff"), "Voxel highlight stroke #00ffff should be used");
+  // Verify layer outline stroke
+  assert.ok(
+    strokes.some((s) => s.includes("97, 175, 239")),
+    "Layer outline wireframe stroke should be used"
+  );
+});

@@ -112,6 +112,10 @@ export class GameEngine {
         player.selectedLayerIndex = action.layerIndex;
         break;
 
+      case "SELECT_SLOT":
+        player.selectedSlot = action.slot;
+        break;
+
       case "EQUIP_ITEM":
         player.equippedItem = action.itemId;
         break;
@@ -166,6 +170,7 @@ export class GameEngine {
       }
 
       case "INTERACT_TILE": {
+        player.selectedSlot = action.slot;
         const room = this.rooms.get(player.currentRoomId);
         if (!room) break;
 
