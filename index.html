@@ -560,6 +560,20 @@
       background: #283344;
     }
 
+    .inv-slot.dragging {
+      opacity: 0.45;
+      transform: scale(0.95);
+      border-style: dashed;
+      border-color: #e5c07b;
+    }
+
+    .inv-slot.drag-over {
+      border-color: #98c379;
+      background: rgba(152, 195, 121, 0.2);
+      box-shadow: 0 0 12px rgba(152, 195, 121, 0.5);
+      transform: scale(1.05);
+    }
+
     .inv-slot-icon {
       font-size: 18px;
     }
@@ -721,11 +735,76 @@
       font-family: monospace;
       color: #98c379;
     }
+
+    /* Floating Item Tooltip */
+    .item-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      background: rgba(15, 18, 23, 0.95);
+      border: 1px solid #61afef;
+      border-radius: 6px;
+      padding: 8px 10px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 220px;
+    }
+
+    .item-tooltip.visible {
+      display: flex;
+    }
+
+    .tooltip-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e5c07b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tooltip-count {
+      font-size: 11px;
+      color: #abb2bf;
+    }
+
+    .tooltip-id {
+      font-size: 9px;
+      color: #5c6370;
+      font-family: monospace;
+    }
+
+    .tooltip-tags {
+      display: flex;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .tooltip-tag {
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: #282c34;
+      border: 1px solid #3e4451;
+      color: #98c379;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div id="game-container">
     <canvas id="game-canvas"></canvas>
+
+    <!-- Floating Item Tooltip -->
+    <div id="item-tooltip" class="item-tooltip">
+      <div class="tooltip-name" id="tooltip-item-name"></div>
+      <div class="tooltip-count" id="tooltip-item-count"></div>
+      <div class="tooltip-id" id="tooltip-item-id"></div>
+      <div class="tooltip-tags" id="tooltip-item-tags"></div>
+    </div>
 
     <div class="ui-overlay">
       <!-- Top HUD Header -->
@@ -939,6 +1018,13 @@
     const voxelTargetCoords = document.getElementById("voxel-target-coords");
     const voxelActionList = document.getElementById("voxel-action-list");
 
+    // Tooltip elements
+    const itemTooltip = document.getElementById("item-tooltip");
+    const tooltipItemName = document.getElementById("tooltip-item-name");
+    const tooltipItemCount = document.getElementById("tooltip-item-count");
+    const tooltipItemId = document.getElementById("tooltip-item-id");
+    const tooltipItemTags = document.getElementById("tooltip-item-tags");
+
     let isInventoryDrawerOpen = false;
     let isCraftingOpen = false;
 
@@ -946,6 +1032,9 @@
     // Key: slot container type ('quick' or 'drawer') + '-' + slotIndex
     const arrowVisibleUntil = new Map();
     const arrowHideTimeouts = new Map();
+
+    // Drag-and-drop state
+    let draggedSlotIndex = null;
 
     const layerButtons = [
       document.getElementById("layer-btn-0"),
@@ -960,9 +1049,56 @@
       if (!itemId) return { icon: "", name: "" };
       const def = getItemDefinition(itemId);
       if (def) {
-        return { icon: def.icon || "📦", name: def.name };
+        return { icon: def.icon || "📦", name: def.name, def };
       }
-      return { icon: "📦", name: itemId };
+      return { icon: "📦", name: itemId, def: null };
+    }
+
+    function showItemTooltip(item, mouseX, mouseY) {
+      if (!item || !itemTooltip) return;
+      const display = getItemDisplay(item.id);
+      const def = display.def;
+      const maxStack = def?.maxStackSize ?? 64;
+
+      tooltipItemName.innerHTML = `<span>${display.icon}</span> <span>${display.name}</span>`;
+      tooltipItemCount.textContent = `Count: ${item.count} / ${maxStack}`;
+      tooltipItemId.textContent = item.id;
+
+      tooltipItemTags.innerHTML = "";
+      if (def?.placeable) {
+        const tag = document.createElement("span");
+        tag.className = "tooltip-tag";
+        tag.textContent = "Placeable";
+        tooltipItemTags.appendChild(tag);
+      }
+      if (def?.isTool) {
+        const tag = document.createElement("span");
+        tag.className = "tooltip-tag";
+        tag.textContent = "Tool";
+        tooltipItemTags.appendChild(tag);
+      }
+      if (def?.canTill) {
+        const tag = document.createElement("span");
+        tag.className = "tooltip-tag";
+        tag.textContent = "Tillable";
+        tooltipItemTags.appendChild(tag);
+      }
+
+      const hintTag = document.createElement("span");
+      hintTag.className = "tooltip-tag";
+      hintTag.style.color = "#61afef";
+      hintTag.textContent = "Drag to Move/Swap";
+      tooltipItemTags.appendChild(hintTag);
+
+      itemTooltip.style.left = `${mouseX + 12}px`;
+      itemTooltip.style.top = `${mouseY + 12}px`;
+      itemTooltip.classList.add("visible");
+    }
+
+    function hideItemTooltip() {
+      if (itemTooltip) {
+        itemTooltip.classList.remove("visible");
+      }
     }
 
     function resizeCanvas() {
@@ -1072,6 +1208,64 @@
         }
       }
 
+      // Drag and drop event listeners
+      if (item) {
+        slotEl.setAttribute("draggable", "true");
+
+        slotEl.addEventListener("dragstart", (e) => {
+          draggedSlotIndex = slotIndex;
+          slotEl.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(slotIndex));
+        });
+
+        slotEl.addEventListener("dragend", () => {
+          draggedSlotIndex = null;
+          document.querySelectorAll(".inv-slot").forEach((el) => {
+            el.classList.remove("dragging", "drag-over");
+          });
+        });
+      }
+
+      slotEl.addEventListener("dragover", (e) => {
+        if (draggedSlotIndex !== null) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          slotEl.classList.add("drag-over");
+        }
+      });
+
+      slotEl.addEventListener("dragleave", (e) => {
+        if (!slotEl.contains(e.relatedTarget)) {
+          slotEl.classList.remove("drag-over");
+        }
+      });
+
+      slotEl.addEventListener("drop", (e) => {
+        e.preventDefault();
+        slotEl.classList.remove("drag-over");
+        const rawIndex = e.dataTransfer.getData("text/plain");
+        const fromIndex = rawIndex !== "" ? parseInt(rawIndex, 10) : draggedSlotIndex;
+
+        if (fromIndex !== null && !isNaN(fromIndex) && fromIndex !== slotIndex) {
+          swapInventorySlots(fromIndex, slotIndex);
+        }
+        draggedSlotIndex = null;
+      });
+
+      // Tooltip hover handlers
+      if (item) {
+        slotEl.addEventListener("mouseenter", (e) => {
+          showItemTooltip(item, e.clientX, e.clientY);
+        });
+        slotEl.addEventListener("mousemove", (e) => {
+          showItemTooltip(item, e.clientX, e.clientY);
+        });
+        slotEl.addEventListener("mouseleave", () => {
+          hideItemTooltip();
+        });
+      }
+
       slotEl.addEventListener("click", () => {
         if (slotIndex < 9) {
           selectQuickSlot(slotIndex);
@@ -1081,26 +1275,40 @@
       return slotEl;
     }
 
+    function cleanupStaleArrowTimers() {
+      const now = Date.now();
+      for (const [key, until] of arrowVisibleUntil.entries()) {
+        if (until <= now) {
+          arrowVisibleUntil.delete(key);
+          const t = arrowHideTimeouts.get(key);
+          if (t) {
+            clearTimeout(t);
+            arrowHideTimeouts.delete(key);
+          }
+        }
+      }
+    }
+
+    function renderSlotContainer(containerEl, count, player, containerType) {
+      containerEl.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const item = player.inventory[i];
+        const isSelected = player.selectedQuickSlotIndex === i;
+        const slotEl = renderInventorySlot(item, i, isSelected, true, containerType);
+        containerEl.appendChild(slotEl);
+      }
+    }
+
     function updateInventoryUI(player) {
       if (!player) return;
 
+      cleanupStaleArrowTimers();
+
       // 1. Render Top 9 Quick Slots
-      hudQuickInventory.innerHTML = "";
-      for (let i = 0; i < 9; i++) {
-        const item = player.inventory[i];
-        const isSelected = player.selectedQuickSlotIndex === i;
-        const slotEl = renderInventorySlot(item, i, isSelected, true, "quick");
-        hudQuickInventory.appendChild(slotEl);
-      }
+      renderSlotContainer(hudQuickInventory, 9, player, "quick");
 
       // 2. Render Full 36 Slots (when drawer is visible or updating)
-      grid36Slots.innerHTML = "";
-      for (let i = 0; i < 36; i++) {
-        const item = player.inventory[i];
-        const isSelected = player.selectedQuickSlotIndex === i;
-        const slotEl = renderInventorySlot(item, i, isSelected, true, "drawer");
-        grid36Slots.appendChild(slotEl);
-      }
+      renderSlotContainer(grid36Slots, 36, player, "drawer");
     }
 
     function toggleInventoryDrawer(open) {
@@ -1292,6 +1500,16 @@
         tick: engine.currentTick + 1,
         playerId: 0,
         action: { type: "SELECT_LAYER", layerIndex },
+      });
+      engine.stepTick();
+      updateHUD();
+    }
+
+    function swapInventorySlots(fromIndex, toIndex) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "SWAP_INVENTORY_SLOTS", fromIndex, toIndex },
       });
       engine.stepTick();
       updateHUD();
@@ -1505,6 +1723,7 @@
     window.__selectQuickSlot = selectQuickSlot;
     window.__moveItemToTop = moveItemToTop;
     window.__moveItemToBottom = moveItemToBottom;
+    window.__swapInventorySlots = swapInventorySlots;
     window.__toggleInventoryDrawer = toggleInventoryDrawer;
     window.__toggleCraftingPanel = toggleCraftingPanel;
     window.__craftRecipe = craftRecipe;
