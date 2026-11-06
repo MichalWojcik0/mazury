@@ -8,6 +8,15 @@ import {
   GRAVEL_DUST_TEXTURE_DATA_URL,
   POOP_FUEL_TEXTURE_DATA_URL,
   STONE_PEBBLE_TEXTURE_DATA_URL,
+  BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
+  BONSAI_OAK_CUTTING_TEXTURE_DATA_URL,
+  WHEAT_SEEDS_TEXTURE_DATA_URL,
+  HEMP_SEED_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
 /**
@@ -38,6 +47,7 @@ export interface BlockDefinition {
   drops?: Array<{ itemId: string; count: number; chance?: number }>; // Loot dropped when broken
   tillable?: boolean; // Can be tilled by secondary interact
   tilledTileId?: string; // Block ID transformed into when tilled
+  tilledDrops?: Array<{ itemId: string; count: number; chance?: number }>; // Loot dropped when tilled
   textureDataUrl?: string;
 }
 
@@ -219,6 +229,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Oak Cutting",
     maxStackSize: 64,
     icon: "🌿",
+    textureDataUrl: BONSAI_OAK_CUTTING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_oak_sapling": {
     id: "arcadialbonsaitrees:bonsai_oak_sapling",
@@ -227,6 +238,66 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "arcadialbonsaitrees:bonsai_oak_sapling",
     icon: "🌱",
+    textureDataUrl: BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_spruce_sapling": {
+    id: "arcadialbonsaitrees:bonsai_spruce_sapling",
+    name: "Bonsai Spruce Sapling",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "arcadialbonsaitrees:bonsai_spruce_sapling",
+    icon: "🌲",
+    textureDataUrl: BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_birch_sapling": {
+    id: "arcadialbonsaitrees:bonsai_birch_sapling",
+    name: "Bonsai Birch Sapling",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "arcadialbonsaitrees:bonsai_birch_sapling",
+    icon: "🌳",
+    textureDataUrl: BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_jungle_sapling": {
+    id: "arcadialbonsaitrees:bonsai_jungle_sapling",
+    name: "Bonsai Jungle Sapling",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "arcadialbonsaitrees:bonsai_jungle_sapling",
+    icon: "🌴",
+    textureDataUrl: BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_acacia_sapling": {
+    id: "arcadialbonsaitrees:bonsai_acacia_sapling",
+    name: "Bonsai Acacia Sapling",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "arcadialbonsaitrees:bonsai_acacia_sapling",
+    icon: "🎋",
+    textureDataUrl: BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_darkoak_sapling": {
+    id: "arcadialbonsaitrees:bonsai_darkoak_sapling",
+    name: "Bonsai Dark Oak Sapling",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "arcadialbonsaitrees:bonsai_darkoak_sapling",
+    icon: "🌳",
+    textureDataUrl: BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
+  },
+  "minecraft:wheat_seeds": {
+    id: "minecraft:wheat_seeds",
+    name: "Wheat Seeds",
+    maxStackSize: 64,
+    icon: "🌾",
+    textureDataUrl: WHEAT_SEEDS_TEXTURE_DATA_URL,
+  },
+  "immersiveengineering:seed": {
+    id: "immersiveengineering:seed",
+    name: "Industrial Hemp Seed",
+    maxStackSize: 64,
+    icon: "🌱",
+    textureDataUrl: HEMP_SEED_TEXTURE_DATA_URL,
   },
 };
 
@@ -261,6 +332,17 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     drops: [{ itemId: "minecraft:dirt", count: 1 }],
     tillable: true,
     tilledTileId: "minecraft:farmland",
+    tilledDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_sapling", count: 1, chance: 0.15 },
+      { itemId: "arcadialbonsaitrees:bonsai_spruce_sapling", count: 1, chance: 0.05 },
+      { itemId: "arcadialbonsaitrees:bonsai_birch_sapling", count: 1, chance: 0.05 },
+      { itemId: "arcadialbonsaitrees:bonsai_acacia_sapling", count: 1, chance: 0.05 },
+      { itemId: "arcadialbonsaitrees:bonsai_darkoak_sapling", count: 1, chance: 0.025 },
+      { itemId: "arcadialbonsaitrees:bonsai_jungle_sapling", count: 1, chance: 0.005 },
+      { itemId: "minecraft:wheat_seeds", count: 1, chance: 0.15 },
+      { itemId: "immersiveengineering:seed", count: 1, chance: 0.02 },
+      { itemId: "exnihilocreatio:item_pebble:0", count: 1, chance: 0.2 },
+    ],
     textureDataUrl: DIRT_TEXTURE_DATA_URL,
   },
   "minecraft:farmland": {
@@ -326,6 +408,66 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     drops: [{ itemId: "minecraft:torch", count: 1 }],
     tillable: false,
+  },
+  "arcadialbonsaitrees:bonsai_oak_sapling": {
+    id: "arcadialbonsaitrees:bonsai_oak_sapling",
+    name: "Bonsai Oak Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_oak_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_spruce_sapling": {
+    id: "arcadialbonsaitrees:bonsai_spruce_sapling",
+    name: "Bonsai Spruce Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_spruce_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_birch_sapling": {
+    id: "arcadialbonsaitrees:bonsai_birch_sapling",
+    name: "Bonsai Birch Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_birch_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_jungle_sapling": {
+    id: "arcadialbonsaitrees:bonsai_jungle_sapling",
+    name: "Bonsai Jungle Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_jungle_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_acacia_sapling": {
+    id: "arcadialbonsaitrees:bonsai_acacia_sapling",
+    name: "Bonsai Acacia Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_acacia_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
+  },
+  "arcadialbonsaitrees:bonsai_darkoak_sapling": {
+    id: "arcadialbonsaitrees:bonsai_darkoak_sapling",
+    name: "Bonsai Dark Oak Sapling",
+    type: "machine",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "arcadialbonsaitrees:bonsai_darkoak_sapling", count: 1 }],
+    tillable: false,
+    textureDataUrl: BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
   },
 };
 
