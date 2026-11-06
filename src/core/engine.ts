@@ -9,9 +9,10 @@ import {
   moveToBottom,
   swapSlots,
 } from "../inventory/inventory.ts";
-import { createOuterRoom, createTinyCompactMachineRoom, resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
+import { createOuterRoom, createTinyCompactMachineRoom } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
+import { resolveSelectedVoxel } from "../mechanics/voxel-actions.ts";
 import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
 import { CHAPTER_1_RECIPES, executeCraft } from "../crafting/list-crafting.ts";
 import { QuestTracker } from "../quests/quest-manager.ts";
@@ -212,30 +213,14 @@ export class GameEngine {
         const room = this.rooms.get(player.currentRoomId);
         if (!room) break;
 
-        const targetCoord = resolveTargetCoord(player, action.slot);
-        if (!targetCoord) break;
+        const selected = resolveSelectedVoxel(room, player, action.slot);
+        if (!selected) break;
 
-        let targetTile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
-        if (!targetTile && room.faces) {
-          const boundary = resolveBoundaryTile(room, targetCoord);
-          if (boundary) {
-            targetTile = boundary.tile;
-          }
-        }
-        if (!targetTile) break;
-
+        const { coord: targetCoord, tile: targetTile, isInBounds } = selected;
         const blockDef = getBlockDefinition(targetTile.id);
 
         if (action.button === "PRIMARY") {
           // Check if targeting a breakable in-world voxel block
-          const isInBounds =
-            targetCoord.x >= 0 &&
-            targetCoord.x < room.width &&
-            targetCoord.y >= 0 &&
-            targetCoord.y < room.height &&
-            targetCoord.z >= 0 &&
-            targetCoord.z < room.depth;
-
           if (isInBounds && blockDef?.breakable) {
             // Break block: replace voxel with air and drop items
             room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
@@ -266,14 +251,6 @@ export class GameEngine {
             }
           }
         } else if (action.button === "SECONDARY") {
-          const isInBounds =
-            targetCoord.x >= 0 &&
-            targetCoord.x < room.width &&
-            targetCoord.y >= 0 &&
-            targetCoord.y < room.height &&
-            targetCoord.z >= 0 &&
-            targetCoord.z < room.depth;
-
           // 1. Check if targeting a tillable block (e.g. Dirt block -> Farmland)
           if (isInBounds && blockDef?.tillable && blockDef.tilledTileId) {
             const tilledDef = getBlockDefinition(blockDef.tilledTileId);
@@ -287,31 +264,28 @@ export class GameEngine {
 
           // 2. Data-driven block placement checking itemDef.placeable
           const equipped = player.equippedItem;
-          if (equipped) {
+          if (equipped && isInBounds) {
             const itemDef = getItemDefinition(equipped);
             if (itemDef?.placeable) {
-              // Can only place if target is within room voxel bounds and is passable / air
-              if (isInBounds) {
-                const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
-                // Do not place inside solid blocks, and do not place where player is occupying space
-                const overlapsPlayer =
-                  targetCoord.x === player.x &&
-                  targetCoord.y === player.y &&
-                  (targetCoord.z === player.z || targetCoord.z === player.z + 1);
+              const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+              // Do not place inside solid blocks, and do not place where player is occupying space
+              const overlapsPlayer =
+                targetCoord.x === player.x &&
+                targetCoord.y === player.y &&
+                (targetCoord.z === player.z || targetCoord.z === player.z + 1);
 
-                if (existingVoxel && (existingVoxel.passable || existingVoxel.id === "minecraft:air") && !overlapsPlayer) {
-                  // Consume 1 item from inventory
-                  const removed = removeItem(player.inventory, equipped, 1);
-                  if (removed > 0) {
-                    const tileIdToPlace = itemDef.placesTileId ?? equipped;
-                    const placedBlockDef = getBlockDefinition(tileIdToPlace);
-                    room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
-                      id: tileIdToPlace,
-                      type: placedBlockDef?.type ?? "floor",
-                      passable: placedBlockDef?.passable ?? false,
-                    };
-                    this.updateActiveEquipped(player);
-                  }
+              if (existingVoxel && (existingVoxel.passable || existingVoxel.id === "minecraft:air") && !overlapsPlayer) {
+                // Consume 1 item from inventory
+                const removed = removeItem(player.inventory, equipped, 1);
+                if (removed > 0) {
+                  const tileIdToPlace = itemDef.placesTileId ?? equipped;
+                  const placedBlockDef = getBlockDefinition(tileIdToPlace);
+                  room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+                    id: tileIdToPlace,
+                    type: placedBlockDef?.type ?? "floor",
+                    passable: placedBlockDef?.passable ?? false,
+                  };
+                  this.updateActiveEquipped(player);
                 }
               }
             }

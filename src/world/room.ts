@@ -136,46 +136,72 @@ export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentR
  * - x < 0 -> face WEST, [z][y]
  * - x >= width -> face EAST, [z][y]
  */
+interface BoundaryFaceRule {
+  face: MachineFace;
+  matches: (coord: Vec3, room: Room) => boolean;
+  getIndices: (coord: Vec3, room: Room) => { row: number; col: number };
+}
+
+const BOUNDARY_FACE_RULES: BoundaryFaceRule[] = [
+  {
+    face: "DOWN",
+    matches: ({ z }) => z < 0,
+    getIndices: ({ x, y }, { width, height }) => ({
+      row: Math.max(0, Math.min(height - 1, y)),
+      col: Math.max(0, Math.min(width - 1, x)),
+    }),
+  },
+  {
+    face: "UP",
+    matches: ({ z }, { depth }) => z >= depth,
+    getIndices: ({ x, y }, { width, height }) => ({
+      row: Math.max(0, Math.min(height - 1, y)),
+      col: Math.max(0, Math.min(width - 1, x)),
+    }),
+  },
+  {
+    face: "NORTH",
+    matches: ({ y }) => y < 0,
+    getIndices: ({ x, z }, { width, depth }) => ({
+      row: Math.max(0, Math.min(depth - 1, z)),
+      col: Math.max(0, Math.min(width - 1, x)),
+    }),
+  },
+  {
+    face: "SOUTH",
+    matches: ({ y }, { height }) => y >= height,
+    getIndices: ({ x, z }, { width, depth }) => ({
+      row: Math.max(0, Math.min(depth - 1, z)),
+      col: Math.max(0, Math.min(width - 1, x)),
+    }),
+  },
+  {
+    face: "WEST",
+    matches: ({ x }) => x < 0,
+    getIndices: ({ y, z }, { height, depth }) => ({
+      row: Math.max(0, Math.min(depth - 1, z)),
+      col: Math.max(0, Math.min(height - 1, y)),
+    }),
+  },
+  {
+    face: "EAST",
+    matches: ({ x }, { width }) => x >= width,
+    getIndices: ({ y, z }, { height, depth }) => ({
+      row: Math.max(0, Math.min(depth - 1, z)),
+      col: Math.max(0, Math.min(height - 1, y)),
+    }),
+  },
+];
+
 export function resolveBoundaryTile(room: Room, coord: Vec3): { face: MachineFace; tile: Tile } | null {
   if (!room.faces) return null;
 
-  const { x, y, z } = coord;
-
-  if (z < 0) {
-    const clampedX = Math.max(0, Math.min(room.width - 1, x));
-    const clampedY = Math.max(0, Math.min(room.height - 1, y));
-    const tile = room.faces.DOWN?.[clampedY]?.[clampedX];
-    return tile ? { face: "DOWN", tile } : null;
-  }
-  if (z >= room.depth) {
-    const clampedX = Math.max(0, Math.min(room.width - 1, x));
-    const clampedY = Math.max(0, Math.min(room.height - 1, y));
-    const tile = room.faces.UP?.[clampedY]?.[clampedX];
-    return tile ? { face: "UP", tile } : null;
-  }
-  if (y < 0) {
-    const clampedX = Math.max(0, Math.min(room.width - 1, x));
-    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
-    const tile = room.faces.NORTH?.[clampedZ]?.[clampedX];
-    return tile ? { face: "NORTH", tile } : null;
-  }
-  if (y >= room.height) {
-    const clampedX = Math.max(0, Math.min(room.width - 1, x));
-    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
-    const tile = room.faces.SOUTH?.[clampedZ]?.[clampedX];
-    return tile ? { face: "SOUTH", tile } : null;
-  }
-  if (x < 0) {
-    const clampedY = Math.max(0, Math.min(room.height - 1, y));
-    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
-    const tile = room.faces.WEST?.[clampedZ]?.[clampedY];
-    return tile ? { face: "WEST", tile } : null;
-  }
-  if (x >= room.width) {
-    const clampedY = Math.max(0, Math.min(room.height - 1, y));
-    const clampedZ = Math.max(0, Math.min(room.depth - 1, z));
-    const tile = room.faces.EAST?.[clampedZ]?.[clampedY];
-    return tile ? { face: "EAST", tile } : null;
+  for (const rule of BOUNDARY_FACE_RULES) {
+    if (rule.matches(coord, room)) {
+      const { row, col } = rule.getIndices(coord, room);
+      const tile = room.faces[rule.face]?.[row]?.[col];
+      return tile ? { face: rule.face, tile } : null;
+    }
   }
 
   return null;

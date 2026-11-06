@@ -227,7 +227,7 @@
       opacity: 0.7;
     }
 
-    /* 3x3 Auxiliary Reticle Widget */
+    /* 3x3 Auxiliary Reticle Widget & Target Action Card */
     .aux-reticle-card {
       display: flex;
       flex-direction: column;
@@ -238,6 +238,105 @@
       border-radius: 8px;
       padding: 8px 10px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .reticle-action-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .voxel-action-card {
+      background: rgba(18, 22, 28, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      min-width: 170px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .voxel-target-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+
+    .voxel-target-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #828997;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .voxel-target-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #61afef;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .voxel-target-coords {
+      font-size: 10px;
+      font-family: monospace;
+      color: #abb2bf;
+    }
+
+    .voxel-action-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .voxel-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #21252b;
+      border: 1px solid #3e4451;
+      border-radius: 5px;
+      color: #e0e6ed;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .voxel-action-btn:hover:not(:disabled) {
+      background: #2b5876;
+      border-color: #61afef;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(97, 175, 239, 0.3);
+    }
+
+    .voxel-action-btn:active:not(:disabled) {
+      transform: translateY(0);
+      background: #1e3a5f;
+    }
+
+    .voxel-action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .voxel-no-action {
+      font-size: 11px;
+      color: #5c6370;
+      font-style: italic;
+      text-align: center;
+      padding: 4px 0;
     }
 
     .reticle-grid {
@@ -692,19 +791,33 @@
           </button>
         </div>
 
-        <!-- 3x3 Auxiliary Reticle Widget -->
-        <div class="aux-reticle-card ui-interactive">
-          <div class="widget-title">Target Reticle</div>
-          <div class="reticle-grid">
-            <button class="reticle-cell" data-slot="7" title="North-West (Numpad 7)">7</button>
-            <button class="reticle-cell" data-slot="8" title="North (Numpad 8)">8</button>
-            <button class="reticle-cell" data-slot="9" title="North-East (Numpad 9)">9</button>
-            <button class="reticle-cell" data-slot="4" title="West (Numpad 4)">4</button>
-            <button class="reticle-cell player-cell" data-slot="5" id="reticle-slot-5" title="Center (Numpad 5)">●</button>
-            <button class="reticle-cell" data-slot="6" title="East (Numpad 6)">6</button>
-            <button class="reticle-cell" data-slot="1" title="South-West (Numpad 1)">1</button>
-            <button class="reticle-cell" data-slot="2" title="South (Numpad 2)">2</button>
-            <button class="reticle-cell" data-slot="3" title="South-East (Numpad 3)">3</button>
+        <!-- 3x3 Auxiliary Reticle Widget & Target Voxel Action Card -->
+        <div class="reticle-action-container">
+          <div class="aux-reticle-card ui-interactive">
+            <div class="widget-title">Target Reticle</div>
+            <div class="reticle-grid">
+              <button class="reticle-cell" data-slot="7" title="North-West (Numpad 7)">7</button>
+              <button class="reticle-cell" data-slot="8" title="North (Numpad 8)">8</button>
+              <button class="reticle-cell" data-slot="9" title="North-East (Numpad 9)">9</button>
+              <button class="reticle-cell" data-slot="4" title="West (Numpad 4)">4</button>
+              <button class="reticle-cell player-cell" data-slot="5" id="reticle-slot-5" title="Center (Numpad 5)">●</button>
+              <button class="reticle-cell" data-slot="6" title="East (Numpad 6)">6</button>
+              <button class="reticle-cell" data-slot="1" title="South-West (Numpad 1)">1</button>
+              <button class="reticle-cell" data-slot="2" title="South (Numpad 2)">2</button>
+              <button class="reticle-cell" data-slot="3" title="South-East (Numpad 3)">3</button>
+            </div>
+          </div>
+
+          <!-- UI Component to perform actions on the selected voxel -->
+          <div class="voxel-action-card ui-interactive" id="voxel-action-card">
+            <div class="voxel-target-header">
+              <div class="voxel-target-title">Selected Voxel</div>
+              <div class="voxel-target-name" id="voxel-target-name">None Selected</div>
+              <div class="voxel-target-coords" id="voxel-target-coords">Coord: -</div>
+            </div>
+            <div class="voxel-action-list" id="voxel-action-list">
+              <span class="voxel-no-action">Select a block to act</span>
+            </div>
           </div>
         </div>
       </div>
@@ -787,6 +900,9 @@
       canCraft,
       ITEM_REGISTRY,
       getItemDefinition,
+      getBlockDefinition,
+      resolveSelectedVoxel,
+      getAvailableVoxelActions,
     } from "./dist/bundle.js";
 
     // Initialize Game Engine (deterministic 20 Hz simulation)
@@ -818,6 +934,10 @@
     const craftingRecipeList = document.getElementById("crafting-recipe-list");
     const btnToggleCrafting = document.getElementById("btn-toggle-crafting");
     const btnCloseCrafting = document.getElementById("btn-close-crafting");
+
+    const voxelTargetName = document.getElementById("voxel-target-name");
+    const voxelTargetCoords = document.getElementById("voxel-target-coords");
+    const voxelActionList = document.getElementById("voxel-action-list");
 
     let isInventoryDrawerOpen = false;
     let isCraftingOpen = false;
@@ -1043,6 +1163,56 @@
     btnToggleCrafting.addEventListener("click", () => toggleCraftingPanel());
     btnCloseCrafting.addEventListener("click", () => toggleCraftingPanel(false));
 
+    function updateSelectedVoxelUI(player, room) {
+      if (!player || !room || !player.selectedSlot) {
+        voxelTargetName.textContent = "None Selected";
+        voxelTargetCoords.textContent = "Coord: -";
+        voxelActionList.innerHTML = '<span class="voxel-no-action">Select a block to act</span>';
+        return;
+      }
+
+      const selected = resolveSelectedVoxel(room, player, player.selectedSlot);
+      if (!selected) {
+        voxelTargetName.textContent = "Obstructed / Out of reach";
+        voxelTargetCoords.textContent = "Coord: -";
+        voxelActionList.innerHTML = '<span class="voxel-no-action">No target reachable</span>';
+        return;
+      }
+
+      const { coord, tile, isBoundary } = selected;
+      const blockDef = getBlockDefinition(tile.id);
+      const blockDisplayName = blockDef?.name ?? tile.id;
+      const icon = tile.id === "compactmachines3:wall" ? "🧱" : (tile.id === "minecraft:dirt" ? "🟤" : (tile.id === "minecraft:farmland" ? "🌾" : "📦"));
+
+      voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}</span>`;
+      voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
+
+      const actions = getAvailableVoxelActions(tile, isBoundary);
+      voxelActionList.innerHTML = "";
+
+      if (actions.length === 0) {
+        const noAct = document.createElement("span");
+        noAct.className = "voxel-no-action";
+        noAct.textContent = tile.id === "minecraft:air" ? "Empty Air (No Actions)" : "No Actions Available";
+        voxelActionList.appendChild(noAct);
+        return;
+      }
+
+      for (const act of actions) {
+        const btn = document.createElement("button");
+        btn.className = "voxel-action-btn";
+        btn.innerHTML = `
+          <span>${act.icon || "⚡"} ${act.label}</span>
+          <span style="font-size: 9px; opacity: 0.7;">[${act.buttonType === "PRIMARY" ? "L-Click" : "R-Click"}]</span>
+        `;
+        btn.title = act.description || act.label;
+        btn.addEventListener("click", () => {
+          interactSlot(player.selectedSlot, act.buttonType);
+        });
+        voxelActionList.appendChild(btn);
+      }
+    }
+
     function updateHUD() {
       const p = engine.players.get(0);
       if (!p) return;
@@ -1102,6 +1272,9 @@
           cell.classList.remove("selected");
         }
       });
+
+      // Update Selected Voxel Action UI Component
+      updateSelectedVoxelUI(p, room);
 
       if (p.currentRoomId === "outer_room") {
         hudQuestTitle.textContent = "Quest #142: Stuck in a hole";
@@ -1327,6 +1500,7 @@
     window.__movePlayer = movePlayer;
     window.__usePSD = usePSD;
     window.__selectLayer = selectLayer;
+    window.__selectSlot = selectSlot;
     window.__interactSlot = interactSlot;
     window.__selectQuickSlot = selectQuickSlot;
     window.__moveItemToTop = moveItemToTop;
