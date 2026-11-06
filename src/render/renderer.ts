@@ -1,6 +1,7 @@
 import type { Player, Room, Tile } from "../core/types.ts";
 import type { Vec3 } from "../core/math.ts";
-import { COMPACT_WALL_TEXTURE_DATA_URL } from "./textures.ts";
+import { COMPACT_WALL_TEXTURE_DATA_URL, TEXTURE_MAP } from "./textures.ts";
+import { getBlockDefinition } from "../registry/definitions.ts";
 
 /**
  * Screen pixel coordinate.
@@ -152,10 +153,12 @@ export class StubRenderer {
   public camera: CameraConfig;
   public wallImage: HTMLImageElement | null = null;
   private wallImageLoaded = false;
+  public textures: Map<string, HTMLImageElement> = new Map();
 
   constructor(camera: Partial<CameraConfig> = {}) {
     this.camera = { ...DEFAULT_CAMERA_CONFIG, ...camera };
     this.initWallTexture();
+    this.initTextureMap();
   }
 
   private initWallTexture(): void {
@@ -171,6 +174,21 @@ export class StubRenderer {
       } catch {
         // Fallback for non-browser environments
         this.wallImage = null;
+      }
+    }
+  }
+
+  private initTextureMap(): void {
+    if (typeof Image !== "undefined") {
+      try {
+        for (const [id, dataUrl] of Object.entries(TEXTURE_MAP)) {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = dataUrl;
+          this.textures.set(id, img);
+        }
+      } catch {
+        // Fallback for non-browser environments
       }
     }
   }
@@ -585,9 +603,14 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v);
         ctx.closePath();
 
+        const blockDef = tileId ? getBlockDefinition(tileId) : undefined;
+        const blockTexture = tileId ? this.textures.get(tileId) : undefined;
+
         if (tileId === "compactmachines3:wall" || (cmd.type === "DRAW_FLOOR" && cmd.tile?.type === "solid_wall")) {
-          // Render textured floor tile
-          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH);
+          // Render textured compact wall floor tile
+          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH, this.wallImage);
+        } else if (blockTexture && blockTexture.complete && blockTexture.naturalWidth > 0) {
+          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture);
         } else {
           if (tileId === "minecraft:bedrock") {
             ctx.fillStyle = "#2a2a2a";
@@ -600,6 +623,10 @@ export class StubRenderer {
           } else if (tileId === "minecraft:dirt") {
             ctx.fillStyle = "#866043"; // Rich earthy brown for dirt block
             ctx.strokeStyle = "#5c3d26";
+            ctx.lineWidth = 1;
+          } else if (tileId === "minecraft:farmland" || blockDef?.type === "farmland") {
+            ctx.fillStyle = "#5c3d26"; // Darker cultivated farmland soil
+            ctx.strokeStyle = "#3e2716";
             ctx.lineWidth = 1;
           } else if (cmd.tile?.type === "solid_wall") {
             ctx.fillStyle = "#3a3c42";
@@ -622,6 +649,16 @@ export class StubRenderer {
             }
             ctx.fillStyle = "#66ccff";
             ctx.fill();
+          } else if (tileId === "minecraft:farmland" || blockDef?.type === "farmland") {
+            // Draw furrowed lines for tilled farmland
+            ctx.beginPath();
+            ctx.moveTo(u - halfW * 0.5, v);
+            ctx.lineTo(u, v + halfH * 0.5);
+            ctx.moveTo(u, v - halfH * 0.5);
+            ctx.lineTo(u + halfW * 0.5, v);
+            ctx.strokeStyle = "#382212";
+            ctx.lineWidth = 1;
+            ctx.stroke();
           }
         }
         break;
@@ -808,7 +845,8 @@ export class StubRenderer {
     u: number,
     v: number,
     halfW: number,
-    halfH: number
+    halfH: number,
+    textureImage: HTMLImageElement | null = this.wallImage
   ): void {
     ctx.save();
     ctx.beginPath();
@@ -821,17 +859,17 @@ export class StubRenderer {
     const canClip =
       typeof ctx.clip === "function" &&
       typeof ctx.transform === "function" &&
-      this.wallImage &&
-      this.wallImageLoaded;
+      textureImage &&
+      (textureImage.complete || this.wallImageLoaded);
 
-    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && this.wallImage) {
+    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && textureImage) {
       ctx.clip();
 
-      const imgW = this.wallImage.naturalWidth || 16;
-      const imgH = this.wallImage.naturalHeight || 16;
+      const imgW = textureImage.naturalWidth || 16;
+      const imgH = textureImage.naturalHeight || 16;
 
       ctx.transform(halfW / imgW, halfH / imgW, -halfW / imgH, halfH / imgH, u, v - halfH);
-      ctx.drawImage(this.wallImage, 0, 0, imgW, imgH);
+      ctx.drawImage(textureImage, 0, 0, imgW, imgH);
 
       ctx.restore();
       ctx.save();

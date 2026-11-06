@@ -777,7 +777,15 @@
   </div>
 
   <script type="module">
-    import { GameEngine, StubRenderer, resolveTargetCoord, CHAPTER_1_RECIPES, canCraft } from "./dist/bundle.js";
+    import {
+      GameEngine,
+      StubRenderer,
+      resolveTargetCoord,
+      CHAPTER_1_RECIPES,
+      canCraft,
+      ITEM_REGISTRY,
+      getItemDefinition,
+    } from "./dist/bundle.js";
 
     // Initialize Game Engine (deterministic 20 Hz simulation)
     const engine = new GameEngine(1337);
@@ -821,32 +829,13 @@
 
     const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
 
-    // Item display metadata: Icons and human-readable names
-    const ITEM_ICONS = {
-      "compactmachines3:psd": { icon: "📱", name: "Personal Shrinking Device" },
-      "contenttweaker:dirtdust": { icon: "🟤", name: "Dirt Dust" },
-      "contenttweaker:graveldust": { icon: "⚪", name: "Gravel Dust" },
-      "minecraft:dirt": { icon: "🧱", name: "Dirt Block" },
-      "minecraft:gravel": { icon: "⚪", name: "Gravel" },
-      "cropdusting:poop": { icon: "💩", name: "Organic Poop" },
-      "contenttweaker:poopfuel": { icon: "🔥", name: "Poop Fuel" },
-      "minecraft:planks": { icon: "🪵", name: "Oak Planks" },
-      "minecraft:stick": { icon: "🥢", name: "Stick" },
-      "craftingstation:crafting_station": { icon: "🪑", name: "Crafting Station" },
-      "minecraft:wooden_pickaxe": { icon: "⛏️", name: "Wooden Pickaxe" },
-      "minecraft:stone_pickaxe": { icon: "⛏️", name: "Stone Pickaxe" },
-      "minecraft:cobblestone": { icon: "🪨", name: "Cobblestone" },
-      "exnihilocreatio:item_pebble:0": { icon: "🪨", name: "Stone Pebble" },
-      "exnihilocreatio:item_pebble:1": { icon: "🪨", name: "Granite Pebble" },
-      "exnihilocreatio:item_pebble:2": { icon: "🪨", name: "Diorite Pebble" },
-      "exnihilocreatio:item_pebble:3": { icon: "🪨", name: "Andesite Pebble" },
-      "exnihilocreatio:item_ore_iron:0": { icon: "⚙️", name: "Iron Grit" },
-      "exnihilocreatio:item_ore_copper:0": { icon: "🥉", name: "Copper Grit" },
-    };
-
     function getItemDisplay(itemId) {
       if (!itemId) return { icon: "", name: "" };
-      return ITEM_ICONS[itemId] || { icon: "📦", name: itemId };
+      const def = getItemDefinition(itemId);
+      if (def) {
+        return { icon: def.icon || "📦", name: def.name };
+      }
+      return { icon: "📦", name: itemId };
     }
 
     function resizeCanvas() {

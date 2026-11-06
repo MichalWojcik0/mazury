@@ -12,6 +12,7 @@ import {
 import { createOuterRoom, createTinyCompactMachineRoom, resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
+import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
 import { CHAPTER_1_RECIPES, executeCraft } from "../crafting/list-crafting.ts";
 import { QuestTracker } from "../quests/quest-manager.ts";
 
@@ -223,33 +224,74 @@ export class GameEngine {
         }
         if (!targetTile) break;
 
-        if (action.button === "PRIMARY") {
-          // Wall punch / strike
-          const punchResult = strikeWall(player, targetTile, this.rng);
-          if (punchResult.success) {
-            player.health = Math.max(0, player.health - punchResult.damageTaken);
-            player.exhaustion += punchResult.exhaustionAdded;
+        const blockDef = getBlockDefinition(targetTile.id);
 
-            for (const drop of punchResult.drops) {
-              addItem(player.inventory, drop.id, drop.count);
+        if (action.button === "PRIMARY") {
+          // Check if targeting a breakable in-world voxel block
+          const isInBounds =
+            targetCoord.x >= 0 &&
+            targetCoord.x < room.width &&
+            targetCoord.y >= 0 &&
+            targetCoord.y < room.height &&
+            targetCoord.z >= 0 &&
+            targetCoord.z < room.depth;
+
+          if (isInBounds && blockDef?.breakable) {
+            // Break block: replace voxel with air and drop items
+            room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+              id: "minecraft:air",
+              type: "air",
+              passable: true,
+            };
+
+            if (blockDef.drops) {
+              for (const drop of blockDef.drops) {
+                const chance = drop.chance ?? 1.0;
+                if (chance >= 1.0 || this.rng.next() < chance) {
+                  addItem(player.inventory, drop.itemId, drop.count);
+                }
+              }
+            }
+            this.updateActiveEquipped(player);
+          } else {
+            // Wall punch / strike (for solid compact machine walls or tools)
+            const punchResult = strikeWall(player, targetTile, this.rng);
+            if (punchResult.success) {
+              player.health = Math.max(0, player.health - punchResult.damageTaken);
+              player.exhaustion += punchResult.exhaustionAdded;
+
+              for (const drop of punchResult.drops) {
+                addItem(player.inventory, drop.id, drop.count);
+              }
             }
           }
         } else if (action.button === "SECONDARY") {
-          // Block placement or item interaction
+          const isInBounds =
+            targetCoord.x >= 0 &&
+            targetCoord.x < room.width &&
+            targetCoord.y >= 0 &&
+            targetCoord.y < room.height &&
+            targetCoord.z >= 0 &&
+            targetCoord.z < room.depth;
+
+          // 1. Check if targeting a tillable block (e.g. Dirt block -> Farmland)
+          if (isInBounds && blockDef?.tillable && blockDef.tilledTileId) {
+            const tilledDef = getBlockDefinition(blockDef.tilledTileId);
+            room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+              id: blockDef.tilledTileId,
+              type: tilledDef?.type ?? "farmland",
+              passable: tilledDef?.passable ?? false,
+            };
+            return;
+          }
+
+          // 2. Data-driven block placement checking itemDef.placeable
           const equipped = player.equippedItem;
           if (equipped) {
-            // Check if placing a block
-            const isPlaceable = equipped === "minecraft:dirt" || equipped === "craftingstation:crafting_station";
-            if (isPlaceable) {
+            const itemDef = getItemDefinition(equipped);
+            if (itemDef?.placeable) {
               // Can only place if target is within room voxel bounds and is passable / air
-              if (
-                targetCoord.x >= 0 &&
-                targetCoord.x < room.width &&
-                targetCoord.y >= 0 &&
-                targetCoord.y < room.height &&
-                targetCoord.z >= 0 &&
-                targetCoord.z < room.depth
-              ) {
+              if (isInBounds) {
                 const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
                 // Do not place inside solid blocks, and do not place where player is occupying space
                 const overlapsPlayer =
@@ -261,10 +303,12 @@ export class GameEngine {
                   // Consume 1 item from inventory
                   const removed = removeItem(player.inventory, equipped, 1);
                   if (removed > 0) {
+                    const tileIdToPlace = itemDef.placesTileId ?? equipped;
+                    const placedBlockDef = getBlockDefinition(tileIdToPlace);
                     room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
-                      id: equipped,
-                      type: equipped === "minecraft:dirt" ? "floor" : "machine",
-                      passable: false,
+                      id: tileIdToPlace,
+                      type: placedBlockDef?.type ?? "floor",
+                      passable: placedBlockDef?.passable ?? false,
                     };
                     this.updateActiveEquipped(player);
                   }
