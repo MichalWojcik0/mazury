@@ -497,8 +497,10 @@
       padding: 1px 3px;
       z-index: 50;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
     }
 
+    .slot-arrows.visible,
     .inv-slot:hover .slot-arrows {
       display: flex;
     }
@@ -812,6 +814,11 @@
     let isInventoryDrawerOpen = false;
     let isCraftingOpen = false;
 
+    // Track active hover timers and states across re-renders
+    // Key: slot container type ('quick' or 'drawer') + '-' + slotIndex
+    const arrowVisibleUntil = new Map();
+    const arrowHideTimeouts = new Map();
+
     const layerButtons = [
       document.getElementById("layer-btn-0"),
       document.getElementById("layer-btn-1"),
@@ -857,9 +864,10 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    function renderInventorySlot(item, slotIndex, isSelected, showArrows = true) {
+    function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, containerType = "quick") {
       const display = item ? getItemDisplay(item.id) : null;
       const title = item ? `${display.name} (${item.count})` : `Slot ${slotIndex + 1} (Empty)`;
+      const slotKey = `${containerType}-${slotIndex}`;
 
       const slotEl = document.createElement("div");
       slotEl.className = `inv-slot ${isSelected ? "selected" : ""}`;
@@ -887,6 +895,22 @@
           const arrowsEl = document.createElement("div");
           arrowsEl.className = "slot-arrows";
 
+          // If previously scheduled to stay visible within the 1-second delay, mark as visible
+          const until = arrowVisibleUntil.get(slotKey);
+          if (until && until > Date.now()) {
+            arrowsEl.classList.add("visible");
+            // Setup timer to remove visible class once elapsed
+            const remaining = until - Date.now();
+            const existingTimeout = arrowHideTimeouts.get(slotKey);
+            if (existingTimeout) clearTimeout(existingTimeout);
+            const timeout = setTimeout(() => {
+              arrowsEl.classList.remove("visible");
+              arrowVisibleUntil.delete(slotKey);
+              arrowHideTimeouts.delete(slotKey);
+            }, remaining);
+            arrowHideTimeouts.set(slotKey, timeout);
+          }
+
           // Arrow to move to top
           const topBtn = document.createElement("button");
           topBtn.className = "arrow-btn";
@@ -901,7 +925,7 @@
           // Arrow to move to bottom
           const bottomBtn = document.createElement("button");
           bottomBtn.className = "arrow-btn";
-          bottomBtn.title = "Move to Bottom (Slot 36)";
+          bottomBtn.title = "Move to Bottom";
           bottomBtn.textContent = "▼";
           bottomBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -910,6 +934,32 @@
           arrowsEl.appendChild(bottomBtn);
 
           slotEl.appendChild(arrowsEl);
+
+          const showArrowsWithPersistence = () => {
+            const existingTimeout = arrowHideTimeouts.get(slotKey);
+            if (existingTimeout) {
+              clearTimeout(existingTimeout);
+              arrowHideTimeouts.delete(slotKey);
+            }
+            arrowVisibleUntil.delete(slotKey);
+            arrowsEl.classList.add("visible");
+          };
+
+          const scheduleHideArrows = () => {
+            const hideDelay = 1000;
+            arrowVisibleUntil.set(slotKey, Date.now() + hideDelay);
+            const existingTimeout = arrowHideTimeouts.get(slotKey);
+            if (existingTimeout) clearTimeout(existingTimeout);
+            const timeout = setTimeout(() => {
+              arrowsEl.classList.remove("visible");
+              arrowVisibleUntil.delete(slotKey);
+              arrowHideTimeouts.delete(slotKey);
+            }, hideDelay);
+            arrowHideTimeouts.set(slotKey, timeout);
+          };
+
+          slotEl.addEventListener("mouseenter", showArrowsWithPersistence);
+          slotEl.addEventListener("mouseleave", scheduleHideArrows);
         }
       }
 
@@ -930,7 +980,7 @@
       for (let i = 0; i < 9; i++) {
         const item = player.inventory[i];
         const isSelected = player.selectedQuickSlotIndex === i;
-        const slotEl = renderInventorySlot(item, i, isSelected, true);
+        const slotEl = renderInventorySlot(item, i, isSelected, true, "quick");
         hudQuickInventory.appendChild(slotEl);
       }
 
@@ -939,7 +989,7 @@
       for (let i = 0; i < 36; i++) {
         const item = player.inventory[i];
         const isSelected = player.selectedQuickSlotIndex === i;
-        const slotEl = renderInventorySlot(item, i, isSelected, true);
+        const slotEl = renderInventorySlot(item, i, isSelected, true, "drawer");
         grid36Slots.appendChild(slotEl);
       }
     }
