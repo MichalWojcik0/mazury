@@ -1409,9 +1409,18 @@
       const { coord, tile, isBoundary } = selected;
       const blockDef = getBlockDefinition(tile.id);
       const blockDisplayName = blockDef?.name ?? tile.id;
-      const icon = tile.id === "compactmachines3:wall" ? "🧱" : (tile.id === "minecraft:dirt" ? "🟤" : (tile.id === "minecraft:farmland" ? "🌾" : "📦"));
+      const itemDef = getItemDefinition(tile.id);
+      const icon = blockDef?.icon ?? itemDef?.icon ?? "📦";
 
-      voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}</span>`;
+      let growthText = "";
+      if (tile.type === "crop" || blockDef?.isCrop) {
+        const growthTicks = tile.metadata?.growthTicks || 0;
+        const maxTicks = blockDef?.maxGrowthTicks || 1200;
+        const pct = Math.min(100, Math.floor((growthTicks / maxTicks) * 100));
+        growthText = ` [${pct}%]`;
+      }
+
+      voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
       voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
 
       const actions = getAvailableVoxelActions(tile, isBoundary);

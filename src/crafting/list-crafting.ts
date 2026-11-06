@@ -54,6 +54,14 @@ export const CHAPTER_1_RECIPES: ListRecipe[] = [
     inputs: [{ itemId: "cropdusting:poop", count: 1 }],
     outputs: [{ itemId: "contenttweaker:poopfuel", count: 1 }],
   },
+  {
+    id: "recipe:string",
+    name: "String",
+    category: "basic",
+    requiredStation: "none",
+    inputs: [{ itemId: "immersiveengineering:material:4", count: 3 }],
+    outputs: [{ itemId: "minecraft:string", count: 1 }],
+  },
 
   // Crafting Station Recipes
   {

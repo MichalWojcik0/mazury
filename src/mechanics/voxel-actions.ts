@@ -2,7 +2,9 @@ import type { Room, Player, Tile, Vec3 } from "../core/types.ts";
 import { resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
 import { getBlockDefinition } from "../registry/definitions.ts";
 
-export type VoxelActionId = "punch" | "break" | "till";
+import { isCropTile, getGrowthProgress } from "./farming.ts";
+
+export type VoxelActionId = "punch" | "break" | "till" | "harvest";
 
 export interface VoxelAction {
   id: VoxelActionId;
@@ -107,6 +109,20 @@ export function getAvailableVoxelActions(tile: Tile, isBoundary: boolean = false
 
   const actions: VoxelAction[] = [];
   const blockDef = getBlockDefinition(tile.id);
+
+  // If crop / bonsai tile
+  if (isCropTile(tile)) {
+    const { isMature } = getGrowthProgress(tile);
+    if (isMature || tile.id === "immersiveengineering:hemp_top") {
+      actions.push({
+        id: "harvest",
+        label: "Harvest",
+        buttonType: "SECONDARY",
+        icon: "🌾",
+        description: "Harvest mature plant (autoplants in place)",
+      });
+    }
+  }
 
   if (blockDef?.breakable) {
     actions.push({
