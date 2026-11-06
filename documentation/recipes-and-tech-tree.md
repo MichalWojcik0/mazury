@@ -1,6 +1,7 @@
 # Recipes & Tech Tree Reference
 
 This document catalogs the exact recipes, item conversions, and processing steps in *Compact Claustrophobia*.
+For comprehensive links to wikis and upstream configuration scripts, see [Wiki Backreferences](wiki-backreferences.md).
 
 > **Design Choice Reminder**: In accordance with our architecture specification, crafting in the Canvas edition **does not use Minecraft's 2x2 or 3x3 spatial placement grids**. Instead, all crafting is performed from a **searchable, categorized list**. As long as the player carries the required input items (or is adjacent to a Crafting Station with linked containers), selecting the recipe produces the output.
 
@@ -9,6 +10,7 @@ This document catalogs the exact recipes, item conversions, and processing steps
 ## 1. List-Based Hand & Workbench Crafting Recipes
 
 ### 1.1 Hand Crafting (No Workbench Required)
+*Backreferences: [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs), [`scripts/recipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/recipes.zs), [`scripts/bonsai.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs)*
 
 | Recipe Name | Inputs | Outputs | Description / Category |
 | :--- | :--- | :--- | :--- |
@@ -29,6 +31,7 @@ This document catalogs the exact recipes, item conversions, and processing steps
 ---
 
 ### 1.2 Crafting Station Recipes (Requires Proximity to Crafting Station)
+*Backreferences: [`scripts/recipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/recipes.zs), [FTB Wiki: Ex Nihilo Creatio](https://ftbwiki.org/Ex_Nihilo_Creatio)*
 
 | Recipe Name | Inputs | Outputs | Category / Notes |
 | :--- | :--- | :--- | :--- |

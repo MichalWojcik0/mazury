@@ -5,6 +5,12 @@ import type { Room, Tile, Vec3, Player, MachineFace } from "../core/types.ts";
  * - Column (0, 0): 4-tall column (z = 0..3) with Bedrock base and Torch on wall. Player spawns here.
  * - Column (1, 0): 5-tall column (z = 0..4) holding the embedded Tier 1 Compact Machine block on floor.
  * Total bounding dimensions: width = 2, height = 1, depth = 5.
+ *
+ * Backreferences & Verification:
+ * - Upstream Meteor schematic/NBT: `config/startmeteor.nbt` & `config/thestartmeteor.nbt`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/thestartmeteor.nbt
+ * - Compact Machines 3 specifications: [FTB Wiki: Compact Machines 3](https://ftbwiki.org/Compact_Machines_3)
+ *   and upstream repository: https://github.com/CompactMods/CompactMachines/tree/1.12.x
  */
 export function createOuterRoom(): Room {
   const width = 2;

@@ -10,6 +10,17 @@ export interface HarvestResult {
 }
 
 /**
+ * Farming and agricultural growth mechanics.
+ *
+ * Backreferences & Verification:
+ * - FTB Wiki (Bonsai Trees): https://ftbwiki.org/Bonsai_Trees
+ * - Minecraft Wiki (Farmland & Crops): https://minecraft.wiki/w/Farmland & https://minecraft.wiki/w/Wheat_Seeds
+ * - FTB Wiki (Industrial Hemp): https://ftbwiki.org/Industrial_Hemp_Seeds
+ * - Upstream Bonsai script: `scripts/bonsai.zs`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs
+ */
+
+/**
  * Checks whether a given tile is a growing crop or bonsai.
  */
 export function isCropTile(tile: Tile): boolean {

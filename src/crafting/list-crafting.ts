@@ -3,6 +3,14 @@ import { countItem, removeItem, addItem } from "../inventory/inventory.ts";
 
 /**
  * Chapter 1 List Crafting Recipes.
+ *
+ * Backreferences & Verification:
+ * - Hand & workstation recipes: `scripts/otherrecipes.zs` and `scripts/recipes.zs`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/recipes.zs
+ * - Bonsai plank processing: `scripts/bonsai.zs`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs
+ * - Ex Nihilo tools and sieves: FTB Wiki https://ftbwiki.org/Ex_Nihilo_Creatio
  */
 export const CHAPTER_1_RECIPES: ListRecipe[] = [
   // Hand Crafting
