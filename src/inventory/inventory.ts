@@ -177,6 +177,81 @@ export function moveToBottom(inventory: InventoryList, slotIndex: number): boole
 }
 
 /**
+ * Result of a transfer or swap operation between two inventory slots.
+ */
+export interface SlotTransferResult {
+  success: boolean;
+  action: "merged" | "swapped" | "noop";
+  remainingCount?: number;
+}
+
+/**
+ * Transfers or swaps items between two inventory slots.
+ * - Validates slot index bounds.
+ * - If fromIndex === toIndex or source slot is empty, returns noop.
+ * - If target slot is empty, moves source stack to target slot.
+ * - If both slots hold the identical item ID, merges the source stack into target up to maxStackSize.
+ *   If the target stack becomes full and leftover items remain, the remainder stays in the source slot.
+ * - If target slot holds a different item ID, swaps the two slots.
+ */
+export function transferOrSwapSlots(
+  inventory: InventoryList,
+  fromIndex: number,
+  toIndex: number
+): SlotTransferResult {
+  if (
+    fromIndex < 0 ||
+    fromIndex >= inventory.length ||
+    toIndex < 0 ||
+    toIndex >= inventory.length
+  ) {
+    return { success: false, action: "noop" };
+  }
+
+  if (fromIndex === toIndex) {
+    return { success: true, action: "noop" };
+  }
+
+  const source = inventory[fromIndex];
+  if (!source) {
+    return { success: false, action: "noop" };
+  }
+
+  const target = inventory[toIndex];
+
+  // Case 1: Target slot is empty - simple move
+  if (!target) {
+    inventory[toIndex] = source;
+    inventory[fromIndex] = null;
+    return { success: true, action: "swapped" };
+  }
+
+  // Case 2: Target slot has matching item - attempt stack merge
+  if (target.id === source.id) {
+    const maxStack = getMaxStackSize(source.id);
+    const available = maxStack - target.count;
+
+    if (available > 0) {
+      const transferCount = Math.min(source.count, available);
+      target.count += transferCount;
+      source.count -= transferCount;
+
+      if (source.count <= 0) {
+        inventory[fromIndex] = null;
+        return { success: true, action: "merged", remainingCount: 0 };
+      } else {
+        return { success: true, action: "merged", remainingCount: source.count };
+      }
+    }
+  }
+
+  // Case 3: Different item ID or target stack already full - swap slots
+  inventory[fromIndex] = target;
+  inventory[toIndex] = source;
+  return { success: true, action: "swapped" };
+}
+
+/**
  * Swaps two slots in the inventory list.
  */
 export function swapSlots(inventory: InventoryList, indexA: number, indexB: number): boolean {

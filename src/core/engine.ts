@@ -8,6 +8,7 @@ import {
   moveToTop,
   moveToBottom,
   swapSlots,
+  transferOrSwapSlots,
 } from "../inventory/inventory.ts";
 import { createOuterRoom, createTinyCompactMachineRoom } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
@@ -154,7 +155,7 @@ export class GameEngine {
       }
 
       case "SWAP_INVENTORY_SLOTS": {
-        swapSlots(player.inventory, action.fromIndex, action.toIndex);
+        transferOrSwapSlots(player.inventory, action.fromIndex, action.toIndex);
         this.updateActiveEquipped(player);
         break;
       }

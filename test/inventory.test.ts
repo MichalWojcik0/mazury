@@ -10,6 +10,7 @@ import {
   moveToTop,
   moveToBottom,
   swapSlots,
+  transferOrSwapSlots,
   getMaxStackSize,
   INVENTORY_SIZE,
 } from "../src/inventory/inventory.ts";
@@ -185,4 +186,89 @@ test("Engine integrates 36-slot inventory, quick selection hotbar, and top/botto
 
   assert.deepEqual(player.inventory[0], { id: "compactmachines3:psd", count: 1 });
   assert.deepEqual(player.inventory[1], { id: "contenttweaker:dirtdust", count: 4 });
+});
+
+test("transferOrSwapSlots handles moves, swaps, identical stack merging, and bounds", () => {
+  const inv = createEmptyInventory();
+
+  // Test out-of-bounds index returns failure
+  assert.equal(transferOrSwapSlots(inv, -1, 5).success, false);
+  assert.equal(transferOrSwapSlots(inv, 0, 36).success, false);
+
+  // Moving from empty slot returns failure
+  assert.equal(transferOrSwapSlots(inv, 0, 1).success, false);
+
+  // Same index returns noop success
+  assert.equal(transferOrSwapSlots(inv, 0, 0).action, "noop");
+
+  // Setup items
+  inv[0] = { id: "contenttweaker:dirtdust", count: 20 };
+  inv[1] = { id: "compactmachines3:psd", count: 1 };
+  inv[2] = { id: "contenttweaker:dirtdust", count: 30 };
+
+  // 1. Move to empty slot (index 0 -> index 5)
+  const resMove = transferOrSwapSlots(inv, 0, 5);
+  assert.equal(resMove.success, true);
+  assert.equal(resMove.action, "swapped");
+  assert.equal(inv[0], null);
+  assert.deepEqual(inv[5], { id: "contenttweaker:dirtdust", count: 20 });
+
+  // 2. Swap differing items (index 5 [dirt dust 20] <-> index 1 [psd 1])
+  const resSwap = transferOrSwapSlots(inv, 5, 1);
+  assert.equal(resSwap.success, true);
+  assert.equal(resSwap.action, "swapped");
+  assert.deepEqual(inv[5], { id: "compactmachines3:psd", count: 1 });
+  assert.deepEqual(inv[1], { id: "contenttweaker:dirtdust", count: 20 });
+
+  // 3. Merge identical items with enough room (index 1 [dirt dust 20] into index 2 [dirt dust 30])
+  // max stack for dirtdust is 64, 30 + 20 = 50 <= 64
+  const resMerge = transferOrSwapSlots(inv, 1, 2);
+  assert.equal(resMerge.success, true);
+  assert.equal(resMerge.action, "merged");
+  assert.equal(resMerge.remainingCount, 0);
+  assert.equal(inv[1], null);
+  assert.deepEqual(inv[2], { id: "contenttweaker:dirtdust", count: 50 });
+
+  // 4. Merge identical items with partial overflow (index 3 [dirt dust 30] into index 2 [dirt dust 50])
+  // target can only take 14 (up to 64). 16 remains in index 3.
+  inv[3] = { id: "contenttweaker:dirtdust", count: 30 };
+  const resMergePartial = transferOrSwapSlots(inv, 3, 2);
+  assert.equal(resMergePartial.success, true);
+  assert.equal(resMergePartial.action, "merged");
+  assert.equal(resMergePartial.remainingCount, 16);
+  assert.deepEqual(inv[2], { id: "contenttweaker:dirtdust", count: 64 });
+  assert.deepEqual(inv[3], { id: "contenttweaker:dirtdust", count: 16 });
+
+  // 5. Transfer into already full stack swaps the two
+  inv[4] = { id: "minecraft:stick", count: 5 };
+  const resFullSwap = transferOrSwapSlots(inv, 4, 2);
+  assert.equal(resFullSwap.success, true);
+  assert.equal(resFullSwap.action, "swapped");
+  assert.deepEqual(inv[4], { id: "contenttweaker:dirtdust", count: 64 });
+  assert.deepEqual(inv[2], { id: "minecraft:stick", count: 5 });
+});
+
+test("Engine SWAP_INVENTORY_SLOTS action executes stack merging and updates equipped item", () => {
+  const engine = new GameEngine(123);
+  const player = engine.players.get(0)!;
+
+  // Player starts with PSD in slot 0, selectedQuickSlotIndex = 0
+  assert.equal(player.equippedItem, "compactmachines3:psd");
+
+  // Place 10 dirt dust in slot 1 and 20 dirt dust in slot 0
+  player.inventory[0] = { id: "contenttweaker:dirtdust", count: 20 };
+  player.inventory[1] = { id: "contenttweaker:dirtdust", count: 10 };
+
+  // Dispatch SWAP_INVENTORY_SLOTS from 1 to 0
+  engine.enqueueInput({
+    tick: 1,
+    playerId: 0,
+    action: { type: "SWAP_INVENTORY_SLOTS", fromIndex: 1, toIndex: 0 },
+  });
+  engine.stepTick();
+
+  // Dirt dust merges into slot 0 (total 30), slot 1 becomes null
+  assert.deepEqual(player.inventory[0], { id: "contenttweaker:dirtdust", count: 30 });
+  assert.equal(player.inventory[1], null);
+  assert.equal(player.equippedItem, "contenttweaker:dirtdust");
 });
