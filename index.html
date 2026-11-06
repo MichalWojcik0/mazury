@@ -351,6 +351,59 @@
       justify-content: space-between;
       align-items: center;
       padding: 0 4px;
+      gap: 8px;
+    }
+
+    .crafting-panel {
+      display: none;
+      position: absolute;
+      bottom: 64px;
+      right: 0;
+      background: rgba(18, 22, 28, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      width: 320px;
+      backdrop-filter: blur(12px);
+    }
+
+    .crafting-panel.open {
+      display: block;
+    }
+
+    .crafting-recipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .craft-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #21252b;
+      border: 1px solid #3e4451;
+      border-radius: 6px;
+      color: #abb2bf;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .craft-btn:hover:not(:disabled) {
+      background: #2c313a;
+      border-color: #61afef;
+      color: #fff;
+    }
+
+    .craft-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
     .inv-toggle-btn {
@@ -683,9 +736,23 @@
             </div>
           </div>
 
+          <!-- Crafting List Modal / Panel -->
+          <div class="crafting-panel" id="crafting-panel">
+            <div class="drawer-title-row">
+              <span>List Crafting</span>
+              <button class="inv-toggle-btn" id="btn-close-crafting">✕ Close</button>
+            </div>
+            <div class="crafting-recipe-list" id="crafting-recipe-list">
+              <!-- Dynamically rendered list recipes -->
+            </div>
+          </div>
+
           <div class="inventory-header">
             <span class="widget-title" style="text-align: left; margin: 0;">Quick Use (Top 9 Slots)</span>
-            <button class="inv-toggle-btn" id="btn-toggle-inv">📦 Full Inventory [E]</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="inv-toggle-btn" id="btn-toggle-crafting">🔨 Crafting [C]</button>
+              <button class="inv-toggle-btn" id="btn-toggle-inv">📦 Full Inventory [E]</button>
+            </div>
           </div>
 
           <!-- Top 9 Quick Selection / Hotbar -->
@@ -710,7 +777,7 @@
   </div>
 
   <script type="module">
-    import { GameEngine, StubRenderer, resolveTargetCoord } from "./dist/bundle.js";
+    import { GameEngine, StubRenderer, resolveTargetCoord, CHAPTER_1_RECIPES, canCraft } from "./dist/bundle.js";
 
     // Initialize Game Engine (deterministic 20 Hz simulation)
     const engine = new GameEngine(1337);
@@ -737,8 +804,13 @@
     const grid36Slots = document.getElementById("grid-36-slots");
     const btnToggleInv = document.getElementById("btn-toggle-inv");
     const btnCloseFullInv = document.getElementById("btn-close-full-inv");
+    const craftingPanel = document.getElementById("crafting-panel");
+    const craftingRecipeList = document.getElementById("crafting-recipe-list");
+    const btnToggleCrafting = document.getElementById("btn-toggle-crafting");
+    const btnCloseCrafting = document.getElementById("btn-close-crafting");
 
     let isInventoryDrawerOpen = false;
+    let isCraftingOpen = false;
 
     const layerButtons = [
       document.getElementById("layer-btn-0"),
@@ -753,6 +825,7 @@
     const ITEM_ICONS = {
       "compactmachines3:psd": { icon: "📱", name: "Personal Shrinking Device" },
       "contenttweaker:dirtdust": { icon: "🟤", name: "Dirt Dust" },
+      "contenttweaker:graveldust": { icon: "⚪", name: "Gravel Dust" },
       "minecraft:dirt": { icon: "🧱", name: "Dirt Block" },
       "minecraft:gravel": { icon: "⚪", name: "Gravel" },
       "cropdusting:poop": { icon: "💩", name: "Organic Poop" },
@@ -882,8 +955,54 @@
       }
     }
 
+    function toggleCraftingPanel(open) {
+      isCraftingOpen = open !== undefined ? open : !isCraftingOpen;
+      if (isCraftingOpen) {
+        craftingPanel.classList.add("open");
+        btnToggleCrafting.textContent = "✕ Close [C]";
+        renderCraftingRecipes();
+      } else {
+        craftingPanel.classList.remove("open");
+        btnToggleCrafting.textContent = "🔨 Crafting [C]";
+      }
+    }
+
+    function renderCraftingRecipes() {
+      const p = engine.players.get(0);
+      if (!p) return;
+      craftingRecipeList.innerHTML = "";
+
+      for (const recipe of CHAPTER_1_RECIPES) {
+        const can = canCraft(recipe, p.inventory, false);
+        const btn = document.createElement("button");
+        btn.className = "craft-btn";
+        btn.disabled = !can;
+        btn.innerHTML = `
+          <span>${recipe.name}</span>
+          <span style="font-family: monospace; font-size: 11px;">${recipe.inputs.map(i => `${i.count}x ${getItemDisplay(i.itemId).name}`).join(", ")}</span>
+        `;
+        btn.addEventListener("click", () => {
+          craftRecipe(recipe.id);
+        });
+        craftingRecipeList.appendChild(btn);
+      }
+    }
+
+    function craftRecipe(recipeId) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action: { type: "CRAFT_RECIPE", recipeId, count: 1 },
+      });
+      engine.stepTick();
+      updateHUD();
+      if (isCraftingOpen) renderCraftingRecipes();
+    }
+
     btnToggleInv.addEventListener("click", () => toggleInventoryDrawer());
     btnCloseFullInv.addEventListener("click", () => toggleInventoryDrawer(false));
+    btnToggleCrafting.addEventListener("click", () => toggleCraftingPanel());
+    btnCloseCrafting.addEventListener("click", () => toggleCraftingPanel(false));
 
     function updateHUD() {
       const p = engine.players.get(0);
@@ -996,11 +1115,11 @@
       updateHUD();
     }
 
-    function interactSlot(slot) {
+    function interactSlot(slot, button = "PRIMARY") {
       engine.enqueueInput({
         tick: engine.currentTick + 1,
         playerId: 0,
-        action: { type: "INTERACT_TILE", slot, button: "PRIMARY" },
+        action: { type: "INTERACT_TILE", slot, button },
       });
       engine.stepTick();
       updateHUD();
@@ -1053,7 +1172,15 @@
         const slot = parseInt(cell.getAttribute("data-slot"), 10);
         if (slot) {
           selectSlot(slot);
-          interactSlot(slot);
+          interactSlot(slot, "PRIMARY");
+        }
+      });
+      cell.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const slot = parseInt(cell.getAttribute("data-slot"), 10);
+        if (slot) {
+          selectSlot(slot);
+          interactSlot(slot, "SECONDARY");
         }
       });
     });
@@ -1089,6 +1216,11 @@
         case "e":
         case "E":
           toggleInventoryDrawer();
+          e.preventDefault();
+          break;
+        case "c":
+        case "C":
+          toggleCraftingPanel();
           e.preventDefault();
           break;
         case "p":
@@ -1161,6 +1293,8 @@
     window.__moveItemToTop = moveItemToTop;
     window.__moveItemToBottom = moveItemToBottom;
     window.__toggleInventoryDrawer = toggleInventoryDrawer;
+    window.__toggleCraftingPanel = toggleCraftingPanel;
+    window.__craftRecipe = craftRecipe;
 
     // Render loop
     function renderLoop() {
