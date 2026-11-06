@@ -260,6 +260,20 @@ export class GameEngine {
               type: tilledDef?.type ?? "farmland",
               passable: tilledDef?.passable ?? false,
             };
+
+            // Apply tilling exhaustion
+            player.exhaustion += 0.6;
+
+            // Roll loot drops from tilling
+            if (blockDef.tilledDrops) {
+              for (const drop of blockDef.tilledDrops) {
+                const chance = drop.chance ?? 1.0;
+                if (chance >= 1.0 || this.rng.next() < chance) {
+                  addItem(player.inventory, drop.itemId, drop.count);
+                }
+              }
+            }
+            this.updateActiveEquipped(player);
             return;
           }
 

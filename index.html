@@ -576,6 +576,15 @@
 
     .inv-slot-icon {
       font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .inv-slot-icon img {
+      width: 24px;
+      height: 24px;
+      image-rendering: pixelated;
     }
 
     .inv-slot-qty {
@@ -1060,7 +1069,10 @@
       const def = display.def;
       const maxStack = def?.maxStackSize ?? 64;
 
-      tooltipItemName.innerHTML = `<span>${display.icon}</span> <span>${display.name}</span>`;
+      const visualEl = def?.textureDataUrl
+        ? `<img src="${def.textureDataUrl}" style="width: 16px; height: 16px; image-rendering: pixelated; vertical-align: middle;" />`
+        : `<span>${display.icon}</span>`;
+      tooltipItemName.innerHTML = `${visualEl} <span>${display.name}</span>`;
       tooltipItemCount.textContent = `Count: ${item.count} / ${maxStack}`;
       tooltipItemId.textContent = item.id;
 
@@ -1127,7 +1139,14 @@
       if (item) {
         const iconEl = document.createElement("span");
         iconEl.className = "inv-slot-icon";
-        iconEl.textContent = display.icon;
+        if (display.def && display.def.textureDataUrl) {
+          const imgEl = document.createElement("img");
+          imgEl.src = display.def.textureDataUrl;
+          imgEl.alt = display.name;
+          iconEl.appendChild(imgEl);
+        } else {
+          iconEl.textContent = display.icon;
+        }
         slotEl.appendChild(iconEl);
 
         const qtyEl = document.createElement("span");
