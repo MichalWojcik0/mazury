@@ -17,6 +17,14 @@ import { resolveSelectedVoxel } from "../mechanics/voxel-actions.ts";
 import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
 import { CHAPTER_1_RECIPES, executeCraft } from "../crafting/list-crafting.ts";
 import { QuestTracker } from "../quests/quest-manager.ts";
+import {
+  isCropTile,
+  getGrowthProgress,
+  canPlant,
+  plantCrop,
+  tickFarming,
+  harvestPlant,
+} from "../mechanics/farming.ts";
 
 /**
  * 20 Hz Deterministic Simulation Engine (Chapter 1 Checkpoint).
@@ -99,6 +107,11 @@ export class GameEngine {
         player.exhaustion -= 4.0;
         player.hunger = Math.max(0, player.hunger - 1);
       }
+    }
+
+    // Tick farming simulation across all active rooms
+    for (const room of this.rooms.values()) {
+      tickFarming(room, this.players.values(), this.rng);
     }
 
     // Evaluate quests for Player 0
@@ -223,7 +236,52 @@ export class GameEngine {
         if (action.button === "PRIMARY") {
           // Check if targeting a breakable in-world voxel block
           if (isInBounds && blockDef?.breakable) {
-            // Break block: replace voxel with air and drop items
+            // If crop block, breaking destroys it completely and drops appropriate items
+            if (isCropTile(targetTile) || targetTile.id === "immersiveengineering:hemp_top") {
+              const { isMature } = getGrowthProgress(targetTile);
+              room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+                id: "minecraft:air",
+                type: "air",
+                passable: true,
+              };
+
+              if (targetTile.id === "immersiveengineering:hemp_top") {
+                const baseCoord = targetTile.metadata?.baseCoord as Vec3 | undefined;
+                if (baseCoord) {
+                  const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
+                  if (baseTile?.metadata) {
+                    baseTile.metadata.harvestCooldown = 200;
+                  }
+                }
+                addItem(player.inventory, "immersiveengineering:material:4", 1);
+                this.updateActiveEquipped(player);
+                return;
+              }
+
+              if (isMature) {
+                // Mature break: drops harvest yields plus the replanted seed/sapling that wasn't consumed
+                const harvestRes = harvestPlant(targetTile, this.rng);
+                for (const drop of harvestRes.drops) {
+                  addItem(player.inventory, drop.id, drop.count);
+                }
+                if (targetTile.id.startsWith("arcadialbonsaitrees:bonsai_")) {
+                  addItem(player.inventory, targetTile.id, 1);
+                } else if (targetTile.id === "minecraft:wheat") {
+                  addItem(player.inventory, "minecraft:wheat_seeds", 1);
+                }
+              } else {
+                // Immature break: drops just the base sapling/seed
+                if (blockDef?.drops) {
+                  for (const drop of blockDef.drops) {
+                    addItem(player.inventory, drop.itemId, drop.count);
+                  }
+                }
+              }
+              this.updateActiveEquipped(player);
+              return;
+            }
+
+            // Standard break block: replace voxel with air and drop items
             room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
               id: "minecraft:air",
               type: "air",
@@ -252,7 +310,62 @@ export class GameEngine {
             }
           }
         } else if (action.button === "SECONDARY") {
-          // 1. Check if targeting a tillable block (e.g. Dirt block -> Farmland)
+          // 1. Check if targeting a mature crop or bonsai for harvesting (autoplants in place)
+          if (isInBounds && (isCropTile(targetTile) || targetTile.id === "immersiveengineering:hemp_top")) {
+            const { isMature } = getGrowthProgress(targetTile);
+            if (isMature || targetTile.id === "immersiveengineering:hemp_top") {
+              const harvestRes = harvestPlant(targetTile, this.rng);
+              if (harvestRes.success) {
+                for (const drop of harvestRes.drops) {
+                  addItem(player.inventory, drop.id, drop.count);
+                }
+                if (harvestRes.destroysTile) {
+                  room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
+                    id: "minecraft:air",
+                    type: "air",
+                    passable: true,
+                  };
+                  if (targetTile.id === "immersiveengineering:hemp_top") {
+                    const baseCoord = targetTile.metadata?.baseCoord as Vec3 | undefined;
+                    if (baseCoord) {
+                      const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
+                      if (baseTile?.metadata) {
+                        baseTile.metadata.harvestCooldown = 200;
+                      }
+                    }
+                  }
+                }
+                this.updateActiveEquipped(player);
+                return;
+              }
+            }
+          }
+
+          // 2. Check if planting on soil:
+          const equipped = player.equippedItem;
+          if (equipped && isInBounds) {
+            const itemDef = getItemDefinition(equipped);
+            if (itemDef?.plantable) {
+              let plantCoord = targetCoord;
+              if (targetTile.id !== "minecraft:air" && !targetTile.passable) {
+                plantCoord = { x: targetCoord.x, y: targetCoord.y, z: targetCoord.z + 1 };
+              }
+
+              if (plantCoord.z < room.depth) {
+                const check = canPlant(room, plantCoord, equipped);
+                if (check.allowed) {
+                  const removed = removeItem(player.inventory, equipped, 1);
+                  if (removed > 0) {
+                    plantCrop(room, plantCoord, equipped);
+                    this.updateActiveEquipped(player);
+                    return;
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. Check if targeting a tillable block (e.g. Dirt block -> Farmland)
           if (isInBounds && blockDef?.tillable && blockDef.tilledTileId) {
             const tilledDef = getBlockDefinition(blockDef.tilledTileId);
             room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
@@ -261,10 +374,8 @@ export class GameEngine {
               passable: tilledDef?.passable ?? false,
             };
 
-            // Apply tilling exhaustion
             player.exhaustion += 0.6;
 
-            // Roll loot drops from tilling
             if (blockDef.tilledDrops) {
               for (const drop of blockDef.tilledDrops) {
                 const chance = drop.chance ?? 1.0;
@@ -277,20 +388,17 @@ export class GameEngine {
             return;
           }
 
-          // 2. Data-driven block placement checking itemDef.placeable
-          const equipped = player.equippedItem;
+          // 4. Data-driven block placement checking itemDef.placeable
           if (equipped && isInBounds) {
             const itemDef = getItemDefinition(equipped);
-            if (itemDef?.placeable) {
+            if (itemDef?.placeable && !itemDef?.plantable) {
               const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
-              // Do not place inside solid blocks, and do not place where player is occupying space
               const overlapsPlayer =
                 targetCoord.x === player.x &&
                 targetCoord.y === player.y &&
                 (targetCoord.z === player.z || targetCoord.z === player.z + 1);
 
               if (existingVoxel && (existingVoxel.passable || existingVoxel.id === "minecraft:air") && !overlapsPlayer) {
-                // Consume 1 item from inventory
                 const removed = removeItem(player.inventory, equipped, 1);
                 if (removed > 0) {
                   const tileIdToPlace = itemDef.placesTileId ?? equipped;

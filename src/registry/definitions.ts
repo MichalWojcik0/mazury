@@ -32,6 +32,9 @@ export interface ItemDefinition {
   textureDataUrl?: string; // Base64 png texture
   isTool?: boolean;
   canTill?: boolean; // Can till dirt into farmland (e.g. hoe, or bare hands in early cc)
+  plantable?: boolean; // Can be planted as a crop/bonsai
+  plantableOn?: string[]; // Soil block IDs it can be planted on (e.g. ["minecraft:farmland"])
+  placesCropId?: string; // Crop/plant block ID created when planted
 }
 
 /**
@@ -40,7 +43,8 @@ export interface ItemDefinition {
 export interface BlockDefinition {
   id: string;
   name: string;
-  type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel" | "farmland";
+  icon?: string;
+  type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel" | "farmland" | "crop";
   passable: boolean;
   occluding?: boolean;
   breakable?: boolean; // Can be broken by primary interact
@@ -48,6 +52,9 @@ export interface BlockDefinition {
   tillable?: boolean; // Can be tilled by secondary interact
   tilledTileId?: string; // Block ID transformed into when tilled
   tilledDrops?: Array<{ itemId: string; count: number; chance?: number }>; // Loot dropped when tilled
+  isCrop?: boolean; // Is a growing crop or bonsai
+  maxGrowthTicks?: number; // Ticks to reach 100% maturity (default 1200)
+  harvestDrops?: Array<{ itemId: string; count: number; chance?: number; min?: number; max?: number }>;
   textureDataUrl?: string;
 }
 
@@ -231,12 +238,39 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     icon: "🌿",
     textureDataUrl: BONSAI_OAK_CUTTING_TEXTURE_DATA_URL,
   },
+  "minecraft:leaves": {
+    id: "minecraft:leaves",
+    name: "Oak Leaves",
+    maxStackSize: 64,
+    icon: "🍃",
+  },
+  "minecraft:wheat": {
+    id: "minecraft:wheat",
+    name: "Wheat",
+    maxStackSize: 64,
+    icon: "🌾",
+  },
+  "immersiveengineering:material:4": {
+    id: "immersiveengineering:material:4",
+    name: "Industrial Hemp Fiber",
+    maxStackSize: 64,
+    icon: "🧵",
+  },
+  "minecraft:string": {
+    id: "minecraft:string",
+    name: "String",
+    maxStackSize: 64,
+    icon: "🧶",
+  },
   "arcadialbonsaitrees:bonsai_oak_sapling": {
     id: "arcadialbonsaitrees:bonsai_oak_sapling",
     name: "Bonsai Oak Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_oak_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_oak_sapling",
     icon: "🌱",
     textureDataUrl: BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
   },
@@ -245,7 +279,10 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Spruce Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_spruce_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_spruce_sapling",
     icon: "🌲",
     textureDataUrl: BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
   },
@@ -254,7 +291,10 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Birch Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_birch_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_birch_sapling",
     icon: "🌳",
     textureDataUrl: BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
   },
@@ -263,7 +303,10 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Jungle Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_jungle_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_jungle_sapling",
     icon: "🌴",
     textureDataUrl: BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
   },
@@ -272,7 +315,10 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Acacia Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_acacia_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_acacia_sapling",
     icon: "🎋",
     textureDataUrl: BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
   },
@@ -281,7 +327,10 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Bonsai Dark Oak Sapling",
     maxStackSize: 64,
     placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: "arcadialbonsaitrees:bonsai_darkoak_sapling",
+    placesCropId: "arcadialbonsaitrees:bonsai_darkoak_sapling",
     icon: "🌳",
     textureDataUrl: BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
   },
@@ -289,6 +338,11 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     id: "minecraft:wheat_seeds",
     name: "Wheat Seeds",
     maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland"],
+    placesTileId: "minecraft:wheat",
+    placesCropId: "minecraft:wheat",
     icon: "🌾",
     textureDataUrl: WHEAT_SEEDS_TEXTURE_DATA_URL,
   },
@@ -296,6 +350,11 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     id: "immersiveengineering:seed",
     name: "Industrial Hemp Seed",
     maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:farmland"],
+    placesTileId: "immersiveengineering:hemp",
+    placesCropId: "immersiveengineering:hemp",
     icon: "🌱",
     textureDataUrl: HEMP_SEED_TEXTURE_DATA_URL,
   },
@@ -316,6 +375,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
   "compactmachines3:wall": {
     id: "compactmachines3:wall",
     name: "Solid Compact Machine Wall",
+    icon: "🧱",
     type: "solid_wall",
     passable: false,
     occluding: true,
@@ -326,6 +386,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
   "minecraft:dirt": {
     id: "minecraft:dirt",
     name: "Dirt",
+    icon: "🟤",
     type: "floor",
     passable: false,
     breakable: true,
@@ -348,6 +409,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
   "minecraft:farmland": {
     id: "minecraft:farmland",
     name: "Farmland",
+    icon: "🌾",
     type: "farmland",
     passable: false,
     breakable: true,
@@ -412,62 +474,152 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
   "arcadialbonsaitrees:bonsai_oak_sapling": {
     id: "arcadialbonsaitrees:bonsai_oak_sapling",
     name: "Bonsai Oak Sapling",
-    type: "machine",
+    icon: "🌳",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_oak_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_spruce_sapling": {
     id: "arcadialbonsaitrees:bonsai_spruce_sapling",
     name: "Bonsai Spruce Sapling",
-    type: "machine",
+    icon: "🌲",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_spruce_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_birch_sapling": {
     id: "arcadialbonsaitrees:bonsai_birch_sapling",
     name: "Bonsai Birch Sapling",
-    type: "machine",
+    icon: "🌳",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_birch_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_jungle_sapling": {
     id: "arcadialbonsaitrees:bonsai_jungle_sapling",
     name: "Bonsai Jungle Sapling",
-    type: "machine",
+    icon: "🌴",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_jungle_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_acacia_sapling": {
     id: "arcadialbonsaitrees:bonsai_acacia_sapling",
     name: "Bonsai Acacia Sapling",
-    type: "machine",
+    icon: "🎋",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_acacia_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_darkoak_sapling": {
     id: "arcadialbonsaitrees:bonsai_darkoak_sapling",
     name: "Bonsai Dark Oak Sapling",
-    type: "machine",
+    icon: "🌳",
+    type: "crop",
     passable: true,
     breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
     drops: [{ itemId: "arcadialbonsaitrees:bonsai_darkoak_sapling", count: 1 }],
+    harvestDrops: [
+      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 1, min: 1, max: 3 },
+      { itemId: "minecraft:leaves", count: 1, min: 0, max: 2 },
+      { itemId: "minecraft:stick", count: 1, min: 0, max: 1 },
+    ],
     tillable: false,
     textureDataUrl: BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
+  },
+  "minecraft:wheat": {
+    id: "minecraft:wheat",
+    name: "Wheat Crop",
+    icon: "🌾",
+    type: "crop",
+    passable: true,
+    breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
+    drops: [{ itemId: "minecraft:wheat_seeds", count: 1 }],
+    harvestDrops: [
+      { itemId: "minecraft:wheat", count: 1 },
+      { itemId: "minecraft:wheat_seeds", count: 1, min: 1, max: 3 },
+    ],
+    tillable: false,
+  },
+  "immersiveengineering:hemp": {
+    id: "immersiveengineering:hemp",
+    name: "Industrial Hemp (Bottom)",
+    icon: "🌱",
+    type: "crop",
+    passable: true,
+    breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
+    drops: [{ itemId: "immersiveengineering:seed", count: 1 }],
+    harvestDrops: [
+      { itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 },
+      { itemId: "immersiveengineering:seed", count: 1, chance: 0.5 },
+    ],
+    tillable: false,
+  },
+  "immersiveengineering:hemp_top": {
+    id: "immersiveengineering:hemp_top",
+    name: "Industrial Hemp (Top)",
+    icon: "🌱",
+    type: "crop",
+    passable: true,
+    breakable: true,
+    drops: [{ itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 }],
+    tillable: false,
   },
 };
 
