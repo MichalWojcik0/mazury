@@ -8,21 +8,17 @@ export const DEFAULT_MAX_STACK_SIZE = 64;
  * Item stack size definitions.
  * Items default to 64 unless specified here (e.g. tools, devices, machines).
  */
-export const ITEM_STACK_LIMITS: Record<string, number> = {
-  "compactmachines3:psd": 1,
-  "minecraft:wooden_pickaxe": 1,
-  "minecraft:stone_pickaxe": 1,
-  "minecraft:iron_pickaxe": 1,
-  "minecraft:diamond_pickaxe": 1,
-  "exnihilocreatio:hammer_wood": 1,
-  "compactmachines3:field_projector": 4,
-};
+import { getItemDefinition } from "../registry/definitions.ts";
 
 /**
  * Returns the maximum stack size for the given item ID.
  */
 export function getMaxStackSize(itemId: string): number {
-  return ITEM_STACK_LIMITS[itemId] ?? DEFAULT_MAX_STACK_SIZE;
+  const itemDef = getItemDefinition(itemId);
+  if (itemDef?.maxStackSize !== undefined) {
+    return itemDef.maxStackSize;
+  }
+  return DEFAULT_MAX_STACK_SIZE;
 }
 
 /**

@@ -26,7 +26,7 @@ export type MachineFace = "DOWN" | "UP" | "NORTH" | "SOUTH" | "WEST" | "EAST";
 
 export interface Tile {
   id: string;
-  type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel";
+  type: "air" | "solid_wall" | "floor" | "machine" | "conduit" | "tunnel" | "farmland";
   passable: boolean;
   occluding?: boolean;
   metadata?: Record<string, unknown>;
