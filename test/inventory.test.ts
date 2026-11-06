@@ -84,18 +84,58 @@ test("Move to top shifts item to slot 0 and preceding items down", () => {
   assert.deepEqual(inv[2], { id: "contenttweaker:dirtdust", count: 10 });
 });
 
-test("Move to bottom shifts item to the end of the list", () => {
+test("Move to bottom shifts item to the end of populated items", () => {
   const inv = createEmptyInventory();
   inv[0] = { id: "compactmachines3:psd", count: 1 };
   inv[1] = { id: "contenttweaker:dirtdust", count: 10 };
 
-  // Move slot 0 to bottom
+  // Move slot 0 to bottom of 2 populated items -> goes to index 1 (slot 2)
   const res = moveToBottom(inv, 0);
   assert.equal(res, true);
   assert.equal(inv.length, 36);
 
   assert.deepEqual(inv[0], { id: "contenttweaker:dirtdust", count: 10 });
-  assert.deepEqual(inv[35], { id: "compactmachines3:psd", count: 1 });
+  assert.deepEqual(inv[1], { id: "compactmachines3:psd", count: 1 });
+  assert.equal(inv[2], null);
+  assert.equal(inv[35], null);
+});
+
+test("Move to bottom with 4 items puts item in slot 4 (index 3)", () => {
+  const inv = createEmptyInventory();
+  inv[0] = { id: "item1", count: 1 };
+  inv[1] = { id: "item2", count: 1 };
+  inv[2] = { id: "item3", count: 1 };
+  inv[3] = { id: "item4", count: 1 };
+
+  // Moving slot 0 to bottom should shift it to slot 4 (index 3)
+  const res = moveToBottom(inv, 0);
+  assert.equal(res, true);
+  assert.equal(inv.length, 36);
+
+  assert.deepEqual(inv[0], { id: "item2", count: 1 });
+  assert.deepEqual(inv[1], { id: "item3", count: 1 });
+  assert.deepEqual(inv[2], { id: "item4", count: 1 });
+  assert.deepEqual(inv[3], { id: "item1", count: 1 });
+  assert.equal(inv[4], null);
+  assert.equal(inv[35], null);
+
+  // Moving slot 3 (already at bottom of 4 items) should return false
+  const res2 = moveToBottom(inv, 3);
+  assert.equal(res2, false);
+});
+
+test("Move to bottom in full 36-slot inventory moves to slot 36 (index 35)", () => {
+  const inv = createEmptyInventory();
+  for (let i = 0; i < 36; i++) {
+    inv[i] = { id: `item_${i}`, count: 1 };
+  }
+
+  const res = moveToBottom(inv, 0);
+  assert.equal(res, true);
+  assert.equal(inv.length, 36);
+  assert.deepEqual(inv[0], { id: "item_1", count: 1 });
+  assert.deepEqual(inv[34], { id: "item_35", count: 1 });
+  assert.deepEqual(inv[35], { id: "item_0", count: 1 });
 });
 
 test("Engine integrates 36-slot inventory, quick selection hotbar, and top/bottom actions", () => {
@@ -135,13 +175,14 @@ test("Engine integrates 36-slot inventory, quick selection hotbar, and top/botto
   assert.equal(player.selectedQuickSlotIndex, 1);
   assert.equal(player.equippedItem, "compactmachines3:psd");
 
-  // Move slot 1 to bottom
+  // Move slot 0 to bottom (with 2 items in inventory, it moves to slot 2 / index 1)
   engine.enqueueInput({
     tick: 3,
     playerId: 0,
-    action: { type: "MOVE_ITEM_TO_BOTTOM", slotIndex: 1 },
+    action: { type: "MOVE_ITEM_TO_BOTTOM", slotIndex: 0 },
   });
   engine.stepTick();
 
-  assert.deepEqual(player.inventory[35], { id: "compactmachines3:psd", count: 1 });
+  assert.deepEqual(player.inventory[0], { id: "compactmachines3:psd", count: 1 });
+  assert.deepEqual(player.inventory[1], { id: "contenttweaker:dirtdust", count: 4 });
 });

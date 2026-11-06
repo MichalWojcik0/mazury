@@ -135,21 +135,44 @@ export function moveToTop(inventory: InventoryList, slotIndex: number): boolean 
 }
 
 /**
- * Moves the item stack at `slotIndex` to the bottom of the list.
- * If there are empty slots at the end, it moves to the last slot (index 35)
- * or the end of the populated items.
- * Specifically, removes the item from slotIndex and appends it to the end (index 35),
- * shifting following items up.
+ * Moves the item stack at `slotIndex` to the bottom of the populated items in the list.
+ * For example, if there are 4 items (at indices 0, 1, 2, 3), moving slot 0 to the bottom
+ * moves it to slot 4 (index 3), shifting intervening items up, while preserving the
+ * total inventory length of 36.
  */
 export function moveToBottom(inventory: InventoryList, slotIndex: number): boolean {
-  if (slotIndex < 0 || slotIndex >= inventory.length - 1) return false;
+  if (slotIndex < 0 || slotIndex >= inventory.length) return false;
   const item = inventory[slotIndex];
   if (!item) return false; // Nothing to move
 
-  // Remove item from current position
+  // Find the index of the last non-null item in the inventory
+  let lastOccupiedIndex = -1;
+  for (let i = inventory.length - 1; i >= 0; i--) {
+    if (inventory[i] !== null) {
+      lastOccupiedIndex = i;
+      break;
+    }
+  }
+
+  // If already at or past the last populated slot, nothing to move
+  if (slotIndex >= lastOccupiedIndex) return false;
+
+  // Remove item from its current slot
   inventory.splice(slotIndex, 1);
-  // Push to end (index 35)
-  inventory.push(item);
+  // In the spliced array, the target position at the end of populated items is lastOccupiedIndex - 1.
+  // Insert the item after the last remaining populated item (at lastOccupiedIndex - 1).
+  // E.g., if there were 4 items at 0..3, lastOccupiedIndex is 3. Splicing removes 1 item.
+  // We insert at index 3 (lastOccupiedIndex - 1 + 1 = lastOccupiedIndex).
+  // Then pad with null at the end to keep length 36.
+  inventory.splice(lastOccupiedIndex, 0, item);
+
+  while (inventory.length < INVENTORY_SIZE) {
+    inventory.push(null);
+  }
+  if (inventory.length > INVENTORY_SIZE) {
+    inventory.length = INVENTORY_SIZE;
+  }
+
   return true;
 }
 
