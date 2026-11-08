@@ -206,6 +206,34 @@ test("Farming: Harvesting mature bonsai autoplants back to stage 0 and drops yie
   assert.equal(saplingsAfter, saplingsBefore, "Replanted sapling should not reach inventory");
 });
 
+test("Farming: All bonsai types always yield exactly 4 cuttings of their corresponding type", () => {
+  const bonsaiTypes = [
+    { sapling: "arcadialbonsaitrees:bonsai_oak_sapling", cutting: "arcadialbonsaitrees:bonsai_oak_cutting" },
+    { sapling: "arcadialbonsaitrees:bonsai_spruce_sapling", cutting: "arcadialbonsaitrees:bonsai_spruce_cutting" },
+    { sapling: "arcadialbonsaitrees:bonsai_birch_sapling", cutting: "arcadialbonsaitrees:bonsai_birch_cutting" },
+    { sapling: "arcadialbonsaitrees:bonsai_jungle_sapling", cutting: "arcadialbonsaitrees:bonsai_jungle_cutting" },
+    { sapling: "arcadialbonsaitrees:bonsai_acacia_sapling", cutting: "arcadialbonsaitrees:bonsai_acacia_cutting" },
+    { sapling: "arcadialbonsaitrees:bonsai_darkoak_sapling", cutting: "arcadialbonsaitrees:bonsai_darkoak_cutting" },
+  ];
+
+  for (const { sapling, cutting } of bonsaiTypes) {
+    const tile: import("../src/core/types.ts").Tile = {
+      id: sapling,
+      type: "crop",
+      passable: true,
+      metadata: { growthTicks: 1200 },
+    };
+
+    const res = harvestPlant(tile);
+    assert.equal(res.success, true);
+    assert.equal(res.resetsGrowth, true);
+    assert.equal(res.destroysTile, false);
+    assert.equal(res.drops.length, 1);
+    assert.equal(res.drops[0].id, cutting, `Expected cutting ${cutting} for sapling ${sapling}`);
+    assert.equal(res.drops[0].count, 4, `Expected 4 cuttings for sapling ${sapling}`);
+  }
+});
+
 test("Farming: Breaking immature bonsai destroys tile and drops sapling", () => {
   const engine = new GameEngine(1337);
   const player = engine.players.get(0)!;

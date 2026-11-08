@@ -253,10 +253,13 @@ export function harvestPlant(
 
   const drops: Array<{ id: string; count: number }> = [];
 
-  // Bonsai harvest (mature only): drops 4 cuttings, no leaves, autoplanted back to stage 0
+  // Bonsai harvest (mature only): drops 4 cuttings of corresponding type, no leaves, autoplanted back to stage 0
   if (tile.id.startsWith("arcadialbonsaitrees:bonsai_")) {
+    const cuttingId = tile.id.endsWith("_sapling")
+      ? tile.id.replace(/_sapling$/, "_cutting")
+      : "arcadialbonsaitrees:bonsai_oak_cutting";
     drops.push({
-      id: "arcadialbonsaitrees:bonsai_oak_cutting",
+      id: cuttingId,
       count: 4,
     });
 
