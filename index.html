@@ -984,6 +984,7 @@
       GameEngine,
       StubRenderer,
       resolveTargetCoord,
+      screenToWorld,
       CHAPTER_1_RECIPES,
       canCraft,
       ITEM_REGISTRY,
@@ -1740,6 +1741,65 @@
     document.getElementById("btn-left").addEventListener("click", () => movePlayer(-1, 0));
     document.getElementById("btn-right").addEventListener("click", () => movePlayer(1, 0));
     document.getElementById("btn-use-psd").addEventListener("click", () => usePSD());
+
+    // Direct Canvas Interaction: unproject screen coordinates to active layer tile slot
+    function getSlotFromCanvasEvent(e) {
+      const p = engine.players.get(0);
+      if (!p) return null;
+
+      const rect = canvas.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+
+      // Active layer Z in world space
+      const targetZ = p.z + p.selectedLayerIndex - 1;
+      const worldPos = screenToWorld(cursorX, cursorY, targetZ, renderer.camera);
+      const targetX = Math.round(worldPos.x);
+      const targetY = Math.round(worldPos.y);
+
+      const dx = targetX - p.x;
+      const dy = targetY - p.y;
+
+      // Map (dx, dy) within 1-block reach to numpad slot (1..9)
+      const deltaToSlot = {
+        "-1,-1": 7,
+        "0,-1": 8,
+        "1,-1": 9,
+        "-1,0": 4,
+        "0,0": 5,
+        "1,0": 6,
+        "-1,1": 1,
+        "0,1": 2,
+        "1,1": 3,
+      };
+
+      const key = `${dx},${dy}`;
+      return deltaToSlot[key] || null;
+    }
+
+    canvas.addEventListener("mousemove", (e) => {
+      const slot = getSlotFromCanvasEvent(e);
+      if (slot) {
+        selectSlot(slot);
+      }
+    });
+
+    canvas.addEventListener("click", (e) => {
+      const slot = getSlotFromCanvasEvent(e);
+      if (slot) {
+        selectSlot(slot);
+        interactSlot(slot, "PRIMARY");
+      }
+    });
+
+    canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      const slot = getSlotFromCanvasEvent(e);
+      if (slot) {
+        selectSlot(slot);
+        interactSlot(slot, "SECONDARY");
+      }
+    });
 
     // Expose engine to window for testing / automated inspection
     window.__gameEngine = engine;

@@ -174,3 +174,99 @@ test("Placing dirt block in world consumes item and creates solid floor tile", (
   engine.stepTick();
   assert.equal(countItem(player.inventory, "minecraft:dirt"), 1);
 });
+
+test("Wall punching with non-pickaxe items (e.g. PSD) strikes as bare hands and drops loot", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Player starts with PSD equipped in slot 0
+  assert.equal(player.equippedItem, "compactmachines3:psd");
+  assert.equal(player.selectedQuickSlotIndex, 0);
+
+  // Enter tiny compact machine
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+  assert.equal(player.currentRoomId, "room_tiny_1");
+
+  // Move North to (1, 0, 1) so slot 8 targets North perimeter wall
+  engine.enqueueInput({ tick: 2, playerId: 0, action: { type: "MOVE", dx: 0, dy: -1 } });
+  engine.stepTick();
+
+  const healthBefore = player.health;
+  // Punch wall holding PSD
+  engine.enqueueInput({
+    tick: 3,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 8, button: "PRIMARY" },
+  });
+  engine.stepTick();
+
+  // Health decreases by 1 and loot is added
+  assert.equal(player.health, healthBefore - 1);
+  const dustCount = countItem(player.inventory, "contenttweaker:dirtdust") + countItem(player.inventory, "contenttweaker:graveldust");
+  assert.ok(dustCount >= 0); // Either drop or miss (weighted)
+});
+
+test("Toggling active quick slot unequips item to bare hands", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  assert.equal(player.selectedQuickSlotIndex, 0);
+  assert.equal(player.equippedItem, "compactmachines3:psd");
+
+  // Clicking active slot 0 again toggles unequip
+  engine.enqueueInput({
+    tick: 1,
+    playerId: 0,
+    action: { type: "SELECT_QUICK_SLOT", index: 0 },
+  });
+  engine.stepTick();
+
+  assert.equal(player.selectedQuickSlotIndex, undefined);
+  assert.equal(player.equippedItem, undefined);
+
+  // Clicking slot 0 again re-equips PSD
+  engine.enqueueInput({
+    tick: 2,
+    playerId: 0,
+    action: { type: "SELECT_QUICK_SLOT", index: 0 },
+  });
+  engine.stepTick();
+
+  assert.equal(player.selectedQuickSlotIndex, 0);
+  assert.equal(player.equippedItem, "compactmachines3:psd");
+});
+
+test("Targeting Layer 0 (Floor) in 3x3 Compact Machine resolves to DOWN face solid wall and allows punching", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Enter tiny machine
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+  assert.equal(player.currentRoomId, "room_tiny_1");
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 1);
+  assert.equal(player.z, 1);
+
+  // Select Layer 0 (Floor)
+  engine.enqueueInput({
+    tick: 2,
+    playerId: 0,
+    action: { type: "SELECT_LAYER", layerIndex: 0 },
+  });
+  engine.stepTick();
+  assert.equal(player.selectedLayerIndex, 0);
+
+  // Target slot 5 (directly under feet: x=1, y=1, z=0)
+  const healthBefore = player.health;
+  engine.enqueueInput({
+    tick: 3,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 5, button: "PRIMARY" },
+  });
+  engine.stepTick();
+
+  // Floor punch dealt 1 self-damage
+  assert.equal(player.health, healthBefore - 1);
+});

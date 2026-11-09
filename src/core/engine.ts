@@ -148,9 +148,15 @@ export class GameEngine {
 
       case "SELECT_QUICK_SLOT": {
         if (action.index >= 0 && action.index < 9) {
-          player.selectedQuickSlotIndex = action.index;
-          const slotItem = player.inventory[action.index];
-          player.equippedItem = slotItem ? slotItem.id : undefined;
+          if (player.selectedQuickSlotIndex === action.index) {
+            // Toggling already selected hotbar slot unequips / deselects to empty hands
+            player.selectedQuickSlotIndex = undefined;
+            player.equippedItem = undefined;
+          } else {
+            player.selectedQuickSlotIndex = action.index;
+            const slotItem = player.inventory[action.index];
+            player.equippedItem = slotItem ? slotItem.id : undefined;
+          }
         }
         break;
       }
