@@ -1,6 +1,7 @@
 # Chapter 1 Checkpoints: Vertical Slice Roadmap
 
 This document specifies the internal subcheckpoints for completing **Chapter 1: Compact Claustrophobia (The Beginning)** within the 2D isometric canvas engine.
+For upstream configuration sources and mod wikis used to verify each checkpoint, refer to [Wiki Backreferences](wiki-backreferences.md).
 
 In adherence to the **"Go Tall, Not Wide"** development policy:
 - No features or systems from Chapter 2, 3, or 4 will be implemented until Chapter 1 is fully completed, tested, and playable.
@@ -25,6 +26,8 @@ In adherence to the **"Go Tall, Not Wide"** development policy:
 
 ## Subcheckpoint 1.1: Walking & Personal Shrinking Device [COMPLETED]
 
+*Upstream Sources: [Compact Machines 3 Source](https://github.com/CompactMods/CompactMachines/tree/1.12.x), [FTB Wiki: Compact Machines 3](https://ftbwiki.org/Compact_Machines_3), and [`config/betterquesting/DefaultQuests.json` (Quests #142, #68)](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/betterquesting/DefaultQuests.json)*
+
 ### Objective & Scope
 Establish the spatial world foundation: spawn in the Overworld Meteor pocket (Outer Room 2x1 footprint with asymmetrical heights 4 and 5), walk between coordinates, and use the Personal Shrinking Device (PSD) to shrink into the 3x3x3 interior of the starting Compact Machine (`room_tiny_1`).
 
@@ -37,6 +40,8 @@ Establish the spatial world foundation: spawn in the Overworld Meteor pocket (Ou
 ---
 
 ## Subcheckpoint 1.2: Path to Wood & Wooden Items
+
+*Upstream Sources: [`config/scavenge/compactloot.json`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/compactloot.json), [`config/CropDusting.cfg`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/CropDusting.cfg), [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs), [`scripts/bonsai.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs), [Minecraft Wiki: Farmland](https://minecraft.wiki/w/Farmland), [FTB Wiki: Bonsai Trees](https://ftbwiki.org/Bonsai_Trees)*
 
 ### Objective & Scope
 Implement the resource bootstrapping chain: harvesting initial dust by punching walls, producing biological matter through sneaking, crafting the first dirt block, rummaging dirt for seeds/saplings, establishing the first wood harvest, and unlocking the Crafting Station.
@@ -89,6 +94,8 @@ Implement the resource bootstrapping chain: harvesting initial dust by punching 
 
 ## Subcheckpoint 1.3: Farming (Bonsai, Soil & Fibers)
 
+*Upstream Sources: [FTB Wiki: Bonsai Trees](https://ftbwiki.org/Bonsai_Trees), [FTB Wiki: Immersive Engineering (Industrial Hemp)](https://ftbwiki.org/Industrial_Hemp_Seeds), [`scripts/bonsai.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs)*
+
 ### Objective & Scope
 Build out the renewable agricultural simulation: oak bonsai tree lifecycles, growth acceleration mechanics, foliage and cutting yields, industrial hemp cultivation from rummaged seeds, string processing, and organic composting.
 
@@ -124,6 +131,8 @@ Build out the renewable agricultural simulation: oak bonsai tree lifecycles, gro
 ---
 
 ## Subcheckpoint 1.4: Mining & Comminution
+
+*Upstream Sources: [`config/scavenge/pickdrops.json`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/pickdrops.json), [FTB Wiki: Ex Nihilo Hammer](https://ftbwiki.org/Hammer_(Ex_Nihilo_Creatio)), [`scripts/inworld.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/inworld.zs)*
 
 ### Objective & Scope
 Implement the full mining and mineral extraction loop: tool-tier wall scraping, tool durability, block placement and breaking in isometric 3D space, and the Ex Nihilo hammer comminution chain.
@@ -166,6 +175,8 @@ $$\text{Cobblestone} \xrightarrow{\text{Hammer}} \text{Gravel} \xrightarrow{\tex
 ---
 
 ## Subcheckpoint 1.5: Sieving (A Topic of Its Own)
+
+*Upstream Sources: [FTB Wiki: Ex Nihilo Sieve](https://ftbwiki.org/Sieve_(Ex_Nihilo_Creatio)), [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs)*
 
 ### Objective & Scope
 Develop the Ex Nihilo Sieving system as a standalone, deep mechanical subsystem. Sieving is the primary industrial throughput bottleneck in Chapter 1, responsible for transforming bulk granular materials into technological ores, redstone, and mineral powders.
@@ -225,6 +236,8 @@ Develop the Ex Nihilo Sieving system as a standalone, deep mechanical subsystem.
 
 ## Subcheckpoint 1.6: Smelting & Pyrometallurgy
 
+*Upstream Sources: [Minecraft Wiki: Smelting](https://minecraft.wiki/w/Smelting), [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs)*
+
 ### Objective & Scope
 Implement thermal processing via the Furnace: burning fuels, thermal tick simulation, smelting sand to glass, clay balls to bricks, cobblestone to stone, and comminuted ore chunks into structural metal ingots.
 
@@ -270,6 +283,8 @@ Implement thermal processing via the Furnace: burning fuels, thermal tick simula
 
 ## Subcheckpoint 1.7: Early Fluids, Barrels & Clay
 
+*Upstream Sources: [FTB Wiki: Ex Nihilo Crucible & Barrel](https://ftbwiki.org/Ex_Nihilo_Creatio), [`scripts/inworld.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/inworld.zs)*
+
 ### Objective & Scope
 Implement fluid storage, phase transformation, and chemical reactions: melting organic matter in the Wooden Crucible into water, and converting water with dirt or poop in the Wooden Barrel into clay and sewage.
 
@@ -313,6 +328,8 @@ Implement fluid storage, phase transformation, and chemical reactions: melting o
 ---
 
 ## Subcheckpoint 1.8: Automation, Compactor & Miniaturization Field (Chapter 1 Completion)
+
+*Upstream Sources: [FTB Wiki: NuclearCraft](https://ftbwiki.org/NuclearCraft), [FTB Wiki: Modular Machinery](https://ftbwiki.org/Modular_Machinery), [FTB Wiki: Miniaturization Field Projector](https://ftbwiki.org/Miniaturization_Field_Projector), [`config/compactmachines3/recipes/*.json`](https://github.com/kamunimaximus/CompactClaustrophobia/tree/master/config/compactmachines3/recipes)*
 
 ### Objective & Scope
 The pinnacle of Chapter 1: construct automated logistics, RF power generation via radioactive decay, assemble the multiblock Modular Compactor to press Modularium into breakable walls, set up Miniaturization Field Projectors, and craft the first craftable Tiny Compact Machine to complete Quest #10.

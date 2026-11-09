@@ -12,6 +12,8 @@ export interface PunchResult {
 /**
  * Handles striking solid Compact Machine walls according to modpack rules:
  * - Bare Fists:
+ *   - Verification backreference: `config/scavenge/compactloot.json` (`CompactDropsEmptyHand`)
+ *     https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/compactloot.json
  *   - Requires player.health > 1 (safety guard: minimum 1 HP remains)
  *   - Deals 1 self-damage (0.5 heart)
  *   - Adds 0.6 exhaustion
@@ -19,7 +21,10 @@ export interface PunchResult {
  *     - 70% chance of 1x Dirt Dust (`contenttweaker:dirtdust`)
  *     - 20% chance of 1x Gravel Dust (`contenttweaker:graveldust`)
  *     - 10% chance of nothing / miss
- * - Wooden Pickaxe:
+ * - Wooden Pickaxe / Pickaxes:
+ *   - Verification backreference: `config/scavenge/pickdrops.json` (`Pick_0` through `Pick_3`)
+ *     https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/pickdrops.json
+ *     and FTB Wiki: https://ftbwiki.org/Ex_Nihilo_Creatio
  *   - Drops 1x Stone Pebble (100%), with chances for Granite, Diorite, Andesite
  *   - Consumes tool durability (adds exhaustion 0.02)
  *   - Zero self-damage

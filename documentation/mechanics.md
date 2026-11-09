@@ -1,6 +1,7 @@
 # Core Mechanics Specification
 
-This document specifies the exact mechanics implemented in the game, derived from the original modpack configuration files and gameplay loop.
+This document specifies the exact mechanics implemented in the game, derived from upstream modpack configuration files and gameplay wikis.
+For a complete listing of external documentation and source mappings, see [Wiki Backreferences](wiki-backreferences.md).
 
 ---
 
@@ -32,17 +33,19 @@ The player starts inside an unbreakable **Solid Compact Machine Wall** (`compact
 > **CM3 Wall Distinction**: Solid perimeter walls (`compactmachines3:wall`) can never be broken or moved. They drop resources when hit. By contrast, crafted walls (`compactmachines3:wallbreakable`) are placed as building blocks for Miniaturization field structures.
 
 ### 1.1 Empty Hand Scraping
+*Backreference: [`config/scavenge/compactloot.json` (`CompactDropsEmptyHand`)](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/compactloot.json)*
 - **Action**: Left-click (or hold punch) against a solid perimeter wall block while holding nothing.
 - **Cooldown**: 8 ticks (0.4s).
-- **Health Cost**: 1 HP (half a heart) per punch.
-- **Hunger Cost**: 0.6 exhaustion.
-- **Health Requirement**: Minimum 1 HP remaining (player cannot kill themselves by hitting the wall; displays message: *"You are too bruised up to hit the wall any further ;C"*).
+- **Health Cost**: 1 HP (half a heart) per punch (`amount: 1f`, `increase: false`).
+- **Hunger Cost**: 0.6 exhaustion (`amount: 0.6f`, `exhaustion: true`).
+- **Health Requirement**: Minimum 1 HP remaining (guard prevents suicide; upstream message: *"You are too bruised up to hit the wall any further ;C"*).
 - **Drops (Weighted)**:
   - `contenttweaker:dirtdust`: 70% chance (weight 70)
   - `contenttweaker:graveldust`: 20% chance (weight 20)
   - Nothing / Miss: 10%
 
 ### 1.2 Tool-Assisted Wall Scraping
+*Backreference: [`config/scavenge/pickdrops.json`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/pickdrops.json) and [FTB Wiki: Ex Nihilo Creatio Pebbles](https://ftbwiki.org/Ex_Nihilo_Creatio)*
 Hitting the wall with tools uses tool durability (1 point per hit) and costs 0.1 exhaustion without hurting player HP. Drops vary strictly by tool tier:
 
 | Tool Held | Cooldown | Drop Table & Weights | Notes |
@@ -57,7 +60,7 @@ Hitting the wall with tools uses tool durability (1 point per hit) and costs 0.1
 
 ## 2. Sneaking & Pooping Mechanics
 
-From the `CropDusting` mod integration:
+*Backreference: [`config/CropDusting.cfg`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/CropDusting.cfg) and [`scripts/content.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/content.zs)*
 - **Trigger**: Holding the sneak key (`Shift`) while moving or standing.
 - **Cooldown**: Every 30–60 seconds of sneaking (or cumulative sneak ticks).
 - **Result**: Spawns 1x `cropdusting:poop` behind/beneath the player with a characteristic sound.
@@ -73,37 +76,46 @@ From the `CropDusting` mod integration:
 ## 3. Dirt Rummaging & Bonsai Tree Growth
 
 ### 3.1 Crafting Dirt Block (List-Based)
+*Backreference: [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs)*
 - In the Hand Crafting list: Select **Dirt Block** (requires 4x `contenttweaker:dirtdust`) $\rightarrow$ produces 1x `minecraft:dirt`.
 
 ### 3.2 Rummaging Dirt
-- **Action**: Right-click on a placed Dirt block with an empty hand.
-- **Durability/Stage**: The dirt block tracks rummaging progress (1 to 5 clicks).
+*Backreference: [`config/scavenge/compactloot.json` (`DirtDropsEmptyHandRight`)](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/compactloot.json) & [Minecraft Wiki: Farmland](https://minecraft.wiki/w/Farmland)*
+- **Action**: Right-click on a placed Dirt block with an empty hand (`clicktype: right`, `require_empty_hand`).
+- **Cooldown**: 8 ticks (`player_cooldown: 8`).
+- **Tilling / Conversion Chance**: 25% chance (`consume_block: chance: 25.0`) to convert `minecraft:dirt` into `minecraft:farmland`.
 - **Drops per rummage**:
-  - Small chance of `arcadialbonsaitrees:bonsai_oak_sapling` (or seeds).
-  - Stones / pebbles.
-- **Outcome**: On the 5th rummage, the dirt transforms into **Prepared Dirt / Tilled Soil** suitable for planting bonsai trees.
+  - `minecraft:wheat_seeds`: 15% chance
+  - `arcadialbonsaitrees:bonsai_oak_sapling`: 15% chance
+  - `arcadialbonsaitrees:bonsai_spruce_sapling`: 5% chance
+  - `arcadialbonsaitrees:bonsai_birch_sapling`: 5% chance
+  - `arcadialbonsaitrees:bonsai_acacia_sapling`: 5% chance
+  - `arcadialbonsaitrees:bonsai_darkoak_sapling`: 2.5% chance
+  - `arcadialbonsaitrees:bonsai_jungle_sapling`: 0.5% chance
+  - `immersiveengineering:seed` (Industrial Hemp): 2% chance
 
 ### 3.3 Bonsai Growth Mechanics
-- Plant an `arcadialbonsaitrees:bonsai_oak_sapling` onto prepared dirt.
-- **Growth Time**: 60 seconds base.
+*Backreference: [FTB Wiki: Bonsai Trees](https://ftbwiki.org/Bonsai_Trees) & [`scripts/bonsai.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/bonsai.zs)*
+- Plant an `arcadialbonsaitrees:bonsai_oak_sapling` onto prepared dirt (`minecraft:farmland`).
+- **Growth Time**: 60 seconds base (1200 ticks at 20 Hz).
 - **Growth Acceleration (Twerking / Sneaking)**:
-  - Rapidly tapping or holding sneak while adjacent to or on the bonsai tile accelerates growth ticks by 300%.
+  - Rapidly tapping or holding sneak while adjacent to or on the bonsai tile accelerates growth ticks by 4x (+3 bonus ticks per real tick).
 - **Harvesting**:
   - Left-clicking a fully grown Bonsai yields:
     - 1–3 `arcadialbonsaitrees:bonsai_oak_cutting`
-    - 0–1 `arcadialbonsaitrees:bonsai_oak_sapling` (seed return)
     - 0–2 `minecraft:leaves` (Bonsai leaves / foliage)
     - 0–1 `minecraft:stick`
-  - The Bonsai resets to 0% growth rather than destroying the plant.
+  - The Bonsai resets to stage 0 growth in place without returning the planted sapling to inventory (breaking an immature bonsai drops the sapling).
 - **Wood Processing (List-Based)**:
-  - Select **Oak Planks** from the crafting list (4x `bonsai_oak_cutting`) $\rightarrow$ produces 4x `minecraft:planks`.
+  - Select **Oak Planks** from the crafting list (4x `bonsai_oak_cutting`) $\rightarrow$ produces 4x `minecraft:planks` (derived from `scripts/bonsai.zs`).
 
 ---
 
 ## 4. Wooden Crucible, Barrels & Early Fluids
 
 ### 4.1 Wooden Crucible
-- **Recipe**: Crafted from list: 7x `minecraft:planks`.
+*Backreference: [FTB Wiki: Wooden Crucible](https://ftbwiki.org/Crucible_(Ex_Nihilo_Creatio)) & [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs)*
+- **Recipe**: Crafted from list: 7x `minecraft:planks` (or 4 planks + 1 wood slab + 2 sticks per Ex Nihilo).
 - **Function**: Melting foliage into water.
 - **Input**:
   - `minecraft:leaves`: 250 mB water
@@ -114,15 +126,18 @@ From the `CropDusting` mod integration:
 - **Output**: Pure `minecraft:water`. Extract using buckets or pipes.
 
 ### 4.2 Wooden Barrel
+*Backreference: [FTB Wiki: Wooden Barrel](https://ftbwiki.org/Wooden_Barrel_(Ex_Nihilo_Creatio)) & [`scripts/inworld.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/inworld.zs)*
 - **Recipe**: Crafted from list: 7x `minecraft:planks`.
 - **Mechanics**:
   - **Clay Creation**: Fill barrel with 1000 mB Water, insert 1x `minecraft:dirt` $\rightarrow$ Wait 10 seconds $\rightarrow$ 1x `minecraft:clay` block.
-  - Clay block uncrafts into 4x `minecraft:clay_ball` (from list). Smelt in a furnace into `minecraft:brick`.
-  - **Sewage Creation**: Fill barrel with 1000 mB Water, insert 1x `cropdusting:poop` $\rightarrow$ transforms into 1000 mB `liquid:sewagefluid`.
+  - Clay block uncrafts into 4x `minecraft:clay_ball` (from list via `scripts/recipes.zs`). Smelt in a furnace into `minecraft:brick`.
+  - **Sewage Creation**: Fill barrel with 1000 mB Water, insert 1x `cropdusting:poop` $\rightarrow$ transforms into 1000 mB `liquid:sewagefluid` (via `scripts/inworld.zs: FluidToFluid.transform(<liquid:sewagefluid>, <liquid:water>, [<cropdusting:poop>])`).
 
 ---
 
 ## 5. Hammering & Comminution Chain
+
+*Backreference: [FTB Wiki: Ex Nihilo Hammer](https://ftbwiki.org/Hammer_(Ex_Nihilo_Creatio)) & [`scripts/inworld.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/inworld.zs)*
 
 The Ex Nihilo Wooden Hammer smashes blocks into finer materials:
 
@@ -134,6 +149,8 @@ $$\text{Cobblestone} \xrightarrow{\text{Hammer}} \text{Gravel} \xrightarrow{\tex
 ---
 
 ## 6. Sieve & Mesh Mechanics
+
+*Backreference: [FTB Wiki: Ex Nihilo Sieve](https://ftbwiki.org/Sieve_(Ex_Nihilo_Creatio)) & [`scripts/otherrecipes.zs`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/otherrecipes.zs)*
 
 The Wooden Sieve holds a mesh and processes bulk material into raw ore chunks, seeds, and mineral powders.
 

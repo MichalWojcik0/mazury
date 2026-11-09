@@ -1,6 +1,7 @@
 # Machines & Rooms Specification
 
 This document details the spatial architecture, room tiers, inter-room connectivity, and multiblock machinery in *Compact Claustrophobia*.
+For complete links to external wikis and upstream configuration scripts, see [Wiki Backreferences](wiki-backreferences.md).
 
 ---
 
@@ -66,16 +67,18 @@ Before the player enters their first Compact Machine, they spawn inside the **Ou
 Upon activating the PSD on the floor machine block of the Outer Room, the player enters the **Tier 1 (Tiny, 3x3x3)** Compact Machine room.
 
 #### Wall Mechanics & Types (Fidelity to Compact Machines 3):
+*Backreference: [Compact Machines 3 Source (1.12.x)](https://github.com/CompactMods/CompactMachines/tree/1.12.x) and [FTB Wiki: Compact Machines 3](https://ftbwiki.org/Compact_Machines_3)*
+
 A critical distinction from the original Compact Machines 3 mod:
 1. **Solid Compact Machine Wall (`compactmachines3:wall`)**:
    - The indestructible exterior envelope surrounding every room.
    - Cannot be mined, broken, or picked up by any tool or machine.
-   - Striking this wall by hand or tool yields dusts, pebbles, and metal grits (the core early bootstrap mechanic).
+   - Striking this wall by hand or tool yields dusts, pebbles, and metal grits (the core early bootstrap mechanic configured in `config/scavenge/compactloot.json` and `pickdrops.json`).
    - Serves as the substrate where Tunnels are placed.
 2. **Compact Machine Wall (`compactmachines3:wallbreakable`)**:
    - A craftable/placeable block item.
    - Fabricated inside the **Modular Compactor** using Modularium ingots (4x Modularium $\rightarrow$ 1x Wall).
-   - Used as the physical construction block in **Miniaturization Field recipes** to create new Compact Machine hulls.
+   - Used as the physical construction block in **Miniaturization Field recipes** to create new Compact Machine hulls (see `config/compactmachines3/recipes/*.json`).
    - Can be broken and repositioned like normal blocks.
 
 ---
@@ -93,6 +96,8 @@ A fundamental feature of the game is **nested spatial recursion**:
 ---
 
 ## 3. Tunnels & Cross-Dimensional Logistical Routing
+
+*Backreference: [FTB Wiki: Tunnel (Compact Machines 3)](https://ftbwiki.org/Tunnel) and [Compact Machines 3 Source (1.12.x: Tunnel Placement)](https://github.com/CompactMods/CompactMachines/blob/1.12.x/README.md#tunnels)*
 
 Compact Machines 3 connects internal room automation to the outer dimension via **Tunnels**:
 
@@ -127,6 +132,7 @@ Compact Machines 3 connects internal room automation to the outer dimension via 
 ## 4. Multiblock Machinery Specifications
 
 ### 4.1 The NuclearCraft Decay Generator
+*Backreference: [FTB Wiki: Decay Generator (NuclearCraft)](https://ftbwiki.org/Decay_Generator)*
 The earliest source of passive RF power.
 - **Footprint**: 1x1 block entity.
 - **Internal Storage**: 20,000 RF.
@@ -136,6 +142,7 @@ The earliest source of passive RF power.
 - **Buffer Output**: Pushes power automatically to adjacent energy conduits or hatches.
 
 ### 4.2 The Modular Compactor
+*Backreference: [FTB Wiki: Modular Machinery](https://ftbwiki.org/Modular_Machinery)*
 The multiblock factory required to build advanced materials and machine hulls.
 
 **Components Required**:
@@ -157,6 +164,8 @@ The multiblock factory required to build advanced materials and machine hulls.
 ---
 
 ## 5. Miniaturization Field Projectors
+
+*Backreference: [FTB Wiki: Miniaturization Field Projector](https://ftbwiki.org/Miniaturization_Field_Projector) and upstream recipes in [`config/compactmachines3/recipes/`](https://github.com/kamunimaximus/CompactClaustrophobia/tree/master/config/compactmachines3/recipes)*
 
 Compact Machines 3 crafts machine room blocks and miniaturized components using **Miniaturization Field Projectors**:
 - **Setup**: 4 Miniaturization Field Projectors (`compactmachines3:fieldprojector`) placed facing each other in a cardinal cross, defining a crafting volume ($3 \times 3 \times 3$ or $5 \times 5 \times 5$).
