@@ -22,6 +22,21 @@ import {
   HEMP_SEED_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
+/**
+ * Data-driven registry definitions for Items and Blocks.
+ *
+ * Backreferences & Verification:
+ * - Scavenge Wall & Dirt loot drops: `config/scavenge/compactloot.json`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/compactloot.json
+ * - Scavenge Pickaxe drops: `config/scavenge/pickdrops.json`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/scavenge/pickdrops.json
+ * - ContentTweaker custom items: `scripts/content.zs`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/scripts/content.zs
+ * - Vanilla & Mod Wikis:
+ *   - Farmland & Crops: https://minecraft.wiki/w/Farmland & https://minecraft.wiki/w/Wheat_Seeds
+ *   - Bonsai Trees: https://ftbwiki.org/Bonsai_Trees
+ *   - Compact Machines 3: https://ftbwiki.org/Compact_Machines_3
+ */
 export interface ItemDefinition {
   id: string;
   name: string;
