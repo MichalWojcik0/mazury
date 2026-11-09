@@ -13,6 +13,11 @@ export interface SneakTickResult {
  * Updates a player's sneaking state on each simulation tick.
  * When sneak timer reaches SNEAK_POOP_THRESHOLD_TICKS (5 seconds),
  * generates 1x `cropdusting:poop` and adds exhaustion.
+ *
+ * Backreference:
+ * - Upstream config: `config/CropDusting.cfg`
+ *   https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/CropDusting.cfg
+ * - Upstream item: `scripts/content.zs` (`VanillaFactory.createItem("poopfuel")`)
  */
 export function updateSneak(player: Player): SneakTickResult {
   if (!player.isSneaking) {

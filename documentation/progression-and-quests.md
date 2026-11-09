@@ -1,6 +1,8 @@
 # Progression & Quests Specification
 
 This document maps out the quest progression tree of *Compact Claustrophobia*, with quest IDs, pre-requisites, objectives, and unlockable capabilities.
+For master index of wiki backreferences and upstream files, see [Wiki Backreferences](wiki-backreferences.md).
+Quest IDs and tasks correspond to the modpack quest structure defined in upstream [`config/betterquesting/DefaultQuests.json`](https://github.com/kamunimaximus/CompactClaustrophobia/blob/master/config/betterquesting/DefaultQuests.json).
 
 > **Project Checkpoint Policy ("Go Tall, Not Wide")**:
 > - **We will NOT implement anything beyond Chapter 1 until Chapter 1 is completed and fleshed out.**

@@ -134,10 +134,29 @@ To prevent ambiguity during design, development, and debugging, the table below 
 
 ## 5. Documentation Directory Structure
 
-- `overview.md`: (This document) Vision, game loop, design pillars, and points of divergence.
+- `overview.md`: (This document) Vision, game loop, design pillars, points of divergence, and primary sources.
+- `wiki-backreferences.md`: Centralized index of mod wikis, vanilla references, and upstream configuration backreferences.
 - `chapter-1-checkpoints.md`: Sequential subcheckpoint implementation roadmap for Chapter 1 (path to wood, farming, mining, sieving, smelting, fluids, automation).
 - `mechanics.md`: Detailed interactions (wall punching, sneaking/pooping, rummaging, bonsai growth, barrel/crucible mechanics, sieving, auto clickers).
 - `machines-and-rooms.md`: Room specifications (dimensions, walls, tunnels, nesting), Compact Machines 3 mechanics, and multiblock machine configurations (Compactor, Decay Generator).
 - `recipes-and-tech-tree.md`: Complete list-based recipe catalog, hammer tables, sieving tables, in-world fluid crafting, and miniaturization field recipes.
 - `canvas-architecture.md`: Technical implementation specification (isometric rendering pipeline, deterministic lockstep peer networking, state models, list crafting system).
 - `progression-and-quests.md`: Quest lines, chapter breakdowns, tasks, prereqs, and rewards.
+
+---
+
+## 6. Primary Sources & Wiki Backreferences
+
+To ensure that implementations and documentation can be independently verified for correctness:
+- **Upstream Modpack Repository**: [kamunimaximus/CompactClaustrophobia](https://github.com/kamunimaximus/CompactClaustrophobia)
+  - Config directory: [`config/`](https://github.com/kamunimaximus/CompactClaustrophobia/tree/master/config)
+  - CraftTweaker scripts: [`scripts/`](https://github.com/kamunimaximus/CompactClaustrophobia/tree/master/scripts)
+  - Scavenge block drop tables: [`config/scavenge/`](https://github.com/kamunimaximus/CompactClaustrophobia/tree/master/config/scavenge)
+- **Mod Wikis & Upstream Repositories**:
+  - [Compact Machines 3 Source (1.12.x)](https://github.com/CompactMods/CompactMachines/tree/1.12.x) and [FTB Wiki: Compact Machines 3](https://ftbwiki.org/Compact_Machines_3)
+  - [Minecraft Wiki (Vanilla)](https://minecraft.wiki/) ([Farmland](https://minecraft.wiki/w/Farmland), [Wheat Seeds](https://minecraft.wiki/w/Wheat_Seeds), [Pickaxe](https://minecraft.wiki/w/Pickaxe), [Inventory](https://minecraft.wiki/w/Inventory))
+  - [FTB Wiki: Ex Nihilo Creatio](https://ftbwiki.org/Ex_Nihilo_Creatio) (Hammers, Sieves, Crucibles, Barrels)
+  - [FTB Wiki: Bonsai Trees](https://ftbwiki.org/Bonsai_Trees) (Saplings, soil, twerk acceleration)
+  - [FTB Wiki: NuclearCraft](https://ftbwiki.org/NuclearCraft) (Decay Generator)
+  - [FTB Wiki: Modular Machinery](https://ftbwiki.org/Modular_Machinery) (Modular Compactor multiblock)
+  - [FTB Wiki: Immersive Engineering](https://ftbwiki.org/Immersive_Engineering) (Industrial Hemp, metal grits)
