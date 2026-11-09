@@ -2,153 +2,38 @@ import type { Player, Room, Tile } from "../core/types.ts";
 import type { Vec3 } from "../core/math.ts";
 import { COMPACT_WALL_TEXTURE_DATA_URL, TEXTURE_MAP } from "./textures.ts";
 import { getBlockDefinition } from "../registry/definitions.ts";
-import { isCropTile, getGrowthProgress } from "../mechanics/farming.ts";
+import { isCropTile } from "../mechanics/farming.ts";
+import type { ScreenPoint, CameraConfig } from "./projection.ts";
+import {
+  DEFAULT_CAMERA_CONFIG,
+  worldToScreen,
+  screenToWorld,
+  computeDepthKey,
+} from "./projection.ts";
+import type {
+  RenderCommandType,
+  RenderCommand,
+  CanvasContext2DLike,
+  RenderOptions,
+} from "./command-types.ts";
+import { renderCropTile } from "./draw-crop.ts";
+import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
 
-/**
- * Screen pixel coordinate.
- */
-export interface ScreenPoint {
-  u: number;
-  v: number;
-}
-
-/**
- * Camera configuration for isometric projection.
- */
-export interface CameraConfig {
-  tileWidth: number; // Default 64 px
-  tileHeight: number; // Default 32 px
-  elevationHeight: number; // Default 16 px per z-level
-  offsetX: number;
-  offsetY: number;
-  zoom: number; // Scale factor, default 1.0
-}
-
-export const DEFAULT_CAMERA_CONFIG: CameraConfig = {
-  tileWidth: 64,
-  tileHeight: 32,
-  elevationHeight: 16,
-  offsetX: 0,
-  offsetY: 0,
-  zoom: 1.0,
+export type {
+  ScreenPoint,
+  CameraConfig,
+  RenderCommandType,
+  RenderCommand,
+  CanvasContext2DLike,
+  RenderOptions,
 };
 
-/**
- * Projects 3D world coordinates (x, y, z) to 2D screen coordinates (u, v)
- * using dimetric/isometric 2:1 projection.
- *
- * u = (x - y) * (W_tile / 2) * zoom + offsetX
- * v = ((x + y) * (H_tile / 2) - z * H_elevation) * zoom + offsetY
- */
-export function worldToScreen(
-  x: number,
-  y: number,
-  z: number,
-  camera: CameraConfig = DEFAULT_CAMERA_CONFIG
-): ScreenPoint {
-  const { tileWidth, tileHeight, elevationHeight, offsetX, offsetY, zoom } = camera;
-  const halfW = tileWidth / 2;
-  const halfH = tileHeight / 2;
-
-  const isoX = (x - y) * halfW;
-  const isoY = (x + y) * halfH - z * elevationHeight;
-
-  return {
-    u: isoX * zoom + offsetX,
-    v: isoY * zoom + offsetY,
-  };
-}
-
-/**
- * Inverts screen coordinates (u, v) at a given z elevation plane to continuous world (x, y).
- */
-export function screenToWorld(
-  u: number,
-  v: number,
-  z: number,
-  camera: CameraConfig = DEFAULT_CAMERA_CONFIG
-): { x: number; y: number } {
-  const { tileWidth, tileHeight, elevationHeight, offsetX, offsetY, zoom } = camera;
-  const halfW = tileWidth / 2;
-  const halfH = tileHeight / 2;
-
-  const unscaledIsoX = (u - offsetX) / zoom;
-  const unscaledIsoY = (v - offsetY) / zoom + z * elevationHeight;
-
-  const term1 = unscaledIsoX / halfW;
-  const term2 = unscaledIsoY / halfH;
-
-  const x = (term1 + term2) / 2;
-  const y = (term2 - term1) / 2;
-
-  return { x, y };
-}
-
-/**
- * Computes depth sorting key for painter's algorithm.
- * DepthKey = (x + y) * K + z.
- * Ensures items closer to the camera (higher x + y, higher z) are drawn after farther ones.
- */
-export function computeDepthKey(x: number, y: number, z: number, k: number = 1000): number {
-  return (x + y) * k + z;
-}
-
-export type RenderCommandType =
-  | "DRAW_FLOOR"
-  | "DRAW_TILE"
-  | "DRAW_WALL_SIDE"
-  | "DRAW_PLAYER"
-  | "DRAW_HIGHLIGHT"
-  | "DRAW_LAYER_OUTLINE";
-
-export interface RenderCommand {
-  type: RenderCommandType;
-  depthKey: number;
-  worldCoord: Vec3;
-  screenCoord: ScreenPoint;
-  tile?: Tile;
-  player?: Player;
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Lightweight canvas 2D rendering context stub interface.
- * Matches standard CanvasRenderingContext2D methods needed for drawing.
- */
-export interface CanvasContext2DLike {
-  save(): void;
-  restore(): void;
-  translate(x: number, y: number): void;
-  scale(x: number, y: number): void;
-  transform?(a: number, b: number, c: number, d: number, e: number, f: number): void;
-  beginPath(): void;
-  moveTo(x: number, y: number): void;
-  lineTo(x: number, y: number): void;
-  closePath(): void;
-  clip?(): void;
-  fill(): void;
-  stroke(): void;
-  fillRect(x: number, y: number, w: number, h: number): void;
-  strokeRect(x: number, y: number, w: number, h: number): void;
-  drawImage?(image: unknown, dx: number, dy: number, dw?: number, dh?: number): void;
-  fillText(text: string, x: number, y: number): void;
-  arc?(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
-  ellipse?(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number): void;
-  fillStyle: string | unknown;
-  strokeStyle: string | unknown;
-  lineWidth: number;
-}
-
-export interface RenderOptions {
-  /** If true, front walls and ceiling of enclosed rooms are cut away for interior visibility */
-  enableCutaway?: boolean;
-  /** Active selected layer Z elevation in world space (e.g. player.z + selectedLayerIndex - 1) */
-  selectedLayerZ?: number;
-  /** If true, draws the 3D isometric wireframe outline for the selected layer */
-  showLayerOutline?: boolean;
-  /** 3D world coordinate of currently targeted/selected block to outline */
-  highlightCoord?: Vec3 | null;
-}
+export {
+  DEFAULT_CAMERA_CONFIG,
+  worldToScreen,
+  screenToWorld,
+  computeDepthKey,
+};
 
 export class StubRenderer {
   public camera: CameraConfig;
@@ -598,7 +483,7 @@ export class StubRenderer {
 
         // Check if rendering a crop / bonsai tile
         if (cmd.tile && (isCropTile(cmd.tile) || cmd.tile.id === "immersiveengineering:hemp_top")) {
-          this.renderCropTile(ctx, u, v, halfW, halfH, elevH, cmd.tile);
+          renderCropTile(ctx, u, v, halfW, halfH, this.camera.zoom, cmd.tile);
           break;
         }
 
@@ -615,9 +500,9 @@ export class StubRenderer {
 
         if (tileId === "compactmachines3:wall" || (cmd.type === "DRAW_FLOOR" && cmd.tile?.type === "solid_wall")) {
           // Render textured compact wall floor tile
-          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH, this.wallImage);
+          renderTexturedTopDiamond(ctx, u, v, halfW, halfH, this.wallImage, this.wallImageLoaded);
         } else if (blockTexture && blockTexture.complete && blockTexture.naturalWidth > 0) {
-          this.renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture);
+          renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture, this.wallImageLoaded);
         } else {
           if (tileId === "minecraft:bedrock") {
             ctx.fillStyle = "#2a2a2a";
@@ -674,7 +559,7 @@ export class StubRenderer {
       case "DRAW_WALL_SIDE": {
         const face = cmd.metadata?.face as string | undefined;
         const drawFace = (side: "left" | "right") => {
-          this.renderWallSideFace(ctx, u, v, halfW, halfH, elevH, side);
+          renderWallSideFace(ctx, u, v, halfW, halfH, elevH, side, this.wallImage, this.wallImageLoaded);
         };
 
         if (face === "right" || face === "both") {
@@ -847,284 +732,4 @@ export class StubRenderer {
   /**
    * Renders a crop or miniature bonsai tile across distinct growth stages.
    */
-  private renderCropTile(
-    ctx: CanvasContext2DLike,
-    u: number,
-    v: number,
-    halfW: number,
-    halfH: number,
-    elevH: number,
-    tile: Tile
-  ): void {
-    const { progress, stage, isMature } = getGrowthProgress(tile);
-    const tileId = tile.id;
-
-    if (tileId.startsWith("arcadialbonsaitrees:bonsai_")) {
-      // Miniature bonsai tree pot mound
-      ctx.beginPath();
-      ctx.ellipse?.(u, v, halfW * 0.45, halfH * 0.45, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "#3e2716";
-      ctx.fill();
-
-      // Miniature trunk growing in stages
-      const trunkH = (5 + progress * 10) * this.camera.zoom;
-      const trunkW = 3 * this.camera.zoom;
-
-      ctx.fillStyle = "#6d4c41";
-      ctx.fillRect(u - trunkW / 2, v - trunkH, trunkW, trunkH);
-
-      // Miniature crown
-      const crownRadius = (3 + progress * 8) * this.camera.zoom;
-      const crownY = v - trunkH - crownRadius * 0.3;
-
-      ctx.beginPath();
-      if (ctx.arc) {
-        ctx.arc(u, crownY, crownRadius, 0, Math.PI * 2);
-      } else {
-        ctx.fillRect(u - crownRadius, crownY - crownRadius, crownRadius * 2, crownRadius * 2);
-      }
-      ctx.fillStyle = isMature ? "#2e7d32" : "#4caf50";
-      ctx.fill();
-    } else if (tileId === "minecraft:wheat") {
-      const stalkCount = 4 + stage;
-      const stalkH = (4 + progress * 16) * this.camera.zoom;
-      ctx.strokeStyle = isMature ? "#d4af37" : "#7cb342";
-      ctx.lineWidth = 1.5 * this.camera.zoom;
-
-      for (let i = 0; i < stalkCount; i++) {
-        const offsetRatio = (i / (stalkCount - 1) - 0.5);
-        const xOff = offsetRatio * halfW * 0.7;
-        const yOff = (Math.abs(offsetRatio) * 0.5) * halfH;
-
-        ctx.beginPath();
-        ctx.moveTo(u + xOff, v + yOff);
-        ctx.lineTo(u + xOff * 1.2, v + yOff - stalkH);
-        ctx.stroke();
-
-        if (isMature) {
-          ctx.fillStyle = "#f5c542";
-          ctx.fillRect(u + xOff * 1.2 - 1, v + yOff - stalkH - 2, 3, 3);
-        }
-      }
-    } else if (tileId === "immersiveengineering:hemp" || tileId === "immersiveengineering:hemp_top") {
-      const stalkH = (6 + progress * 16) * this.camera.zoom;
-      ctx.strokeStyle = "#33691e";
-      ctx.lineWidth = 2 * this.camera.zoom;
-
-      ctx.beginPath();
-      ctx.moveTo(u, v);
-      ctx.lineTo(u, v - stalkH);
-      ctx.stroke();
-
-      const leafCount = tileId === "immersiveengineering:hemp_top" ? 3 : 2 + Math.floor(progress * 3);
-      ctx.fillStyle = "#558b2f";
-      for (let i = 1; i <= leafCount; i++) {
-        const ly = v - (stalkH * i) / (leafCount + 1);
-        ctx.beginPath();
-        ctx.ellipse?.(u - 5 * this.camera.zoom, ly, 4 * this.camera.zoom, 2 * this.camera.zoom, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse?.(u + 5 * this.camera.zoom, ly, 4 * this.camera.zoom, 2 * this.camera.zoom, 0.3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else {
-      ctx.fillStyle = "#8bc34a";
-      ctx.beginPath();
-      ctx.arc?.(u, v - 8 * this.camera.zoom, 6 * this.camera.zoom, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  /**
-   * Renders the top horizontal isometric diamond of a block, textured with the Compact Machine wall texture.
-   */
-  private renderTexturedTopDiamond(
-    ctx: CanvasContext2DLike,
-    u: number,
-    v: number,
-    halfW: number,
-    halfH: number,
-    textureImage: HTMLImageElement | null = this.wallImage
-  ): void {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(u, v - halfH);
-    ctx.lineTo(u + halfW, v);
-    ctx.lineTo(u, v + halfH);
-    ctx.lineTo(u - halfW, v);
-    ctx.closePath();
-
-    const canClip =
-      typeof ctx.clip === "function" &&
-      typeof ctx.transform === "function" &&
-      textureImage &&
-      (textureImage.complete || this.wallImageLoaded);
-
-    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && textureImage) {
-      ctx.clip();
-
-      const imgW = textureImage.naturalWidth || 16;
-      const imgH = textureImage.naturalHeight || 16;
-
-      ctx.transform(halfW / imgW, halfH / imgW, -halfW / imgH, halfH / imgH, u, v - halfH);
-      ctx.drawImage(textureImage, 0, 0, imgW, imgH);
-
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(u, v - halfH);
-      ctx.lineTo(u + halfW, v);
-      ctx.lineTo(u, v + halfH);
-      ctx.lineTo(u - halfW, v);
-      ctx.closePath();
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.fill();
-      ctx.strokeStyle = "#25272c";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-      return;
-    }
-
-    ctx.fillStyle = "#3a3c42";
-    ctx.fill();
-    ctx.strokeStyle = "#25272c";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    ctx.beginPath();
-    const insetW = halfW * 0.7;
-    const insetH = halfH * 0.7;
-    ctx.moveTo(u, v - insetH);
-    ctx.lineTo(u + insetW, v);
-    ctx.lineTo(u, v + insetH);
-    ctx.lineTo(u - insetW, v);
-    ctx.closePath();
-    ctx.strokeStyle = "#474a54";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  /**
-   * Renders a vertical side face of a wall block, textured with the Compact Machine wall texture.
-   *
-   * @param side "left" (facing +Y, from (u-halfW, v) to (u, v+halfH))
-   *             or "right" (facing +X, from (u, v+halfH) to (u+halfW, v))
-   */
-  private renderWallSideFace(
-    ctx: CanvasContext2DLike,
-    u: number,
-    v: number,
-    halfW: number,
-    halfH: number,
-    elevH: number,
-    side: "left" | "right"
-  ): void {
-    ctx.save();
-    ctx.beginPath();
-
-    if (side === "left") {
-      // Left vertical wall face:
-      // (u - halfW, v) -> (u, v + halfH) -> (u, v + halfH + elevH) -> (u - halfW, v + elevH)
-      ctx.moveTo(u - halfW, v);
-      ctx.lineTo(u, v + halfH);
-      ctx.lineTo(u, v + halfH + elevH);
-      ctx.lineTo(u - halfW, v + elevH);
-      ctx.closePath();
-    } else {
-      // Right vertical wall face:
-      // (u, v + halfH) -> (u + halfW, v) -> (u + halfW, v + elevH) -> (u, v + halfH + elevH)
-      ctx.moveTo(u, v + halfH);
-      ctx.lineTo(u + halfW, v);
-      ctx.lineTo(u + halfW, v + elevH);
-      ctx.lineTo(u, v + halfH + elevH);
-      ctx.closePath();
-    }
-
-    // Clip to the quad so textured image maps strictly inside the wall face
-    const canClip = typeof ctx.clip === "function" && typeof ctx.transform === "function" && this.wallImage && this.wallImageLoaded;
-
-    if (canClip && ctx.clip && ctx.transform && ctx.drawImage && this.wallImage) {
-      ctx.clip();
-
-      // Apply affine transform to map square (16x16) texture onto the isometric quad:
-      // Quad baseline:
-      // If left: origin at (u - halfW, v). Vector along X = (halfW, halfH). Vector along Y = (0, elevH).
-      // If right: origin at (u, v + halfH). Vector along X = (halfW, -halfH). Vector along Y = (0, elevH).
-      const imgW = this.wallImage.naturalWidth || 16;
-      const imgH = this.wallImage.naturalHeight || 16;
-
-      if (side === "left") {
-        ctx.transform(halfW / imgW, halfH / imgW, 0, elevH / imgH, u - halfW, v);
-      } else {
-        ctx.transform(halfW / imgW, -halfH / imgW, 0, elevH / imgH, u, v + halfH);
-      }
-
-      ctx.drawImage(this.wallImage, 0, 0, imgW, imgH);
-
-      // Restore to draw borders and isometric shadow overlay
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      if (side === "left") {
-        ctx.moveTo(u - halfW, v);
-        ctx.lineTo(u, v + halfH);
-        ctx.lineTo(u, v + halfH + elevH);
-        ctx.lineTo(u - halfW, v + elevH);
-        ctx.closePath();
-        // Left face is slightly darker (standard isometric diffuse lighting: 85%)
-        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-      } else {
-        ctx.moveTo(u, v + halfH);
-        ctx.lineTo(u + halfW, v);
-        ctx.lineTo(u + halfW, v + elevH);
-        ctx.lineTo(u, v + halfH + elevH);
-        ctx.closePath();
-        // Right face has ambient light
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-      }
-      ctx.fill();
-      ctx.strokeStyle = "#25272c";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-      return;
-    }
-
-    // High quality vector/pattern fallback if image texture is not ready or in mock context
-    if (side === "left") {
-      ctx.fillStyle = "#33363e"; // Base machine wall tone
-      ctx.fill();
-
-      // Subtle machine panel inner borders
-      ctx.strokeStyle = "#474a54";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Center decorative metallic panel line
-      ctx.beginPath();
-      ctx.moveTo(u - halfW / 2, v + halfH / 2);
-      ctx.lineTo(u - halfW / 2, v + halfH / 2 + elevH);
-      ctx.strokeStyle = "#22242a";
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = "#3e424c"; // Right face slightly brighter
-      ctx.fill();
-
-      ctx.strokeStyle = "#525763";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(u + halfW / 2, v + halfH / 2);
-      ctx.lineTo(u + halfW / 2, v + halfH / 2 + elevH);
-      ctx.strokeStyle = "#22242a";
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
 }

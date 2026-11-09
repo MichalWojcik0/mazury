@@ -31,8 +31,13 @@ test("Tilling dirt: item registry has all bonsai saplings, cuttings, seeds, and 
   }
 
   // Cutting & Seeds
-  const cuttingDef = getItemDefinition("arcadialbonsaitrees:bonsai_oak_cutting");
-  assert.ok(cuttingDef?.textureDataUrl?.startsWith("data:image/png;base64,"));
+  const woodTypes = ["oak", "spruce", "birch", "jungle", "acacia", "darkoak"];
+  for (const wood of woodTypes) {
+    const cuttingDef = getItemDefinition(`arcadialbonsaitrees:bonsai_${wood}_cutting`);
+    assert.ok(cuttingDef, `Cutting for ${wood} should exist in registry`);
+    assert.ok(cuttingDef?.textureDataUrl?.startsWith("data:image/png;base64,"));
+    assert.ok(TEXTURE_MAP[`arcadialbonsaitrees:bonsai_${wood}_cutting`]);
+  }
 
   const wheatSeedsDef = getItemDefinition("minecraft:wheat_seeds");
   assert.ok(wheatSeedsDef?.textureDataUrl?.startsWith("data:image/png;base64,"));
