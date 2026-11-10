@@ -39,6 +39,34 @@ export function strikeWall(player: Player, targetTile: Tile, rng: DeterministicR
 
   const tool = player.equippedItem;
 
+  if (!tool) {
+    // Safety guard: cannot harm oneself when health <= 1 HP
+    if (player.health <= 1) {
+      return {
+        success: false,
+        drops: [],
+        damageTaken: 0,
+        exhaustionAdded: 0,
+        reason: "You are too bruised up to hit the wall any further ;C",
+      };
+    }
+
+    const roll = rng.next();
+    const drops: Item[] = [];
+    if (roll < 0.7) {
+      drops.push({ id: "contenttweaker:dirtdust", count: 1 });
+    } else if (roll < 0.9) {
+      drops.push({ id: "contenttweaker:graveldust", count: 1 });
+    } // roll >= 0.9 is 10% miss / no drop
+
+    return {
+      success: true,
+      drops,
+      damageTaken: 1,
+      exhaustionAdded: 0.6,
+    };
+  }
+
   if (tool === "minecraft:wooden_pickaxe") {
     // Drops stone pebbles
     const drops: Item[] = [{ id: "exnihilocreatio:item_pebble:0", count: 1 }];
@@ -73,31 +101,11 @@ export function strikeWall(player: Player, targetTile: Tile, rng: DeterministicR
     };
   }
 
-  // Bare hands or non-pickaxe items (e.g. PSD, sticks, dust):
-  // Striking wall acts as bare-hand punch, costing 1 HP and dropping dirt/gravel dust.
-  // Safety guard: cannot harm oneself when health <= 1 HP
-  if (player.health <= 1) {
-    return {
-      success: false,
-      drops: [],
-      damageTaken: 0,
-      exhaustionAdded: 0,
-      reason: "You are too bruised up to hit the wall any further ;C",
-    };
-  }
-
-  const roll = rng.next();
-  const drops: Item[] = [];
-  if (roll < 0.7) {
-    drops.push({ id: "contenttweaker:dirtdust", count: 1 });
-  } else if (roll < 0.9) {
-    drops.push({ id: "contenttweaker:graveldust", count: 1 });
-  } // roll >= 0.9 is 10% miss / no drop
-
   return {
-    success: true,
-    drops,
-    damageTaken: 1,
-    exhaustionAdded: 0.6,
+    success: false,
+    drops: [],
+    damageTaken: 0,
+    exhaustionAdded: 0,
+    reason: "Ineffective tool for solid compact machine walls",
   };
 }
