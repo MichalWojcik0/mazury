@@ -151,7 +151,7 @@ interface BoundaryFaceRule {
 const BOUNDARY_FACE_RULES: BoundaryFaceRule[] = [
   {
     face: "DOWN",
-    matches: ({ z }) => z < 0,
+    matches: ({ z }) => z <= 0,
     getIndices: ({ x, y }, { width, height }) => ({
       row: Math.max(0, Math.min(height - 1, y)),
       col: Math.max(0, Math.min(width - 1, x)),

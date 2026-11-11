@@ -174,3 +174,46 @@ test("Placing dirt block in world consumes item and creates solid floor tile", (
   engine.stepTick();
   assert.equal(countItem(player.inventory, "minecraft:dirt"), 1);
 });
+
+test("Targeting Layer 0 (Floor) in 3x3 Compact Machine resolves to DOWN face solid wall and allows punching", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Enter tiny machine
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+  assert.equal(player.currentRoomId, "room_tiny_1");
+  assert.equal(player.x, 1);
+  assert.equal(player.y, 1);
+  assert.equal(player.z, 1);
+
+  // Select empty quick slot 1 to punch with bare hands
+  engine.enqueueInput({
+    tick: 2,
+    playerId: 0,
+    action: { type: "SELECT_QUICK_SLOT", index: 1 },
+  });
+  engine.stepTick();
+  assert.equal(player.equippedItem, undefined);
+
+  // Select Layer 0 (Floor)
+  engine.enqueueInput({
+    tick: 3,
+    playerId: 0,
+    action: { type: "SELECT_LAYER", layerIndex: 0 },
+  });
+  engine.stepTick();
+  assert.equal(player.selectedLayerIndex, 0);
+
+  // Target slot 5 (directly under feet: x=1, y=1, z=0)
+  const healthBefore = player.health;
+  engine.enqueueInput({
+    tick: 4,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 5, button: "PRIMARY" },
+  });
+  engine.stepTick();
+
+  // Floor punch dealt 1 self-damage
+  assert.equal(player.health, healthBefore - 1);
+});

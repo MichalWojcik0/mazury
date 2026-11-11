@@ -49,6 +49,15 @@ export function resolveSelectedVoxel(
 
   if (isInBounds) {
     tile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+    // In rooms with boundary faces (e.g. Compact Machines), floor level z=0 without a placed block
+    // is backed by the DOWN solid compact machine wall face.
+    if ((!tile || tile.id === "minecraft:air") && targetCoord.z === 0 && room.faces) {
+      const boundary = resolveBoundaryTile(room, targetCoord);
+      if (boundary) {
+        tile = boundary.tile;
+        isBoundary = true;
+      }
+    }
   } else if (room.faces) {
     const boundary = resolveBoundaryTile(room, targetCoord);
     if (boundary) {
