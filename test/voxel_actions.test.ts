@@ -49,7 +49,7 @@ test("Voxel Actions: dirt yields both break and till choices", () => {
   assert.equal(tillAction.buttonType, "SECONDARY");
 });
 
-test("Voxel Actions: air yields no available actions", () => {
+test("Voxel Actions: air yields no available actions when barehanded or non-placeable", () => {
   const airTile: Tile = {
     id: "minecraft:air",
     type: "air",
@@ -58,6 +58,45 @@ test("Voxel Actions: air yields no available actions", () => {
 
   const actions = getAvailableVoxelActions(airTile, false);
   assert.equal(actions.length, 0);
+});
+
+test("Voxel Actions: air yields place action when dirt or placeable item is equipped", () => {
+  const airTile: Tile = {
+    id: "minecraft:air",
+    type: "air",
+    passable: true,
+  };
+
+  const mockPlayer = {
+    id: 0 as const,
+    name: "Tester",
+    health: 20,
+    hunger: 20,
+    exhaustion: 0,
+    isSneaking: false,
+    sneakTimer: 0,
+    currentRoomId: "room_tiny_1",
+    x: 1,
+    y: 1,
+    z: 1,
+    height: 2 as const,
+    selectedLayerIndex: 1 as const,
+    inventory: [],
+    equippedItem: "minecraft:dirt",
+  };
+
+  // Targeting adjacent air block (1, 0, 1)
+  const targetCoord = { x: 1, y: 0, z: 1 };
+  const actions = getAvailableVoxelActions(airTile, false, mockPlayer, targetCoord);
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0].id, "place");
+  assert.equal(actions[0].buttonType, "SECONDARY");
+  assert.equal(actions[0].label, "Place Dirt Block");
+
+  // Targeting player's own position (1, 1, 1) should not offer place action
+  const ownCoord = { x: 1, y: 1, z: 1 };
+  const ownActions = getAvailableVoxelActions(airTile, false, mockPlayer, ownCoord);
+  assert.equal(ownActions.length, 0);
 });
 
 test("Voxel Actions: resolveSelectedVoxel accurately identifies target tile and actions", () => {

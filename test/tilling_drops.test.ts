@@ -6,6 +6,31 @@ import { countItem, addItem } from "../src/inventory/inventory.ts";
 import { getItemDefinition, getBlockDefinition } from "../src/registry/definitions.ts";
 import { TEXTURE_MAP } from "../src/render/textures.ts";
 
+import { inflateSync } from "node:zlib";
+
+test("Texture Map: all texture data URLs are valid, authentic decodable PNGs", () => {
+  for (const [id, dataUrl] of Object.entries(TEXTURE_MAP)) {
+    assert.ok(dataUrl.startsWith("data:image/png;base64,"), `${id} must have a base64 data URL`);
+    const b64 = dataUrl.replace("data:image/png;base64,", "");
+    const buf = Buffer.from(b64, "base64");
+    assert.ok(buf.length > 20, `${id} buffer is too short`);
+    assert.deepEqual(
+      buf.subarray(0, 8),
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      `${id} must have valid PNG magic signature`
+    );
+
+    // Find and decompress IDAT
+    const idatIdx = buf.indexOf(Buffer.from("IDAT"));
+    assert.notEqual(idatIdx, -1, `${id} must have an IDAT chunk`);
+    const idatLen = buf.readUInt32BE(idatIdx - 4);
+    const compressed = buf.subarray(idatIdx + 4, idatIdx + 4 + idatLen);
+    assert.doesNotThrow(() => {
+      inflateSync(compressed);
+    }, `${id} PNG IDAT data must decompress without error`);
+  }
+});
+
 test("Tilling dirt: item registry has all bonsai saplings, cuttings, seeds, and original textures", () => {
   const saplingIds = [
     "arcadialbonsaitrees:bonsai_oak_sapling",

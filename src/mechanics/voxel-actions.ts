@@ -1,10 +1,10 @@
 import type { Room, Player, Tile, Vec3 } from "../core/types.ts";
 import { resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
-import { getBlockDefinition } from "../registry/definitions.ts";
+import { getBlockDefinition, getItemDefinition } from "../registry/definitions.ts";
 
 import { isCropTile, getGrowthProgress } from "./farming.ts";
 
-export type VoxelActionId = "punch" | "break" | "till" | "harvest";
+export type VoxelActionId = "punch" | "break" | "till" | "harvest" | "place";
 
 export interface VoxelAction {
   id: VoxelActionId;
@@ -73,7 +73,12 @@ export function resolveSelectedVoxel(
  * - Dirt: "break" or "till"
  * - Other tiles: inspects block definition breakable / tillable attributes
  */
-export function getAvailableVoxelActions(tile: Tile, isBoundary: boolean = false): VoxelAction[] {
+export function getAvailableVoxelActions(
+  tile: Tile,
+  isBoundary: boolean = false,
+  player?: Player,
+  targetCoord?: Vec3
+): VoxelAction[] {
   // Machine walls or boundary faces: only choice is punch
   if (tile.id === "compactmachines3:wall" || isBoundary || tile.type === "solid_wall") {
     return [
@@ -142,6 +147,30 @@ export function getAvailableVoxelActions(tile: Tile, isBoundary: boolean = false
       icon: "🌾",
       description: "Till soil into farmland",
     });
+  }
+
+  // If targeting air or a passable tile and player has an equipped placeable item
+  if ((tile.id === "minecraft:air" || tile.passable) && player?.equippedItem) {
+    const equippedItemDef = getItemDefinition(player.equippedItem);
+    if (equippedItemDef?.placeable) {
+      // Check that targeted coord doesn't overlap player's body if targetCoord is provided
+      let overlapsPlayer = false;
+      if (targetCoord) {
+        overlapsPlayer =
+          targetCoord.x === player.x &&
+          targetCoord.y === player.y &&
+          (targetCoord.z === player.z || targetCoord.z === player.z + 1);
+      }
+      if (!overlapsPlayer) {
+        actions.push({
+          id: "place",
+          label: `Place ${equippedItemDef.name || "Block"}`,
+          buttonType: "SECONDARY",
+          icon: equippedItemDef.icon || "🧱",
+          description: `Place ${equippedItemDef.name || "block"} down into the world`,
+        });
+      }
+    }
   }
 
   return actions;

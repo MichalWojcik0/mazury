@@ -1423,7 +1423,7 @@
       voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
       voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
 
-      const actions = getAvailableVoxelActions(tile, isBoundary);
+      const actions = getAvailableVoxelActions(tile, isBoundary, player, coord);
       voxelActionList.innerHTML = "";
 
       if (actions.length === 0) {
