@@ -4,6 +4,7 @@
   "description": "Deterministic canvas reimplementation of Compact Claustrophobia (Chapter 1 checkpoint)",
   "type": "module",
   "scripts": {
+    "extract-assets": "node scripts/extract-assets.mjs",
     "build": "bun build src/index.ts --outfile dist/bundle.js --target browser && bun index/build.mjs",
     "test": "node --experimental-strip-types --test test/*.ts"
   }

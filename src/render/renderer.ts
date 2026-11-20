@@ -2,7 +2,7 @@ import type { Player, Room, Tile } from "../core/types.ts";
 import type { Vec3 } from "../core/math.ts";
 import { COMPACT_WALL_TEXTURE_DATA_URL, TEXTURE_MAP } from "./textures.ts";
 import { getBlockDefinition } from "../registry/definitions.ts";
-import { isCropTile } from "../mechanics/farming.ts";
+import { isCropTile, getGrowthProgress } from "../mechanics/farming.ts";
 import type { ScreenPoint, CameraConfig } from "./projection.ts";
 import {
   DEFAULT_CAMERA_CONFIG,
@@ -487,7 +487,18 @@ export class StubRenderer {
 
         // Check if rendering a crop / bonsai tile
         if (cmd.tile && (isCropTile(cmd.tile) || cmd.tile.id === "immersiveengineering:hemp_top")) {
-          const cropTexture = tileId ? this.textures.get(tileId) : undefined;
+          let cropTexture = tileId ? this.textures.get(tileId) : undefined;
+          if (tileId && tileId.startsWith("arcadialbonsaitrees:bonsai_")) {
+            const match = tileId.match(/^arcadialbonsaitrees:bonsai_([a-z]+)_sapling$/);
+            if (match) {
+              const { progress } = getGrowthProgress(cmd.tile);
+              const stageIdx = Math.min(7, Math.floor(progress * 7.999));
+              const stageTexture = this.textures.get(`arcadialbonsaitrees:bonsai_${match[1]}_stage_${stageIdx}`);
+              if (stageTexture) {
+                cropTexture = stageTexture;
+              }
+            }
+          }
           renderCropTile(ctx, u, v, halfW, halfH, elevH, this.camera.zoom, cmd.tile, cropTexture);
           break;
         }

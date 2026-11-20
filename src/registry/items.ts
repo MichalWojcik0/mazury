@@ -1,13 +1,28 @@
 import {
+  PSD_TEXTURE_DATA_URL,
+  FIELD_PROJECTOR_TEXTURE_DATA_URL,
   DIRT_TEXTURE_DATA_URL,
   FARMLAND_DRY_TEXTURE_DATA_URL,
+  COBBLESTONE_TEXTURE_DATA_URL,
+  GRAVEL_TEXTURE_DATA_URL,
   CRAFTING_STATION_TEXTURE_DATA_URL,
   PLANKS_OAK_TEXTURE_DATA_URL,
   STICK_TEXTURE_DATA_URL,
+  STRING_TEXTURE_DATA_URL,
+  WHEAT_TEXTURE_DATA_URL,
+  WOODEN_PICKAXE_TEXTURE_DATA_URL,
+  STONE_PICKAXE_TEXTURE_DATA_URL,
+  IRON_PICKAXE_TEXTURE_DATA_URL,
+  DIAMOND_PICKAXE_TEXTURE_DATA_URL,
   DIRT_DUST_TEXTURE_DATA_URL,
   GRAVEL_DUST_TEXTURE_DATA_URL,
+  POOP_TEXTURE_DATA_URL,
   POOP_FUEL_TEXTURE_DATA_URL,
   STONE_PEBBLE_TEXTURE_DATA_URL,
+  GRANITE_PEBBLE_TEXTURE_DATA_URL,
+  DIORITE_PEBBLE_TEXTURE_DATA_URL,
+  ANDESITE_PEBBLE_TEXTURE_DATA_URL,
+  HAMMER_WOOD_TEXTURE_DATA_URL,
   BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
   BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
   BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
@@ -22,6 +37,7 @@ import {
   BONSAI_DARKOAK_CUTTING_TEXTURE_DATA_URL,
   WHEAT_SEEDS_TEXTURE_DATA_URL,
   HEMP_SEED_TEXTURE_DATA_URL,
+  HEMP_FIBER_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
 /**
@@ -61,6 +77,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "📱",
     isTool: true,
+    textureDataUrl: PSD_TEXTURE_DATA_URL,
   },
   "contenttweaker:dirtdust": {
     id: "contenttweaker:dirtdust",
@@ -101,12 +118,14 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:gravel",
     icon: "⚪",
+    textureDataUrl: GRAVEL_TEXTURE_DATA_URL,
   },
   "cropdusting:poop": {
     id: "cropdusting:poop",
     name: "Organic Poop",
     maxStackSize: 64,
     icon: "💩",
+    textureDataUrl: POOP_TEXTURE_DATA_URL,
   },
   "contenttweaker:poopfuel": {
     id: "contenttweaker:poopfuel",
@@ -146,6 +165,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "⛏️",
     isTool: true,
+    textureDataUrl: WOODEN_PICKAXE_TEXTURE_DATA_URL,
   },
   "minecraft:stone_pickaxe": {
     id: "minecraft:stone_pickaxe",
@@ -153,6 +173,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "⛏️",
     isTool: true,
+    textureDataUrl: STONE_PICKAXE_TEXTURE_DATA_URL,
   },
   "minecraft:iron_pickaxe": {
     id: "minecraft:iron_pickaxe",
@@ -160,6 +181,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "⛏️",
     isTool: true,
+    textureDataUrl: IRON_PICKAXE_TEXTURE_DATA_URL,
   },
   "minecraft:diamond_pickaxe": {
     id: "minecraft:diamond_pickaxe",
@@ -167,6 +189,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "⛏️",
     isTool: true,
+    textureDataUrl: DIAMOND_PICKAXE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:hammer_wood": {
     id: "exnihilocreatio:hammer_wood",
@@ -174,12 +197,14 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 1,
     icon: "🔨",
     isTool: true,
+    textureDataUrl: HAMMER_WOOD_TEXTURE_DATA_URL,
   },
   "compactmachines3:field_projector": {
     id: "compactmachines3:field_projector",
     name: "Miniaturization Field Projector",
     maxStackSize: 4,
     icon: "📡",
+    textureDataUrl: FIELD_PROJECTOR_TEXTURE_DATA_URL,
   },
   "minecraft:cobblestone": {
     id: "minecraft:cobblestone",
@@ -188,6 +213,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:cobblestone",
     icon: "🪨",
+    textureDataUrl: COBBLESTONE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_pebble:0": {
     id: "exnihilocreatio:item_pebble:0",
@@ -201,18 +227,21 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Granite Pebble",
     maxStackSize: 64,
     icon: "🪨",
+    textureDataUrl: GRANITE_PEBBLE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_pebble:2": {
     id: "exnihilocreatio:item_pebble:2",
     name: "Diorite Pebble",
     maxStackSize: 64,
     icon: "🪨",
+    textureDataUrl: DIORITE_PEBBLE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_pebble:3": {
     id: "exnihilocreatio:item_pebble:3",
     name: "Andesite Pebble",
     maxStackSize: 64,
     icon: "🪨",
+    textureDataUrl: ANDESITE_PEBBLE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_ore_iron:0": {
     id: "exnihilocreatio:item_ore_iron:0",
@@ -279,18 +308,21 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Wheat",
     maxStackSize: 64,
     icon: "🌾",
+    textureDataUrl: WHEAT_TEXTURE_DATA_URL,
   },
   "immersiveengineering:material:4": {
     id: "immersiveengineering:material:4",
     name: "Industrial Hemp Fiber",
     maxStackSize: 64,
     icon: "🧵",
+    textureDataUrl: HEMP_FIBER_TEXTURE_DATA_URL,
   },
   "minecraft:string": {
     id: "minecraft:string",
     name: "String",
     maxStackSize: 64,
     icon: "🧶",
+    textureDataUrl: STRING_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_oak_sapling": {
     id: "arcadialbonsaitrees:bonsai_oak_sapling",

@@ -1,10 +1,13 @@
 import {
   COMPACT_WALL_TEXTURE_DATA_URL,
+  COMPACT_MACHINE_TINY_TEXTURE_DATA_URL,
   DIRT_TEXTURE_DATA_URL,
   FARMLAND_DRY_TEXTURE_DATA_URL,
   BEDROCK_TEXTURE_DATA_URL,
+  COBBLESTONE_TEXTURE_DATA_URL,
   CRAFTING_STATION_TEXTURE_DATA_URL,
   PLANKS_OAK_TEXTURE_DATA_URL,
+  TORCH_TEXTURE_DATA_URL,
   BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
   BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
   BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
@@ -101,6 +104,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     passable: false,
     breakable: false,
     tillable: false,
+    textureDataUrl: COMPACT_MACHINE_TINY_TEXTURE_DATA_URL,
   },
   "craftingstation:crafting_station": {
     id: "craftingstation:crafting_station",
@@ -130,6 +134,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     drops: [{ itemId: "minecraft:cobblestone", count: 1 }],
     tillable: false,
+    textureDataUrl: COBBLESTONE_TEXTURE_DATA_URL,
   },
   "minecraft:torch": {
     id: "minecraft:torch",
@@ -139,6 +144,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     drops: [{ itemId: "minecraft:torch", count: 1 }],
     tillable: false,
+    textureDataUrl: TORCH_TEXTURE_DATA_URL,
   },
   "arcadialbonsaitrees:bonsai_oak_sapling": {
     id: "arcadialbonsaitrees:bonsai_oak_sapling",
