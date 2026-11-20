@@ -420,3 +420,53 @@ test("StubRenderer uses thin wireframe strokes (< 1px) for layer outline and vox
   const layerStrokes = strokeWidths.filter((s) => s.style.includes("97, 175, 239"));
   assert.ok(layerStrokes.length > 0 && layerStrokes.every((s) => s.width < 1), "Layer outline wireframes should be thinner than 1px");
 });
+
+test("StubRenderer renders crafting station as a 4-legged wooden table with crafting grid top", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+  room.voxels[1][1][1] = {
+    id: "craftingstation:crafting_station",
+    type: "machine",
+    passable: false,
+  };
+
+  const topTex = { id: "top", complete: true, naturalWidth: 16, naturalHeight: 16 } as unknown as HTMLImageElement;
+  const planksTex = { id: "planks", complete: true, naturalWidth: 16, naturalHeight: 16 } as unknown as HTMLImageElement;
+
+  renderer.textures.set("craftingstation:crafting_station", topTex);
+  renderer.textures.set("minecraft:planks", planksTex);
+
+  const drawnImages: unknown[] = [];
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    transform: () => {},
+    clip: () => {},
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => {},
+    stroke: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    drawImage: (img) => drawnImages.push(img),
+    fillText: () => {},
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  const cmd = renderer
+    .generateRenderCommands(room, [], { enableCutaway: true })
+    .find((c) => c.type === "DRAW_TILE" && c.tile?.id === "craftingstation:crafting_station");
+  assert.ok(cmd);
+
+  renderer.executeCommand(cmd, mockCtx);
+  // 4 legs * 2 faces (8) + tabletop rim * 2 faces (2) = 10 planks faces, then 1 crafting grid top
+  assert.equal(drawnImages.length, 11);
+  assert.ok(drawnImages.slice(0, 10).every((img) => img === planksTex), "Legs and tabletop rim should use planks texture");
+  assert.equal(drawnImages[10], topTex, "Top surface should use crafting grid texture");
+});

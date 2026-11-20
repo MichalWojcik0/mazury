@@ -20,6 +20,7 @@ import type {
 import { renderCropTile } from "./draw-crop.ts";
 import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
 import { renderMinecraftSteve } from "./draw-player.ts";
+import { renderCraftingStation } from "./draw-crafting-station.ts";
 
 export type {
   ScreenPoint,
@@ -491,6 +492,21 @@ export class StubRenderer {
           break;
         }
 
+        // Custom compound table model for Crafting Station (4 wooden legs + thin tabletop + crafting grid top)
+        if (tileId === "craftingstation:crafting_station") {
+          renderCraftingStation(
+            ctx,
+            u,
+            v,
+            halfW,
+            halfH,
+            elevH,
+            this.textures.get("craftingstation:crafting_station") ?? null,
+            this.textures.get("minecraft:planks") ?? null
+          );
+          break;
+        }
+
         const blockDef = tileId ? getBlockDefinition(tileId) : undefined;
         const blockTexture = tileId ? this.textures.get(tileId) : undefined;
 
@@ -500,6 +516,7 @@ export class StubRenderer {
             tileId === "minecraft:dirt" ||
             tileId === "minecraft:farmland" ||
             blockDef?.type === "farmland";
+
           const sideTexture = isDirtLike ? this.textures.get("minecraft:dirt") ?? null : blockTexture ?? null;
           const sideLoaded = Boolean(sideTexture && sideTexture.complete && sideTexture.naturalWidth > 0);
           const sideFallback = isDirtLike

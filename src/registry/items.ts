@@ -2,6 +2,8 @@ import {
   DIRT_TEXTURE_DATA_URL,
   FARMLAND_DRY_TEXTURE_DATA_URL,
   CRAFTING_STATION_TEXTURE_DATA_URL,
+  PLANKS_OAK_TEXTURE_DATA_URL,
+  STICK_TEXTURE_DATA_URL,
   DIRT_DUST_TEXTURE_DATA_URL,
   GRAVEL_DUST_TEXTURE_DATA_URL,
   POOP_FUEL_TEXTURE_DATA_URL,
@@ -120,12 +122,14 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:planks",
     icon: "🪵",
+    textureDataUrl: PLANKS_OAK_TEXTURE_DATA_URL,
   },
   "minecraft:stick": {
     id: "minecraft:stick",
     name: "Stick",
     maxStackSize: 64,
     icon: "🥢",
+    textureDataUrl: STICK_TEXTURE_DATA_URL,
   },
   "craftingstation:crafting_station": {
     id: "craftingstation:crafting_station",

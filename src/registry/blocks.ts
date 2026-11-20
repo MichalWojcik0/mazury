@@ -4,6 +4,7 @@ import {
   FARMLAND_DRY_TEXTURE_DATA_URL,
   BEDROCK_TEXTURE_DATA_URL,
   CRAFTING_STATION_TEXTURE_DATA_URL,
+  PLANKS_OAK_TEXTURE_DATA_URL,
   BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
   BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
   BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
@@ -119,6 +120,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     drops: [{ itemId: "minecraft:planks", count: 1 }],
     tillable: false,
+    textureDataUrl: PLANKS_OAK_TEXTURE_DATA_URL,
   },
   "minecraft:cobblestone": {
     id: "minecraft:cobblestone",
