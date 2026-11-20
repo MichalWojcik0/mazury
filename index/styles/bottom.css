@@ -47,6 +47,19 @@ button.ui-btn:active {
   background: #21252b;
 }
 
+button.squat-btn {
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+button.squat-btn.active {
+  background: #2e5939;
+  border-color: #98c379;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(152, 195, 121, 0.35);
+}
+
 .psd-action-panel {
   display: flex;
   flex-direction: column;

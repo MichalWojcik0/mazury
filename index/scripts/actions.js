@@ -55,3 +55,27 @@ export function selectSlot(slot) {
 export function craftRecipeAction(recipeId) {
   dispatchPlayerAction({ type: "CRAFT_RECIPE", recipeId, count: 1 });
 }
+
+export function startSneak() {
+  const p = engine.players.get(0);
+  if (p && !p.isSneaking) {
+    dispatchPlayerAction({ type: "START_SNEAK" });
+  }
+}
+
+export function stopSneak() {
+  const p = engine.players.get(0);
+  if (p && p.isSneaking) {
+    dispatchPlayerAction({ type: "STOP_SNEAK" });
+  }
+}
+
+export function toggleSneak() {
+  const p = engine.players.get(0);
+  if (!p) return;
+  if (p.isSneaking) {
+    stopSneak();
+  } else {
+    startSneak();
+  }
+}

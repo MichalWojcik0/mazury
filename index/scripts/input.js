@@ -9,6 +9,9 @@ import {
   movePlayer,
   usePSD,
   selectSlot,
+  startSneak,
+  stopSneak,
+  toggleSneak,
 } from "./actions.js";
 
 // Direct Canvas Interaction: unproject screen coordinates to active layer tile slot
@@ -114,8 +117,17 @@ export function bindInputHandlers() {
   });
 
   // Keyboard handlers
+  let isShiftHeld = false;
   window.addEventListener("keydown", (e) => {
     const p = engine.players.get(0);
+    if (e.key === "Shift") {
+      if (!e.repeat) {
+        isShiftHeld = true;
+        startSneak();
+      }
+      e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case "ArrowUp":
       case "w":
@@ -204,12 +216,30 @@ export function bindInputHandlers() {
     }
   });
 
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") {
+      isShiftHeld = false;
+      stopSneak();
+      e.preventDefault();
+    }
+  });
+
+  window.addEventListener("blur", () => {
+    if (isShiftHeld) {
+      isShiftHeld = false;
+      stopSneak();
+    }
+  });
+
   // Button controls
   document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -1));
   document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 1));
   document.getElementById("btn-left").addEventListener("click", () => movePlayer(-1, 0));
   document.getElementById("btn-right").addEventListener("click", () => movePlayer(1, 0));
   document.getElementById("btn-use-psd").addEventListener("click", () => usePSD());
+  if (dom.btnSquat) {
+    dom.btnSquat.addEventListener("click", () => toggleSneak());
+  }
 
   // Canvas pointer controls
   canvas.addEventListener("mousemove", (e) => {

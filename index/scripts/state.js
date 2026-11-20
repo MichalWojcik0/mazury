@@ -30,6 +30,7 @@ export const dom = {
   craftingRecipeList: document.getElementById("crafting-recipe-list"),
   btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
   btnCloseCrafting: document.getElementById("btn-close-crafting"),
+  btnSquat: document.getElementById("btn-squat"),
 
   voxelTargetName: document.getElementById("voxel-target-name"),
   voxelTargetCoords: document.getElementById("voxel-target-coords"),

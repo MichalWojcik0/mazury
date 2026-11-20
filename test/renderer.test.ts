@@ -316,3 +316,69 @@ test("StubRenderer renders bonsai trees as two intersected flat texture planes i
   assert.ok(transforms.some((t) => t[1] > 0), "Plane A should shear along +Y isometric axis");
   assert.ok(transforms.some((t) => t[1] < 0), "Plane B should shear along -Y isometric axis");
 });
+
+test("StubRenderer renders squatting player crouched with squat indicator and progress bar", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+
+  const standingPlayer: Player = {
+    id: 0,
+    name: "Player 1",
+    health: 20,
+    hunger: 20,
+    exhaustion: 0,
+    isSneaking: false,
+    sneakTimer: 0,
+    currentRoomId: room.id,
+    x: 1,
+    y: 1,
+    z: 1,
+    height: 2,
+    selectedLayerIndex: 1,
+    inventory: [],
+  };
+
+  const squattingPlayer: Player = {
+    ...standingPlayer,
+    isSneaking: true,
+    sneakTimer: 50,
+  };
+
+  const capturePlayerDraw = (player: Player) => {
+    const rects: number[][] = [];
+    const texts: string[] = [];
+    const mockCtx: CanvasContext2DLike = {
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      scale: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      fill: () => {},
+      stroke: () => {},
+      fillRect: (x, y, w, h) => rects.push([x, y, w, h]),
+      strokeRect: () => {},
+      fillText: (text) => texts.push(text),
+      fillStyle: "",
+      strokeStyle: "",
+      lineWidth: 1,
+    };
+    const cmd = renderer
+      .generateRenderCommands(room, [player], { enableCutaway: true })
+      .find((c) => c.type === "DRAW_PLAYER");
+    assert.ok(cmd);
+    renderer.executeCommand(cmd, mockCtx);
+    return { rects, texts };
+  };
+
+  const standing = capturePlayerDraw(standingPlayer);
+  const squatting = capturePlayerDraw(squattingPlayer);
+
+  // Squatting player torso height (rects[0][3]) is shorter than standing torso height
+  assert.ok(squatting.rects[0][3] < standing.rects[0][3], "Squatting player should render shorter");
+  // Squatting renders progress bar (background + fill = 2 extra rects) and squat label
+  assert.ok(squatting.rects.length > standing.rects.length, "Squatting player should render progress bar");
+  assert.ok(squatting.texts.includes("P1 [Squat]"), "Squatting label should be displayed");
+});

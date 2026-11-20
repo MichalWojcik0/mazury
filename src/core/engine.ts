@@ -99,6 +99,7 @@ export class GameEngine {
       const sneakRes = updateSneak(player);
       if (sneakRes.poopProduced && sneakRes.drop) {
         addItem(player.inventory, sneakRes.drop.id, sneakRes.drop.count);
+        this.updateActiveEquipped(player);
       }
       player.exhaustion += sneakRes.exhaustionAdded;
 

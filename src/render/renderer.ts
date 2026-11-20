@@ -591,9 +591,12 @@ export class StubRenderer {
       }
 
       case "DRAW_PLAYER": {
-        // Draw 2-block tall player marker with face direction & shadow
-        const playerH = 2 * this.camera.elevationHeight * this.camera.zoom;
-        const width = 14 * this.camera.zoom;
+        // Draw 2-block tall player marker (crouched when sneaking/squatting) with shadow
+        const isSneaking = Boolean(cmd.player?.isSneaking);
+        const sneakTimer = cmd.player?.sneakTimer ?? 0;
+        const basePlayerH = 2 * this.camera.elevationHeight * this.camera.zoom;
+        const playerH = isSneaking ? basePlayerH * 0.68 : basePlayerH;
+        const width = (isSneaking ? 16 : 14) * this.camera.zoom;
 
         // Shadow directly on the center of the floor tile diamond
         ctx.beginPath();
@@ -606,22 +609,38 @@ export class StubRenderer {
         ctx.fill();
 
         // Player body: feet anchor at (u, v), standing upward
-        ctx.fillStyle = "#3498db"; // Cyan/blue shirt
+        ctx.fillStyle = isSneaking ? "#2ecc71" : "#3498db";
         ctx.fillRect(u - width / 2, v - playerH, width, playerH * 0.65);
-        ctx.strokeStyle = "#1b4f72";
+        ctx.strokeStyle = isSneaking ? "#1e8449" : "#1b4f72";
         ctx.lineWidth = 1;
         ctx.strokeRect(u - width / 2, v - playerH, width, playerH * 0.65);
 
         // Player head
         const headH = playerH * 0.35;
-        ctx.fillStyle = "#f5b041"; // Head
+        ctx.fillStyle = "#f5b041";
         ctx.fillRect(u - width / 2, v - playerH - headH, width, headH);
         ctx.strokeStyle = "#b9770e";
         ctx.strokeRect(u - width / 2, v - playerH - headH, width, headH);
 
+        // Squat progress bar (poop timer) while sneaking
+        if (isSneaking) {
+          const barW = 24 * this.camera.zoom;
+          const barH = 4 * this.camera.zoom;
+          const barX = u - barW / 2;
+          const barY = v - playerH - headH - 10 * this.camera.zoom;
+          const ratio = Math.min(1, sneakTimer / 100);
+
+          ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+          ctx.fillRect(barX, barY, barW, barH);
+          ctx.fillStyle = "#98c379";
+          ctx.fillRect(barX, barY, barW * ratio, barH);
+          ctx.strokeStyle = "#2c313a";
+          ctx.strokeRect(barX, barY, barW, barH);
+        }
+
         // Name tag or indicator
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("P1", u - 6, v - playerH - headH - 4);
+        ctx.fillStyle = isSneaking ? "#98c379" : "#ffffff";
+        ctx.fillText(isSneaking ? "P1 [Squat]" : "P1", u - (isSneaking ? 22 : 6), v - playerH - headH - (isSneaking ? 14 : 4));
         break;
       }
 

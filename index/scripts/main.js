@@ -11,6 +11,9 @@ import {
   movePlayer,
   usePSD,
   selectSlot,
+  startSneak,
+  stopSneak,
+  toggleSneak,
 } from "./actions.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel, craftRecipe } from "./crafting.js";
@@ -42,6 +45,15 @@ window.__swapInventorySlots = swapInventorySlots;
 window.__toggleInventoryDrawer = toggleInventoryDrawer;
 window.__toggleCraftingPanel = toggleCraftingPanel;
 window.__craftRecipe = craftRecipe;
+window.__startSneak = startSneak;
+window.__stopSneak = stopSneak;
+window.__toggleSneak = toggleSneak;
+
+// 20 Hz deterministic simulation loop (50 ms per tick)
+setInterval(() => {
+  engine.stepTick();
+  updateHUD();
+}, 50);
 
 // Render loop
 function renderLoop() {

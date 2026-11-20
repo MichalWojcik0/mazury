@@ -8,11 +8,24 @@ import { engine, dom, layerLabels } from "./state.js";
 import { updateInventoryUI } from "./inventory.js";
 import { interactSlot } from "./actions.js";
 
+let lastInventorySignature = null;
+let lastVoxelActionSignature = null;
+
+function computeInventorySignature(player) {
+  const slots = player.inventory
+    .map((item) => (item ? `${item.id}:${item.count}` : ""))
+    .join("|");
+  return `${player.selectedQuickSlotIndex ?? -1}::${slots}`;
+}
+
 export function updateSelectedVoxelUI(player, room) {
   if (!player || !room || !player.selectedSlot) {
     dom.voxelTargetName.textContent = "None Selected";
     dom.voxelTargetCoords.textContent = "Coord: -";
-    dom.voxelActionList.innerHTML = '<span class="voxel-no-action">Select a block to act</span>';
+    if (lastVoxelActionSignature !== "NONE") {
+      lastVoxelActionSignature = "NONE";
+      dom.voxelActionList.innerHTML = '<span class="voxel-no-action">Select a block to act</span>';
+    }
     return;
   }
 
@@ -20,7 +33,10 @@ export function updateSelectedVoxelUI(player, room) {
   if (!selected) {
     dom.voxelTargetName.textContent = "Obstructed / Out of reach";
     dom.voxelTargetCoords.textContent = "Coord: -";
-    dom.voxelActionList.innerHTML = '<span class="voxel-no-action">No target reachable</span>';
+    if (lastVoxelActionSignature !== "OUT_OF_REACH") {
+      lastVoxelActionSignature = "OUT_OF_REACH";
+      dom.voxelActionList.innerHTML = '<span class="voxel-no-action">No target reachable</span>';
+    }
     return;
   }
 
@@ -42,6 +58,13 @@ export function updateSelectedVoxelUI(player, room) {
   dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
 
   const actions = getAvailableVoxelActions(tile, isBoundary, player, coord);
+  const actionSig = `${player.selectedSlot}:${coord.x},${coord.y},${coord.z}:${tile.id}:${actions
+    .map((a) => `${a.id}:${a.label}:${a.buttonType}`)
+    .join(",")}`;
+  if (actionSig === lastVoxelActionSignature) {
+    return;
+  }
+  lastVoxelActionSignature = actionSig;
   dom.voxelActionList.innerHTML = "";
 
   if (actions.length === 0) {
@@ -102,8 +125,24 @@ export function updateHUD() {
   }
   dom.hudHunger.innerHTML = hungerHtml;
 
-  // Update Inventory
-  updateInventoryUI(p);
+  // Update Inventory only when items or quick selection changed (preserves drag/hover state on 20 Hz ticks)
+  const invSig = computeInventorySignature(p);
+  if (invSig !== lastInventorySignature) {
+    lastInventorySignature = invSig;
+    updateInventoryUI(p);
+  }
+
+  // Update Squat button state & progress
+  if (dom.btnSquat) {
+    if (p.isSneaking) {
+      const pct = Math.min(100, Math.floor(((p.sneakTimer || 0) / 100) * 100));
+      dom.btnSquat.classList.add("active");
+      dom.btnSquat.textContent = `🧎 Squatting (${pct}%)`;
+    } else {
+      dom.btnSquat.classList.remove("active");
+      dom.btnSquat.textContent = "🧎 Squat [Shift]";
+    }
+  }
 
   // Reticle center button disabled for body layers (1 and 2)
   const reticleCenter = document.getElementById("reticle-slot-5");
