@@ -1,0 +1,56 @@
+/* Floating Item Tooltip */
+.item-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  background: rgba(15, 18, 23, 0.95);
+  border: 1px solid #61afef;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 220px;
+}
+
+.item-tooltip.visible {
+  display: flex;
+}
+
+.tooltip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e5c07b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-count {
+  font-size: 11px;
+  color: #abb2bf;
+}
+
+.tooltip-id {
+  font-size: 9px;
+  color: #5c6370;
+  font-family: monospace;
+}
+
+.tooltip-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.tooltip-tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #282c34;
+  border: 1px solid #3e4451;
+  color: #98c379;
+  font-weight: 600;
+}

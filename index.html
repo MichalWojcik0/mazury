@@ -437,6 +437,51 @@
       background: #21252b;
     }
 
+    .psd-action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .psd-btn {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+      border: 1px solid #61afef;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(97, 175, 239, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .psd-btn:hover {
+      box-shadow: 0 6px 18px rgba(97, 175, 239, 0.45);
+      transform: translateY(-2px);
+    }
+
+    .psd-btn:active {
+      transform: translateY(0);
+    }
+
+    .legend-card {
+      font-size: 11px;
+      color: #828997;
+      line-height: 1.6;
+    }
+
+    .key-badge {
+      display: inline-block;
+      padding: 1px 5px;
+      background: #21252b;
+      border: 1px solid #3e4451;
+      border-radius: 3px;
+      font-family: monospace;
+      color: #98c379;
+    }
+
     /* Inventory Section */
     .inventory-section {
       display: flex;
@@ -700,51 +745,6 @@
       padding-top: 4px;
     }
 
-    .psd-action-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .psd-btn {
-      padding: 12px 20px;
-      background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
-      border: 1px solid #61afef;
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(97, 175, 239, 0.25);
-      transition: all 0.2s ease;
-    }
-
-    .psd-btn:hover {
-      box-shadow: 0 6px 18px rgba(97, 175, 239, 0.45);
-      transform: translateY(-2px);
-    }
-
-    .psd-btn:active {
-      transform: translateY(0);
-    }
-
-    .legend-card {
-      font-size: 11px;
-      color: #828997;
-      line-height: 1.6;
-    }
-
-    .key-badge {
-      display: inline-block;
-      padding: 1px 5px;
-      background: #21252b;
-      border: 1px solid #3e4451;
-      border-radius: 3px;
-      font-family: monospace;
-      color: #98c379;
-    }
-
     /* Floating Item Tooltip */
     .item-tooltip {
       position: fixed;
@@ -980,6 +980,7 @@
   </div>
 
   <script type="module">
+    // index/scripts/engine-api.js
     import {
       GameEngine,
       StubRenderer,
@@ -991,152 +992,172 @@
       getItemDefinition,
       getBlockDefinition,
       resolveSelectedVoxel,
-      getAvailableVoxelActions,
+      getAvailableVoxelActions
     } from "./dist/bundle.js";
 
-    // Initialize Game Engine (deterministic 20 Hz simulation)
-    const engine = new GameEngine(1337);
-    const renderer = new StubRenderer({
+    // index/scripts/state.js
+    var engine = new GameEngine(1337);
+    var renderer = new StubRenderer({
       tileWidth: 80,
       tileHeight: 40,
       elevationHeight: 20,
-      zoom: 1.0,
+      zoom: 1
     });
+    var canvas = document.getElementById("game-canvas");
+    var ctx = canvas.getContext("2d");
+    var dom = {
+      hudRoomName: document.getElementById("hud-room-name"),
+      hudCoords: document.getElementById("hud-coords"),
+      hudLayerName: document.getElementById("hud-layer-name"),
+      hudQuestTitle: document.getElementById("hud-quest-title"),
+      hudQuestDesc: document.getElementById("hud-quest-desc"),
+      hudHearts: document.getElementById("hud-hearts"),
+      hudHunger: document.getElementById("hud-hunger"),
+      hudQuickInventory: document.getElementById("hud-quick-inventory"),
+      fullInvDrawer: document.getElementById("full-inv-drawer"),
+      grid36Slots: document.getElementById("grid-36-slots"),
+      btnToggleInv: document.getElementById("btn-toggle-inv"),
+      btnCloseFullInv: document.getElementById("btn-close-full-inv"),
+      craftingPanel: document.getElementById("crafting-panel"),
+      craftingRecipeList: document.getElementById("crafting-recipe-list"),
+      btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
+      btnCloseCrafting: document.getElementById("btn-close-crafting"),
+      voxelTargetName: document.getElementById("voxel-target-name"),
+      voxelTargetCoords: document.getElementById("voxel-target-coords"),
+      voxelActionList: document.getElementById("voxel-action-list"),
+      itemTooltip: document.getElementById("item-tooltip"),
+      tooltipItemName: document.getElementById("tooltip-item-name"),
+      tooltipItemCount: document.getElementById("tooltip-item-count"),
+      tooltipItemId: document.getElementById("tooltip-item-id"),
+      tooltipItemTags: document.getElementById("tooltip-item-tags"),
+      layerButtons: [
+        document.getElementById("layer-btn-0"),
+        document.getElementById("layer-btn-1"),
+        document.getElementById("layer-btn-2"),
+        document.getElementById("layer-btn-3")
+      ]
+    };
+    var layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
+    var uiState = {
+      isInventoryDrawerOpen: false,
+      isCraftingOpen: false,
+      draggedSlotIndex: null
+    };
+    var arrowVisibleUntil = new Map;
+    var arrowHideTimeouts = new Map;
 
-    const canvas = document.getElementById("game-canvas");
-    const ctx = canvas.getContext("2d");
-
-    // UI elements
-    const hudRoomName = document.getElementById("hud-room-name");
-    const hudCoords = document.getElementById("hud-coords");
-    const hudLayerName = document.getElementById("hud-layer-name");
-    const hudQuestTitle = document.getElementById("hud-quest-title");
-    const hudQuestDesc = document.getElementById("hud-quest-desc");
-    const hudHearts = document.getElementById("hud-hearts");
-    const hudHunger = document.getElementById("hud-hunger");
-    const hudQuickInventory = document.getElementById("hud-quick-inventory");
-    const fullInvDrawer = document.getElementById("full-inv-drawer");
-    const grid36Slots = document.getElementById("grid-36-slots");
-    const btnToggleInv = document.getElementById("btn-toggle-inv");
-    const btnCloseFullInv = document.getElementById("btn-close-full-inv");
-    const craftingPanel = document.getElementById("crafting-panel");
-    const craftingRecipeList = document.getElementById("crafting-recipe-list");
-    const btnToggleCrafting = document.getElementById("btn-toggle-crafting");
-    const btnCloseCrafting = document.getElementById("btn-close-crafting");
-
-    const voxelTargetName = document.getElementById("voxel-target-name");
-    const voxelTargetCoords = document.getElementById("voxel-target-coords");
-    const voxelActionList = document.getElementById("voxel-action-list");
-
-    // Tooltip elements
-    const itemTooltip = document.getElementById("item-tooltip");
-    const tooltipItemName = document.getElementById("tooltip-item-name");
-    const tooltipItemCount = document.getElementById("tooltip-item-count");
-    const tooltipItemId = document.getElementById("tooltip-item-id");
-    const tooltipItemTags = document.getElementById("tooltip-item-tags");
-
-    let isInventoryDrawerOpen = false;
-    let isCraftingOpen = false;
-
-    // Track active hover timers and states across re-renders
-    // Key: slot container type ('quick' or 'drawer') + '-' + slotIndex
-    const arrowVisibleUntil = new Map();
-    const arrowHideTimeouts = new Map();
-
-    // Drag-and-drop state
-    let draggedSlotIndex = null;
-
-    const layerButtons = [
-      document.getElementById("layer-btn-0"),
-      document.getElementById("layer-btn-1"),
-      document.getElementById("layer-btn-2"),
-      document.getElementById("layer-btn-3"),
-    ];
-
-    const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
-
-    function getItemDisplay(itemId) {
-      if (!itemId) return { icon: "", name: "" };
-      const def = getItemDefinition(itemId);
-      if (def) {
-        return { icon: def.icon || "📦", name: def.name, def };
-      }
-      return { icon: "📦", name: itemId, def: null };
+    // index/scripts/actions.js
+    var onActionComplete = () => {};
+    function setOnActionComplete(callback) {
+      onActionComplete = callback;
+    }
+    function dispatchPlayerAction(action) {
+      engine.enqueueInput({
+        tick: engine.currentTick + 1,
+        playerId: 0,
+        action
+      });
+      engine.stepTick();
+      onActionComplete();
+    }
+    function selectLayer(layerIndex) {
+      dispatchPlayerAction({ type: "SELECT_LAYER", layerIndex });
+    }
+    function swapInventorySlots(fromIndex, toIndex) {
+      dispatchPlayerAction({ type: "SWAP_INVENTORY_SLOTS", fromIndex, toIndex });
+    }
+    function selectQuickSlot(index) {
+      dispatchPlayerAction({ type: "SELECT_QUICK_SLOT", index });
+    }
+    function moveItemToTop(slotIndex) {
+      dispatchPlayerAction({ type: "MOVE_ITEM_TO_TOP", slotIndex });
+    }
+    function moveItemToBottom(slotIndex) {
+      dispatchPlayerAction({ type: "MOVE_ITEM_TO_BOTTOM", slotIndex });
+    }
+    function interactSlot(slot, button = "PRIMARY") {
+      dispatchPlayerAction({ type: "INTERACT_TILE", slot, button });
+    }
+    function movePlayer(dx, dy) {
+      dispatchPlayerAction({ type: "MOVE", dx, dy });
+    }
+    function usePSD() {
+      dispatchPlayerAction({ type: "USE_PSD" });
+    }
+    function selectSlot(slot) {
+      dispatchPlayerAction({ type: "SELECT_SLOT", slot });
+    }
+    function craftRecipeAction(recipeId) {
+      dispatchPlayerAction({ type: "CRAFT_RECIPE", recipeId, count: 1 });
     }
 
+    // index/scripts/tooltip.js
+    function getItemDisplay(itemId) {
+      if (!itemId)
+        return { icon: "", name: "" };
+      const def = getItemDefinition(itemId);
+      if (def) {
+        return { icon: def.icon || "\uD83D\uDCE6", name: def.name, def };
+      }
+      return { icon: "\uD83D\uDCE6", name: itemId, def: null };
+    }
     function showItemTooltip(item, mouseX, mouseY) {
-      if (!item || !itemTooltip) return;
+      if (!item || !dom.itemTooltip)
+        return;
       const display = getItemDisplay(item.id);
       const def = display.def;
       const maxStack = def?.maxStackSize ?? 64;
-
-      const visualEl = def?.textureDataUrl
-        ? `<img src="${def.textureDataUrl}" style="width: 16px; height: 16px; image-rendering: pixelated; vertical-align: middle;" />`
-        : `<span>${display.icon}</span>`;
-      tooltipItemName.innerHTML = `${visualEl} <span>${display.name}</span>`;
-      tooltipItemCount.textContent = `Count: ${item.count} / ${maxStack}`;
-      tooltipItemId.textContent = item.id;
-
-      tooltipItemTags.innerHTML = "";
+      const visualEl = def?.textureDataUrl ? `<img src="${def.textureDataUrl}" style="width: 16px; height: 16px; image-rendering: pixelated; vertical-align: middle;" />` : `<span>${display.icon}</span>`;
+      dom.tooltipItemName.innerHTML = `${visualEl} <span>${display.name}</span>`;
+      dom.tooltipItemCount.textContent = `Count: ${item.count} / ${maxStack}`;
+      dom.tooltipItemId.textContent = item.id;
+      dom.tooltipItemTags.innerHTML = "";
       if (def?.placeable) {
         const tag = document.createElement("span");
         tag.className = "tooltip-tag";
         tag.textContent = "Placeable";
-        tooltipItemTags.appendChild(tag);
+        dom.tooltipItemTags.appendChild(tag);
       }
       if (def?.isTool) {
         const tag = document.createElement("span");
         tag.className = "tooltip-tag";
         tag.textContent = "Tool";
-        tooltipItemTags.appendChild(tag);
+        dom.tooltipItemTags.appendChild(tag);
       }
       if (def?.canTill) {
         const tag = document.createElement("span");
         tag.className = "tooltip-tag";
         tag.textContent = "Tillable";
-        tooltipItemTags.appendChild(tag);
+        dom.tooltipItemTags.appendChild(tag);
       }
-
       const hintTag = document.createElement("span");
       hintTag.className = "tooltip-tag";
       hintTag.style.color = "#61afef";
       hintTag.textContent = "Drag to Move/Swap";
-      tooltipItemTags.appendChild(hintTag);
-
-      itemTooltip.style.left = `${mouseX + 12}px`;
-      itemTooltip.style.top = `${mouseY + 12}px`;
-      itemTooltip.classList.add("visible");
+      dom.tooltipItemTags.appendChild(hintTag);
+      dom.itemTooltip.style.left = `${mouseX + 12}px`;
+      dom.itemTooltip.style.top = `${mouseY + 12}px`;
+      dom.itemTooltip.classList.add("visible");
     }
-
     function hideItemTooltip() {
-      if (itemTooltip) {
-        itemTooltip.classList.remove("visible");
+      if (dom.itemTooltip) {
+        dom.itemTooltip.classList.remove("visible");
       }
     }
 
-    function resizeCanvas() {
-      canvas.width = canvas.clientWidth * window.devicePixelRatio;
-      canvas.height = canvas.clientHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-
+    // index/scripts/inventory.js
     function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, containerType = "quick") {
       const display = item ? getItemDisplay(item.id) : null;
       const title = item ? `${display.name} (${item.count})` : `Slot ${slotIndex + 1} (Empty)`;
       const slotKey = `${containerType}-${slotIndex}`;
-
       const slotEl = document.createElement("div");
       slotEl.className = `inv-slot ${isSelected ? "selected" : ""}`;
       slotEl.title = title;
       slotEl.setAttribute("data-slot-index", slotIndex);
-
       const indexLabel = document.createElement("span");
       indexLabel.className = "inv-slot-index";
       indexLabel.textContent = slotIndex + 1;
       slotEl.appendChild(indexLabel);
-
       if (item) {
         const iconEl = document.createElement("span");
         iconEl.className = "inv-slot-icon";
@@ -1149,25 +1170,20 @@
           iconEl.textContent = display.icon;
         }
         slotEl.appendChild(iconEl);
-
         const qtyEl = document.createElement("span");
         qtyEl.className = "inv-slot-qty";
         qtyEl.textContent = item.count;
         slotEl.appendChild(qtyEl);
-
         if (showArrows) {
-          // Hover arrow container
           const arrowsEl = document.createElement("div");
           arrowsEl.className = "slot-arrows";
-
-          // If previously scheduled to stay visible within the 1-second delay, mark as visible
           const until = arrowVisibleUntil.get(slotKey);
           if (until && until > Date.now()) {
             arrowsEl.classList.add("visible");
-            // Setup timer to remove visible class once elapsed
             const remaining = until - Date.now();
             const existingTimeout = arrowHideTimeouts.get(slotKey);
-            if (existingTimeout) clearTimeout(existingTimeout);
+            if (existingTimeout)
+              clearTimeout(existingTimeout);
             const timeout = setTimeout(() => {
               arrowsEl.classList.remove("visible");
               arrowVisibleUntil.delete(slotKey);
@@ -1175,8 +1191,6 @@
             }, remaining);
             arrowHideTimeouts.set(slotKey, timeout);
           }
-
-          // Arrow to move to top
           const topBtn = document.createElement("button");
           topBtn.className = "arrow-btn";
           topBtn.title = "Move to Top (Slot 1)";
@@ -1186,8 +1200,6 @@
             moveItemToTop(slotIndex);
           });
           arrowsEl.appendChild(topBtn);
-
-          // Arrow to move to bottom
           const bottomBtn = document.createElement("button");
           bottomBtn.className = "arrow-btn";
           bottomBtn.title = "Move to Bottom";
@@ -1197,9 +1209,7 @@
             moveItemToBottom(slotIndex);
           });
           arrowsEl.appendChild(bottomBtn);
-
           slotEl.appendChild(arrowsEl);
-
           const showArrowsWithPersistence = () => {
             const existingTimeout = arrowHideTimeouts.get(slotKey);
             if (existingTimeout) {
@@ -1209,12 +1219,12 @@
             arrowVisibleUntil.delete(slotKey);
             arrowsEl.classList.add("visible");
           };
-
           const scheduleHideArrows = () => {
             const hideDelay = 1000;
             arrowVisibleUntil.set(slotKey, Date.now() + hideDelay);
             const existingTimeout = arrowHideTimeouts.get(slotKey);
-            if (existingTimeout) clearTimeout(existingTimeout);
+            if (existingTimeout)
+              clearTimeout(existingTimeout);
             const timeout = setTimeout(() => {
               arrowsEl.classList.remove("visible");
               arrowVisibleUntil.delete(slotKey);
@@ -1222,58 +1232,47 @@
             }, hideDelay);
             arrowHideTimeouts.set(slotKey, timeout);
           };
-
           slotEl.addEventListener("mouseenter", showArrowsWithPersistence);
           slotEl.addEventListener("mouseleave", scheduleHideArrows);
         }
       }
-
-      // Drag and drop event listeners
       if (item) {
         slotEl.setAttribute("draggable", "true");
-
         slotEl.addEventListener("dragstart", (e) => {
-          draggedSlotIndex = slotIndex;
+          uiState.draggedSlotIndex = slotIndex;
           slotEl.classList.add("dragging");
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", String(slotIndex));
         });
-
         slotEl.addEventListener("dragend", () => {
-          draggedSlotIndex = null;
+          uiState.draggedSlotIndex = null;
           document.querySelectorAll(".inv-slot").forEach((el) => {
             el.classList.remove("dragging", "drag-over");
           });
         });
       }
-
       slotEl.addEventListener("dragover", (e) => {
-        if (draggedSlotIndex !== null) {
+        if (uiState.draggedSlotIndex !== null) {
           e.preventDefault();
           e.dataTransfer.dropEffect = "move";
           slotEl.classList.add("drag-over");
         }
       });
-
       slotEl.addEventListener("dragleave", (e) => {
         if (!slotEl.contains(e.relatedTarget)) {
           slotEl.classList.remove("drag-over");
         }
       });
-
       slotEl.addEventListener("drop", (e) => {
         e.preventDefault();
         slotEl.classList.remove("drag-over");
         const rawIndex = e.dataTransfer.getData("text/plain");
-        const fromIndex = rawIndex !== "" ? parseInt(rawIndex, 10) : draggedSlotIndex;
-
+        const fromIndex = rawIndex !== "" ? parseInt(rawIndex, 10) : uiState.draggedSlotIndex;
         if (fromIndex !== null && !isNaN(fromIndex) && fromIndex !== slotIndex) {
           swapInventorySlots(fromIndex, slotIndex);
         }
-        draggedSlotIndex = null;
+        uiState.draggedSlotIndex = null;
       });
-
-      // Tooltip hover handlers
       if (item) {
         slotEl.addEventListener("mouseenter", (e) => {
           showItemTooltip(item, e.clientX, e.clientY);
@@ -1285,16 +1284,13 @@
           hideItemTooltip();
         });
       }
-
       slotEl.addEventListener("click", () => {
         if (slotIndex < 9) {
           selectQuickSlot(slotIndex);
         }
       });
-
       return slotEl;
     }
-
     function cleanupStaleArrowTimers() {
       const now = Date.now();
       for (const [key, until] of arrowVisibleUntil.entries()) {
@@ -1308,57 +1304,50 @@
         }
       }
     }
-
     function renderSlotContainer(containerEl, count, player, containerType) {
       containerEl.innerHTML = "";
-      for (let i = 0; i < count; i++) {
+      for (let i = 0;i < count; i++) {
         const item = player.inventory[i];
         const isSelected = player.selectedQuickSlotIndex === i;
         const slotEl = renderInventorySlot(item, i, isSelected, true, containerType);
         containerEl.appendChild(slotEl);
       }
     }
-
     function updateInventoryUI(player) {
-      if (!player) return;
-
+      if (!player)
+        return;
       cleanupStaleArrowTimers();
-
-      // 1. Render Top 9 Quick Slots
-      renderSlotContainer(hudQuickInventory, 9, player, "quick");
-
-      // 2. Render Full 36 Slots (when drawer is visible or updating)
-      renderSlotContainer(grid36Slots, 36, player, "drawer");
+      renderSlotContainer(dom.hudQuickInventory, 9, player, "quick");
+      renderSlotContainer(dom.grid36Slots, 36, player, "drawer");
     }
-
     function toggleInventoryDrawer(open) {
-      isInventoryDrawerOpen = open !== undefined ? open : !isInventoryDrawerOpen;
-      if (isInventoryDrawerOpen) {
-        fullInvDrawer.classList.add("open");
-        btnToggleInv.textContent = "✕ Close [E]";
+      uiState.isInventoryDrawerOpen = open !== undefined ? open : !uiState.isInventoryDrawerOpen;
+      if (uiState.isInventoryDrawerOpen) {
+        dom.fullInvDrawer.classList.add("open");
+        dom.btnToggleInv.textContent = "✕ Close [E]";
       } else {
-        fullInvDrawer.classList.remove("open");
-        btnToggleInv.textContent = "📦 Full Inventory [E]";
+        dom.fullInvDrawer.classList.remove("open");
+        dom.btnToggleInv.textContent = "\uD83D\uDCE6 Full Inventory [E]";
       }
     }
 
+    // index/scripts/crafting.js
     function toggleCraftingPanel(open) {
-      isCraftingOpen = open !== undefined ? open : !isCraftingOpen;
-      if (isCraftingOpen) {
-        craftingPanel.classList.add("open");
-        btnToggleCrafting.textContent = "✕ Close [C]";
+      uiState.isCraftingOpen = open !== undefined ? open : !uiState.isCraftingOpen;
+      if (uiState.isCraftingOpen) {
+        dom.craftingPanel.classList.add("open");
+        dom.btnToggleCrafting.textContent = "✕ Close [C]";
         renderCraftingRecipes();
       } else {
-        craftingPanel.classList.remove("open");
-        btnToggleCrafting.textContent = "🔨 Crafting [C]";
+        dom.craftingPanel.classList.remove("open");
+        dom.btnToggleCrafting.textContent = "\uD83D\uDD28 Crafting [C]";
       }
     }
-
     function renderCraftingRecipes() {
       const p = engine.players.get(0);
-      if (!p) return;
-      craftingRecipeList.innerHTML = "";
-
+      if (!p)
+        return;
+      dom.craftingRecipeList.innerHTML = "";
       for (const recipe of CHAPTER_1_RECIPES) {
         const can = canCraft(recipe, p.inventory, false);
         const btn = document.createElement("button");
@@ -1366,75 +1355,58 @@
         btn.disabled = !can;
         btn.innerHTML = `
           <span>${recipe.name}</span>
-          <span style="font-family: monospace; font-size: 11px;">${recipe.inputs.map(i => `${i.count}x ${getItemDisplay(i.itemId).name}`).join(", ")}</span>
+          <span style="font-family: monospace; font-size: 11px;">${recipe.inputs.map((i) => `${i.count}x ${getItemDisplay(i.itemId).name}`).join(", ")}</span>
         `;
         btn.addEventListener("click", () => {
           craftRecipe(recipe.id);
         });
-        craftingRecipeList.appendChild(btn);
+        dom.craftingRecipeList.appendChild(btn);
       }
     }
-
     function craftRecipe(recipeId) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "CRAFT_RECIPE", recipeId, count: 1 },
-      });
-      engine.stepTick();
-      updateHUD();
-      if (isCraftingOpen) renderCraftingRecipes();
+      craftRecipeAction(recipeId);
+      if (uiState.isCraftingOpen)
+        renderCraftingRecipes();
     }
 
-    btnToggleInv.addEventListener("click", () => toggleInventoryDrawer());
-    btnCloseFullInv.addEventListener("click", () => toggleInventoryDrawer(false));
-    btnToggleCrafting.addEventListener("click", () => toggleCraftingPanel());
-    btnCloseCrafting.addEventListener("click", () => toggleCraftingPanel(false));
-
+    // index/scripts/hud.js
     function updateSelectedVoxelUI(player, room) {
       if (!player || !room || !player.selectedSlot) {
-        voxelTargetName.textContent = "None Selected";
-        voxelTargetCoords.textContent = "Coord: -";
-        voxelActionList.innerHTML = '<span class="voxel-no-action">Select a block to act</span>';
+        dom.voxelTargetName.textContent = "None Selected";
+        dom.voxelTargetCoords.textContent = "Coord: -";
+        dom.voxelActionList.innerHTML = '<span class="voxel-no-action">Select a block to act</span>';
         return;
       }
-
       const selected = resolveSelectedVoxel(room, player, player.selectedSlot);
       if (!selected) {
-        voxelTargetName.textContent = "Obstructed / Out of reach";
-        voxelTargetCoords.textContent = "Coord: -";
-        voxelActionList.innerHTML = '<span class="voxel-no-action">No target reachable</span>';
+        dom.voxelTargetName.textContent = "Obstructed / Out of reach";
+        dom.voxelTargetCoords.textContent = "Coord: -";
+        dom.voxelActionList.innerHTML = '<span class="voxel-no-action">No target reachable</span>';
         return;
       }
-
       const { coord, tile, isBoundary } = selected;
       const blockDef = getBlockDefinition(tile.id);
       const blockDisplayName = blockDef?.name ?? tile.id;
       const itemDef = getItemDefinition(tile.id);
-      const icon = blockDef?.icon ?? itemDef?.icon ?? "📦";
-
+      const icon = blockDef?.icon ?? itemDef?.icon ?? "\uD83D\uDCE6";
       let growthText = "";
       if (tile.type === "crop" || blockDef?.isCrop) {
         const growthTicks = tile.metadata?.growthTicks || 0;
         const maxTicks = blockDef?.maxGrowthTicks || 1200;
-        const pct = Math.min(100, Math.floor((growthTicks / maxTicks) * 100));
+        const pct = Math.min(100, Math.floor(growthTicks / maxTicks * 100));
         growthText = ` [${pct}%]`;
       }
-
-      voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
-      voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
-
+      dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
+      dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
       const actions = getAvailableVoxelActions(tile, isBoundary, player, coord);
-      voxelActionList.innerHTML = "";
-
+      dom.voxelActionList.innerHTML = "";
       if (actions.length === 0) {
         const noAct = document.createElement("span");
         noAct.className = "voxel-no-action";
         noAct.textContent = tile.id === "minecraft:air" ? "Empty Air (No Actions)" : "No Actions Available";
-        voxelActionList.appendChild(noAct);
+        dom.voxelActionList.appendChild(noAct);
         return;
       }
-
       for (const act of actions) {
         const btn = document.createElement("button");
         btn.className = "voxel-action-btn";
@@ -1446,21 +1418,18 @@
         btn.addEventListener("click", () => {
           interactSlot(player.selectedSlot, act.buttonType);
         });
-        voxelActionList.appendChild(btn);
+        dom.voxelActionList.appendChild(btn);
       }
     }
-
     function updateHUD() {
       const p = engine.players.get(0);
-      if (!p) return;
-
+      if (!p)
+        return;
       const room = engine.rooms.get(p.currentRoomId);
-      hudRoomName.textContent = room ? room.name : p.currentRoomId;
-      hudCoords.textContent = `(${p.x}, ${p.y}, ${p.z})`;
-      hudLayerName.textContent = layerLabels[p.selectedLayerIndex] || `L${p.selectedLayerIndex}`;
-
-      // Layer selection buttons state
-      layerButtons.forEach((btn, idx) => {
+      dom.hudRoomName.textContent = room ? room.name : p.currentRoomId;
+      dom.hudCoords.textContent = `(${p.x}, ${p.y}, ${p.z})`;
+      dom.hudLayerName.textContent = layerLabels[p.selectedLayerIndex] || `L${p.selectedLayerIndex}`;
+      dom.layerButtons.forEach((btn, idx) => {
         if (btn) {
           if (idx === p.selectedLayerIndex) {
             btn.classList.add("active");
@@ -1469,26 +1438,19 @@
           }
         }
       });
-
-      // Health and Hunger display
       const heartsCount = Math.ceil(p.health / 2);
       let heartsHtml = "";
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0;i < 10; i++) {
         heartsHtml += `<span class="icon-heart" style="opacity: ${i < heartsCount ? 1 : 0.25}">❤</span>`;
       }
-      hudHearts.innerHTML = heartsHtml;
-
+      dom.hudHearts.innerHTML = heartsHtml;
       const hungerCount = Math.ceil(p.hunger / 2);
       let hungerHtml = "";
-      for (let i = 0; i < 10; i++) {
-        hungerHtml += `<span class="icon-hunger" style="opacity: ${i < hungerCount ? 1 : 0.25}">🍗</span>`;
+      for (let i = 0;i < 10; i++) {
+        hungerHtml += `<span class="icon-hunger" style="opacity: ${i < hungerCount ? 1 : 0.25}">\uD83C\uDF57</span>`;
       }
-      hudHunger.innerHTML = hungerHtml;
-
-      // Update Inventory
+      dom.hudHunger.innerHTML = hungerHtml;
       updateInventoryUI(p);
-
-      // Reticle center button disabled for body layers (1 and 2)
       const reticleCenter = document.getElementById("reticle-slot-5");
       if (reticleCenter) {
         if (p.selectedLayerIndex === 1 || p.selectedLayerIndex === 2) {
@@ -1499,8 +1461,6 @@
           reticleCenter.style.opacity = "1";
         }
       }
-
-      // Update reticle buttons selected state
       document.querySelectorAll(".reticle-cell").forEach((cell) => {
         const slot = parseInt(cell.getAttribute("data-slot"), 10);
         if (p.selectedSlot && slot === p.selectedSlot) {
@@ -1509,258 +1469,30 @@
           cell.classList.remove("selected");
         }
       });
-
-      // Update Selected Voxel Action UI Component
       updateSelectedVoxelUI(p, room);
-
       if (p.currentRoomId === "outer_room") {
-        hudQuestTitle.textContent = "Quest #142: Stuck in a hole";
-        hudQuestDesc.textContent =
-          "Walk onto the embedded Compact Machine block (1, 0) and activate the Personal Shrinking Device to enter!";
+        dom.hudQuestTitle.textContent = "Quest #142: Stuck in a hole";
+        dom.hudQuestDesc.textContent = "Walk onto the embedded Compact Machine block (1, 0) and activate the Personal Shrinking Device to enter!";
       } else {
-        hudQuestTitle.textContent = "Quest #68: The beginning?";
-        hudQuestDesc.textContent =
-          "Inside the 3x3 Tiny Compact Machine! Punch the side walls (Numpad 1-9) to gather dirt dust, or use PSD to exit.";
+        dom.hudQuestTitle.textContent = "Quest #68: The beginning?";
+        dom.hudQuestDesc.textContent = "Inside the 3x3 Tiny Compact Machine! Punch the side walls (Numpad 1-9) to gather dirt dust, or use PSD to exit.";
       }
     }
 
-    function selectLayer(layerIndex) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "SELECT_LAYER", layerIndex },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function swapInventorySlots(fromIndex, toIndex) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "SWAP_INVENTORY_SLOTS", fromIndex, toIndex },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function selectQuickSlot(index) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "SELECT_QUICK_SLOT", index },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function moveItemToTop(slotIndex) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "MOVE_ITEM_TO_TOP", slotIndex },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function moveItemToBottom(slotIndex) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "MOVE_ITEM_TO_BOTTOM", slotIndex },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function interactSlot(slot, button = "PRIMARY") {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "INTERACT_TILE", slot, button },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function movePlayer(dx, dy) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "MOVE", dx, dy },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    function usePSD() {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "USE_PSD" },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    // Layer selector button click bindings
-    layerButtons.forEach((btn, idx) => {
-      if (btn) {
-        btn.addEventListener("click", () => selectLayer(idx));
-      }
-    });
-
-    function selectSlot(slot) {
-      engine.enqueueInput({
-        tick: engine.currentTick + 1,
-        playerId: 0,
-        action: { type: "SELECT_SLOT", slot },
-      });
-      engine.stepTick();
-      updateHUD();
-    }
-
-    // Aux Reticle click and hover preview bindings
-    document.querySelectorAll(".reticle-cell").forEach((cell) => {
-      cell.addEventListener("mouseenter", () => {
-        const slot = parseInt(cell.getAttribute("data-slot"), 10);
-        if (slot) selectSlot(slot);
-      });
-      cell.addEventListener("click", () => {
-        const slot = parseInt(cell.getAttribute("data-slot"), 10);
-        if (slot) {
-          selectSlot(slot);
-          interactSlot(slot, "PRIMARY");
-        }
-      });
-      cell.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        const slot = parseInt(cell.getAttribute("data-slot"), 10);
-        if (slot) {
-          selectSlot(slot);
-          interactSlot(slot, "SECONDARY");
-        }
-      });
-    });
-
-    // Keyboard handlers
-    window.addEventListener("keydown", (e) => {
-      const p = engine.players.get(0);
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-        case "W":
-          movePlayer(0, -1);
-          e.preventDefault();
-          break;
-        case "ArrowDown":
-        case "s":
-        case "S":
-          movePlayer(0, 1);
-          e.preventDefault();
-          break;
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          movePlayer(-1, 0);
-          e.preventDefault();
-          break;
-        case "ArrowRight":
-        case "d":
-        case "D":
-          movePlayer(1, 0);
-          e.preventDefault();
-          break;
-        case "e":
-        case "E":
-          toggleInventoryDrawer();
-          e.preventDefault();
-          break;
-        case "c":
-        case "C":
-          toggleCraftingPanel();
-          e.preventDefault();
-          break;
-        case "p":
-        case "P":
-        case " ":
-          usePSD();
-          e.preventDefault();
-          break;
-        case "F1":
-          selectLayer(0);
-          e.preventDefault();
-          break;
-        case "F2":
-          selectLayer(1);
-          e.preventDefault();
-          break;
-        case "F3":
-          selectLayer(2);
-          e.preventDefault();
-          break;
-        case "F4":
-          selectLayer(3);
-          e.preventDefault();
-          break;
-        case "[":
-          if (p) selectLayer(Math.max(0, p.selectedLayerIndex - 1));
-          e.preventDefault();
-          break;
-        case "]":
-          if (p) selectLayer(Math.min(3, p.selectedLayerIndex + 1));
-          e.preventDefault();
-          break;
-        case "1":
-        case "2":
-        case "3":
-        case "4":
-        case "5":
-        case "6":
-        case "7":
-        case "8":
-        case "9": {
-          const slot = parseInt(e.key, 10);
-          if (e.code.startsWith("Numpad") || e.location === 3) {
-            selectSlot(slot);
-            interactSlot(slot);
-            e.preventDefault();
-          } else {
-            // Quick select hotbar slot 0..8
-            selectQuickSlot(slot - 1);
-          }
-          break;
-        }
-      }
-    });
-
-    // Button controls
-    document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -1));
-    document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 1));
-    document.getElementById("btn-left").addEventListener("click", () => movePlayer(-1, 0));
-    document.getElementById("btn-right").addEventListener("click", () => movePlayer(1, 0));
-    document.getElementById("btn-use-psd").addEventListener("click", () => usePSD());
-
-    // Direct Canvas Interaction: unproject screen coordinates to active layer tile slot
+    // index/scripts/input.js
     function getSlotFromCanvasEvent(e) {
       const p = engine.players.get(0);
-      if (!p) return null;
-
+      if (!p)
+        return null;
       const rect = canvas.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
       const cursorY = e.clientY - rect.top;
-
-      // Active layer Z in world space
       const targetZ = p.z + p.selectedLayerIndex - 1;
       const worldPos = screenToWorld(cursorX, cursorY, targetZ, renderer.camera);
       const targetX = Math.round(worldPos.x);
       const targetY = Math.round(worldPos.y);
-
       const dx = targetX - p.x;
       const dy = targetY - p.y;
-
-      // Map (dx, dy) within 1-block reach to numpad slot (1..9)
       const deltaToSlot = {
         "-1,-1": 7,
         "0,-1": 8,
@@ -1770,38 +1502,171 @@
         "1,0": 6,
         "-1,1": 1,
         "0,1": 2,
-        "1,1": 3,
+        "1,1": 3
       };
-
       const key = `${dx},${dy}`;
       return deltaToSlot[key] || null;
     }
+    function bindInputHandlers() {
+      dom.btnToggleInv.addEventListener("click", () => toggleInventoryDrawer());
+      dom.btnCloseFullInv.addEventListener("click", () => toggleInventoryDrawer(false));
+      dom.btnToggleCrafting.addEventListener("click", () => toggleCraftingPanel());
+      dom.btnCloseCrafting.addEventListener("click", () => toggleCraftingPanel(false));
+      dom.layerButtons.forEach((btn, idx) => {
+        if (btn) {
+          btn.addEventListener("click", () => selectLayer(idx));
+        }
+      });
+      document.querySelectorAll(".reticle-cell").forEach((cell) => {
+        cell.addEventListener("mouseenter", () => {
+          const slot = parseInt(cell.getAttribute("data-slot"), 10);
+          if (slot)
+            selectSlot(slot);
+        });
+        cell.addEventListener("click", () => {
+          const slot = parseInt(cell.getAttribute("data-slot"), 10);
+          if (slot) {
+            selectSlot(slot);
+            interactSlot(slot, "PRIMARY");
+          }
+        });
+        cell.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          const slot = parseInt(cell.getAttribute("data-slot"), 10);
+          if (slot) {
+            selectSlot(slot);
+            interactSlot(slot, "SECONDARY");
+          }
+        });
+      });
+      window.addEventListener("keydown", (e) => {
+        const p = engine.players.get(0);
+        switch (e.key) {
+          case "ArrowUp":
+          case "w":
+          case "W":
+            movePlayer(0, -1);
+            e.preventDefault();
+            break;
+          case "ArrowDown":
+          case "s":
+          case "S":
+            movePlayer(0, 1);
+            e.preventDefault();
+            break;
+          case "ArrowLeft":
+          case "a":
+          case "A":
+            movePlayer(-1, 0);
+            e.preventDefault();
+            break;
+          case "ArrowRight":
+          case "d":
+          case "D":
+            movePlayer(1, 0);
+            e.preventDefault();
+            break;
+          case "e":
+          case "E":
+            toggleInventoryDrawer();
+            e.preventDefault();
+            break;
+          case "c":
+          case "C":
+            toggleCraftingPanel();
+            e.preventDefault();
+            break;
+          case "p":
+          case "P":
+          case " ":
+            usePSD();
+            e.preventDefault();
+            break;
+          case "F1":
+            selectLayer(0);
+            e.preventDefault();
+            break;
+          case "F2":
+            selectLayer(1);
+            e.preventDefault();
+            break;
+          case "F3":
+            selectLayer(2);
+            e.preventDefault();
+            break;
+          case "F4":
+            selectLayer(3);
+            e.preventDefault();
+            break;
+          case "[":
+            if (p)
+              selectLayer(Math.max(0, p.selectedLayerIndex - 1));
+            e.preventDefault();
+            break;
+          case "]":
+            if (p)
+              selectLayer(Math.min(3, p.selectedLayerIndex + 1));
+            e.preventDefault();
+            break;
+          case "1":
+          case "2":
+          case "3":
+          case "4":
+          case "5":
+          case "6":
+          case "7":
+          case "8":
+          case "9": {
+            const slot = parseInt(e.key, 10);
+            if (e.code.startsWith("Numpad") || e.location === 3) {
+              selectSlot(slot);
+              interactSlot(slot);
+              e.preventDefault();
+            } else {
+              selectQuickSlot(slot - 1);
+            }
+            break;
+          }
+        }
+      });
+      document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -1));
+      document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 1));
+      document.getElementById("btn-left").addEventListener("click", () => movePlayer(-1, 0));
+      document.getElementById("btn-right").addEventListener("click", () => movePlayer(1, 0));
+      document.getElementById("btn-use-psd").addEventListener("click", () => usePSD());
+      canvas.addEventListener("mousemove", (e) => {
+        const slot = getSlotFromCanvasEvent(e);
+        if (slot) {
+          selectSlot(slot);
+        }
+      });
+      canvas.addEventListener("click", (e) => {
+        const slot = getSlotFromCanvasEvent(e);
+        if (slot) {
+          selectSlot(slot);
+          interactSlot(slot, "PRIMARY");
+        }
+      });
+      canvas.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const slot = getSlotFromCanvasEvent(e);
+        if (slot) {
+          selectSlot(slot);
+          interactSlot(slot, "SECONDARY");
+        }
+      });
+    }
 
-    canvas.addEventListener("mousemove", (e) => {
-      const slot = getSlotFromCanvasEvent(e);
-      if (slot) {
-        selectSlot(slot);
-      }
-    });
-
-    canvas.addEventListener("click", (e) => {
-      const slot = getSlotFromCanvasEvent(e);
-      if (slot) {
-        selectSlot(slot);
-        interactSlot(slot, "PRIMARY");
-      }
-    });
-
-    canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      const slot = getSlotFromCanvasEvent(e);
-      if (slot) {
-        selectSlot(slot);
-        interactSlot(slot, "SECONDARY");
-      }
-    });
-
-    // Expose engine to window for testing / automated inspection
+    // index/scripts/main.js
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    setOnActionComplete(updateHUD);
+    bindInputHandlers();
     window.__gameEngine = engine;
     window.__movePlayer = movePlayer;
     window.__usePSD = usePSD;
@@ -1815,41 +1680,28 @@
     window.__toggleInventoryDrawer = toggleInventoryDrawer;
     window.__toggleCraftingPanel = toggleCraftingPanel;
     window.__craftRecipe = craftRecipe;
-
-    // Render loop
     function renderLoop() {
       const p = engine.players.get(0);
       const room = p ? engine.rooms.get(p.currentRoomId) : undefined;
-
       const logicalW = canvas.clientWidth;
       const logicalH = canvas.clientHeight;
-
       ctx.clearRect(0, 0, logicalW, logicalH);
-
       if (room && p) {
-        // Auto-center camera for current room
         renderer.centerOnRoom(room, logicalW, logicalH);
-
-        // Active layer Z elevation in world space (player.z + selectedLayerIndex - 1)
         const selectedLayerZ = p.z + p.selectedLayerIndex - 1;
-
-        // Targeted block coordinate if a slot is selected
         let highlightCoord = null;
         if (p.selectedSlot) {
           highlightCoord = resolveTargetCoord(p, p.selectedSlot);
         }
-
         renderer.render(room, engine.players.values(), ctx, {
           enableCutaway: true,
           selectedLayerZ,
           showLayerOutline: true,
-          highlightCoord,
+          highlightCoord
         });
       }
-
       requestAnimationFrame(renderLoop);
     }
-
     updateHUD();
     requestAnimationFrame(renderLoop);
   </script>

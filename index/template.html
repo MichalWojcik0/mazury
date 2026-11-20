@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compact Claustrophobia (Canvas Edition)</title>
+  <link rel="stylesheet" href="./styles/base.css" />
+  <link rel="stylesheet" href="./styles/middle.css" />
+  <link rel="stylesheet" href="./styles/bottom.css" />
+  <link rel="stylesheet" href="./styles/inventory.css" />
+  <link rel="stylesheet" href="./styles/tooltip.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- @include ./partials/tooltip.html -->
+
+    <div class="ui-overlay">
+      <!-- @include ./partials/top-bar.html -->
+
+      <!-- @include ./partials/middle-overlay.html -->
+
+      <!-- @include ./partials/bottom-bar.html -->
+    </div>
+  </div>
+
+  <script type="module" src="./scripts/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!-- Bottom Controls, Quick Inventory, and Actions -->
+<div class="bottom-bar">
+  <div class="controls-panel ui-interactive">
+    <div class="dpad-container">
+      <div></div>
+      <button class="ui-btn" id="btn-up" title="Move North (W / Up)">▲</button>
+      <div></div>
+      <button class="ui-btn" id="btn-left" title="Move West (A / Left)">◀</button>
+      <button class="ui-btn" id="btn-center" disabled style="opacity: 0.3;">●</button>
+      <button class="ui-btn" id="btn-right" title="Move East (D / Right)">▶</button>
+      <div></div>
+      <button class="ui-btn" id="btn-down" title="Move South (S / Down)">▼</button>
+      <div></div>
+    </div>
+  </div>
+
+  <!-- Inventory Container -->
+  <div class="inventory-section ui-interactive">
+    <!-- Full 36-slot Drawer -->
+    <div class="full-inventory-drawer" id="full-inv-drawer">
+      <div class="drawer-title-row">
+        <span>Inventory (36 Slots)</span>
+        <button class="inv-toggle-btn" id="btn-close-full-inv">✕ Close</button>
+      </div>
+      <div class="inventory-grid-36" id="grid-36-slots">
+        <!-- Dynamically rendered 36 slots -->
+      </div>
+    </div>
+
+    <!-- Crafting List Modal / Panel -->
+    <div class="crafting-panel" id="crafting-panel">
+      <div class="drawer-title-row">
+        <span>List Crafting</span>
+        <button class="inv-toggle-btn" id="btn-close-crafting">✕ Close</button>
+      </div>
+      <div class="crafting-recipe-list" id="crafting-recipe-list">
+        <!-- Dynamically rendered list recipes -->
+      </div>
+    </div>
+
+    <div class="inventory-header">
+      <span class="widget-title" style="text-align: left; margin: 0;">Quick Use (Top 9 Slots)</span>
+      <div style="display: flex; gap: 6px;">
+        <button class="inv-toggle-btn" id="btn-toggle-crafting">🔨 Crafting [C]</button>
+        <button class="inv-toggle-btn" id="btn-toggle-inv">📦 Full Inventory [E]</button>
+      </div>
+    </div>
+
+    <!-- Top 9 Quick Selection / Hotbar -->
+    <div class="quick-inventory-panel" id="hud-quick-inventory">
+      <!-- Dynamically rendered top 9 slots -->
+    </div>
+  </div>
+
+  <div class="psd-action-panel ui-interactive">
+    <button class="psd-btn" id="btn-use-psd">
+      ⚡ Use Personal Shrinking Device (P / Space)
+    </button>
+    <div class="hud-card legend-card">
+      Walk: <span class="key-badge">WASD</span> &bull;
+      Layer: <span class="key-badge">F1-F4</span> / <span class="key-badge">[ ]</span> &bull;
+      Target: <span class="key-badge">Numpad 1-9</span> &bull;
+      Inv: <span class="key-badge">E</span> / <span class="key-badge">1-9</span>
+    </div>
+  </div>
+</div>

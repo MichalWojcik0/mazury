@@ -1,0 +1,225 @@
+.middle-overlay {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Vertical 4-Layer Selection Widget */
+.layer-selector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(18, 22, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.widget-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #828997;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.layer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 5px;
+  color: #abb2bf;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 130px;
+}
+
+.layer-btn:hover {
+  background: #2c313a;
+  color: #ffffff;
+  border-color: #61afef;
+}
+
+.layer-btn.active {
+  background: #2b5876;
+  border-color: #61afef;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(97, 175, 239, 0.35);
+}
+
+.layer-btn .hotkey {
+  font-family: monospace;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* 3x3 Auxiliary Reticle Widget & Target Action Card */
+.aux-reticle-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(18, 22, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.reticle-action-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.voxel-action-card {
+  background: rgba(18, 22, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.voxel-target-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.voxel-target-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #828997;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voxel-target-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #61afef;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voxel-target-coords {
+  font-size: 10px;
+  font-family: monospace;
+  color: #abb2bf;
+}
+
+.voxel-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voxel-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 5px;
+  color: #e0e6ed;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.voxel-action-btn:hover:not(:disabled) {
+  background: #2b5876;
+  border-color: #61afef;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(97, 175, 239, 0.3);
+}
+
+.voxel-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+  background: #1e3a5f;
+}
+
+.voxel-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voxel-no-action {
+  font-size: 11px;
+  color: #5c6370;
+  font-style: italic;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.reticle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  grid-template-rows: repeat(3, 34px);
+  gap: 4px;
+}
+
+.reticle-cell {
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 4px;
+  color: #abb2bf;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-family: monospace;
+}
+
+.reticle-cell:hover:not(:disabled) {
+  background: #3e4451;
+  color: #61afef;
+  border-color: #61afef;
+  transform: scale(1.05);
+}
+
+.reticle-cell:active:not(:disabled) {
+  transform: scale(0.95);
+  background: #61afef;
+  color: #12161c;
+}
+
+.reticle-cell.player-cell {
+  background: #282c34;
+  border-color: #e5c07b;
+  color: #e5c07b;
+  opacity: 0.6;
+}
+
+.reticle-cell.selected {
+  background: #2b5876;
+  border-color: #00ffff;
+  color: #00ffff;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}

@@ -1,0 +1,93 @@
+.bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dpad-container {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+  background: rgba(18, 22, 28, 0.7);
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+button.ui-btn {
+  background: #2c313a;
+  border: 1px solid #3e4451;
+  border-radius: 6px;
+  color: #abb2bf;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.ui-btn:hover {
+  background: #3e4451;
+  color: #ffffff;
+  border-color: #61afef;
+}
+
+button.ui-btn:active {
+  transform: scale(0.95);
+  background: #21252b;
+}
+
+.psd-action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.psd-btn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+  border: 1px solid #61afef;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(97, 175, 239, 0.25);
+  transition: all 0.2s ease;
+}
+
+.psd-btn:hover {
+  box-shadow: 0 6px 18px rgba(97, 175, 239, 0.45);
+  transform: translateY(-2px);
+}
+
+.psd-btn:active {
+  transform: translateY(0);
+}
+
+.legend-card {
+  font-size: 11px;
+  color: #828997;
+  line-height: 1.6;
+}
+
+.key-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 3px;
+  font-family: monospace;
+  color: #98c379;
+}
