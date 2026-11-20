@@ -15,7 +15,7 @@ import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
 import { resolveSelectedVoxel } from "../mechanics/voxel-actions.ts";
 import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
-import { CHAPTER_1_RECIPES, executeCraft } from "../crafting/list-crafting.ts";
+import { CHAPTER_1_RECIPES, executeCraft, hasCraftingStationAccess } from "../crafting/list-crafting.ts";
 import { QuestTracker } from "../quests/quest-manager.ts";
 import {
   isCropTile,
@@ -490,8 +490,9 @@ export class GameEngine {
         const recipe = CHAPTER_1_RECIPES.find((r) => r.id === action.recipeId);
         if (!recipe) break;
 
-        // In Chapter 1, check if player has crafting station in room or inventory
-        const hasStation = countItem(player.inventory, "craftingstation:crafting_station") > 0;
+        // Check if player has a crafting station placed nearby in the current room or in inventory
+        const room = this.rooms.get(player.currentRoomId);
+        const hasStation = hasCraftingStationAccess(room, player);
         executeCraft(recipe, player.inventory, hasStation);
         this.updateActiveEquipped(player);
         break;

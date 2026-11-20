@@ -4,12 +4,14 @@ import {
   resolveSelectedVoxel,
   getAvailableVoxelActions,
 } from "./engine-api.js";
-import { engine, dom, layerLabels } from "./state.js";
+import { engine, dom, layerLabels, uiState } from "./state.js";
 import { updateInventoryUI } from "./inventory.js";
+import { renderCraftingRecipes } from "./crafting.js";
 import { interactSlot } from "./actions.js";
 
 let lastInventorySignature = null;
 let lastVoxelActionSignature = null;
+let lastCraftingContextSignature = null;
 
 function computeInventorySignature(player) {
   const slots = player.inventory
@@ -130,6 +132,17 @@ export function updateHUD() {
   if (invSig !== lastInventorySignature) {
     lastInventorySignature = invSig;
     updateInventoryUI(p);
+  }
+
+  // Refresh Crafting Panel when open if inventory, player position, or room changed
+  if (uiState.isCraftingOpen) {
+    const craftSig = `${invSig}@${p.currentRoomId}:${p.x},${p.y},${p.z}`;
+    if (craftSig !== lastCraftingContextSignature) {
+      lastCraftingContextSignature = craftSig;
+      renderCraftingRecipes();
+    }
+  } else {
+    lastCraftingContextSignature = null;
   }
 
   // Update Squat button state & progress

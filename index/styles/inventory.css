@@ -18,52 +18,230 @@
   display: none;
   position: absolute;
   bottom: 64px;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(18, 22, 28, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   padding: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
   z-index: 100;
-  width: 320px;
+  width: 400px;
+  max-width: 92vw;
   backdrop-filter: blur(12px);
+}
+
+.crafting-panel.dual {
+  width: 760px;
 }
 
 .crafting-panel.open {
   display: block;
 }
 
-.crafting-recipe-list {
+.crafting-header-left,
+.crafting-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.station-status-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  color: #828997;
+}
+
+.station-status-badge.active {
+  background: rgba(152, 195, 121, 0.16);
+  border-color: #98c379;
+  color: #98c379;
+}
+
+.inv-toggle-btn.active {
+  background: #2c3e50;
+  border-color: #61afef;
+  color: #ffffff;
+}
+
+.crafting-panes {
+  display: flex;
+  gap: 12px;
+}
+
+.crafting-pane {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 280px;
+}
+
+.crafting-pane-secondary {
+  display: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 12px;
+}
+
+.crafting-panel.dual .crafting-pane-secondary {
+  display: flex;
+}
+
+.crafting-pane-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.craft-select {
+  flex: 1;
+  min-width: 0;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 4px;
+  color: #abb2bf;
+  font-size: 10px;
+  padding: 4px 5px;
+  cursor: pointer;
+}
+
+.craft-select:hover,
+.craft-select:focus {
+  border-color: #61afef;
+  color: #ffffff;
+  outline: none;
+}
+
+.crafting-recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
   overflow-y: auto;
+  padding-right: 2px;
+}
+
+.craft-group-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #61afef;
+  padding: 4px 4px 2px 4px;
+  border-bottom: 1px solid rgba(97, 175, 239, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.craft-group-count {
+  color: #5c6370;
+  font-family: monospace;
 }
 
 .craft-btn {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 10px;
   background: #21252b;
   border: 1px solid #3e4451;
   border-radius: 6px;
   color: #abb2bf;
   cursor: pointer;
   font-size: 12px;
+  text-align: left;
   transition: all 0.15s ease;
+}
+
+.craft-btn.craftable {
+  border-color: rgba(152, 195, 121, 0.45);
 }
 
 .craft-btn:hover:not(:disabled) {
   background: #2c313a;
-  border-color: #61afef;
+  border-color: #98c379;
   color: #fff;
 }
 
 .craft-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.55;
   cursor: not-allowed;
+}
+
+.craft-btn-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.craft-btn-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #e0e6ed;
+}
+
+.craft-btn-icon img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+
+.craft-badge {
+  font-size: 9px;
+  font-family: monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.craft-badge-ready {
+  background: rgba(152, 195, 121, 0.2);
+  color: #98c379;
+}
+
+.craft-badge-station {
+  background: rgba(229, 192, 123, 0.2);
+  color: #e5c07b;
+}
+
+.craft-badge-full {
+  background: rgba(224, 108, 117, 0.2);
+  color: #e06c75;
+}
+
+.craft-btn-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.craft-input-ok {
+  color: #98c379;
+}
+
+.craft-input-missing {
+  color: #e06c75;
+}
+
+.craft-empty-state {
+  font-size: 11px;
+  color: #5c6370;
+  font-style: italic;
+  text-align: center;
+  padding: 16px 8px;
 }
 
 .inv-toggle-btn {

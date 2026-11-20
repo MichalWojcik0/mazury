@@ -33,11 +33,72 @@
     <!-- Crafting List Modal / Panel -->
     <div class="crafting-panel" id="crafting-panel">
       <div class="drawer-title-row">
-        <span>List Crafting</span>
-        <button class="inv-toggle-btn" id="btn-close-crafting">✕ Close</button>
+        <div class="crafting-header-left">
+          <span>List Crafting</span>
+          <span class="station-status-badge" id="crafting-station-status">✋ Hand Only</span>
+        </div>
+        <div class="crafting-header-actions">
+          <button class="inv-toggle-btn" id="btn-toggle-dual-crafting" title="View two independent crafting lists side by side">⇄ 2 Lists</button>
+          <button class="inv-toggle-btn" id="btn-close-crafting">✕ Close</button>
+        </div>
       </div>
-      <div class="crafting-recipe-list" id="crafting-recipe-list">
-        <!-- Dynamically rendered list recipes -->
+      <div class="crafting-panes" id="crafting-panes">
+        <div class="crafting-pane" id="crafting-pane-0">
+          <div class="crafting-pane-controls">
+            <select class="craft-select" id="craft-filter-0" title="Filter recipes">
+              <option value="all">All Recipes</option>
+              <option value="craftable">Craftable Only</option>
+              <option value="hand">Hand Crafting</option>
+              <option value="station">Crafting Station</option>
+              <option value="basic">Basic &amp; Materials</option>
+              <option value="tools">Tools</option>
+              <option value="machinery">Machinery</option>
+              <option value="fluid">Fluids</option>
+            </select>
+            <select class="craft-select" id="craft-group-0" title="Group recipes">
+              <option value="category">Group: Category</option>
+              <option value="station">Group: Station</option>
+              <option value="craftable">Group: Craftable</option>
+              <option value="none">No Grouping</option>
+            </select>
+            <select class="craft-select" id="craft-sort-0" title="Sort recipes">
+              <option value="craftable">Sort: Craftable</option>
+              <option value="name">Sort: Name</option>
+              <option value="category">Sort: Category</option>
+            </select>
+          </div>
+          <div class="crafting-recipe-list" id="crafting-recipe-list-0">
+            <!-- Dynamically rendered list recipes -->
+          </div>
+        </div>
+        <div class="crafting-pane crafting-pane-secondary" id="crafting-pane-1">
+          <div class="crafting-pane-controls">
+            <select class="craft-select" id="craft-filter-1" title="Filter recipes (List 2)">
+              <option value="all">All Recipes</option>
+              <option value="craftable">Craftable Only</option>
+              <option value="hand">Hand Crafting</option>
+              <option value="station" selected>Crafting Station</option>
+              <option value="basic">Basic &amp; Materials</option>
+              <option value="tools">Tools</option>
+              <option value="machinery">Machinery</option>
+              <option value="fluid">Fluids</option>
+            </select>
+            <select class="craft-select" id="craft-group-1" title="Group recipes (List 2)">
+              <option value="category">Group: Category</option>
+              <option value="station">Group: Station</option>
+              <option value="craftable">Group: Craftable</option>
+              <option value="none">No Grouping</option>
+            </select>
+            <select class="craft-select" id="craft-sort-1" title="Sort recipes (List 2)">
+              <option value="craftable">Sort: Craftable</option>
+              <option value="name">Sort: Name</option>
+              <option value="category">Sort: Category</option>
+            </select>
+          </div>
+          <div class="crafting-recipe-list" id="crafting-recipe-list-1">
+            <!-- Dynamically rendered list recipes (List 2) -->
+          </div>
+        </div>
       </div>
     </div>
 

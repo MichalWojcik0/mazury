@@ -27,7 +27,22 @@ export const dom = {
   btnToggleInv: document.getElementById("btn-toggle-inv"),
   btnCloseFullInv: document.getElementById("btn-close-full-inv"),
   craftingPanel: document.getElementById("crafting-panel"),
-  craftingRecipeList: document.getElementById("crafting-recipe-list"),
+  craftingStationStatus: document.getElementById("crafting-station-status"),
+  btnToggleDualCrafting: document.getElementById("btn-toggle-dual-crafting"),
+  craftingPanes: [
+    {
+      listEl: document.getElementById("crafting-recipe-list-0"),
+      filterEl: document.getElementById("craft-filter-0"),
+      groupEl: document.getElementById("craft-group-0"),
+      sortEl: document.getElementById("craft-sort-0"),
+    },
+    {
+      listEl: document.getElementById("crafting-recipe-list-1"),
+      filterEl: document.getElementById("craft-filter-1"),
+      groupEl: document.getElementById("craft-group-1"),
+      sortEl: document.getElementById("craft-sort-1"),
+    },
+  ],
   btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
   btnCloseCrafting: document.getElementById("btn-close-crafting"),
   btnSquat: document.getElementById("btn-squat"),
@@ -58,6 +73,11 @@ export const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
 export const uiState = {
   isInventoryDrawerOpen: false,
   isCraftingOpen: false,
+  isDualCraftingOpen: false,
+  craftingPaneConfigs: [
+    { filter: "all", groupBy: "category", sortBy: "craftable" },
+    { filter: "station", groupBy: "category", sortBy: "craftable" },
+  ],
   draggedSlotIndex: null,
 };
 
