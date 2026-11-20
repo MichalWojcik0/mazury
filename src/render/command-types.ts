@@ -35,7 +35,8 @@ export interface CanvasContext2DLike {
   stroke(): void;
   fillRect(x: number, y: number, w: number, h: number): void;
   strokeRect(x: number, y: number, w: number, h: number): void;
-  drawImage?(image: unknown, dx: number, dy: number, dw?: number, dh?: number): void;
+  drawImage?(image: unknown, ...args: number[]): void;
+  imageSmoothingEnabled?: boolean;
   fillText(text: string, x: number, y: number): void;
   arc?(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
   ellipse?(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number): void;

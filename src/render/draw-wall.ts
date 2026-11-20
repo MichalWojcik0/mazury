@@ -71,6 +71,20 @@ export function renderTexturedTopDiamond(
   ctx.restore();
 }
 
+export interface SideFaceFallbackStyle {
+  leftFill: string;
+  rightFill: string;
+  stroke: string;
+  drawPanelSeam?: boolean;
+}
+
+const DEFAULT_WALL_SIDE_STYLE: SideFaceFallbackStyle = {
+  leftFill: "#33363e",
+  rightFill: "#3e424c",
+  stroke: "#474a54",
+  drawPanelSeam: true,
+};
+
 export function renderWallSideFace(
   ctx: CanvasContext2DLike,
   u: number,
@@ -80,7 +94,8 @@ export function renderWallSideFace(
   elevH: number,
   side: "left" | "right",
   wallImage: HTMLImageElement | null = null,
-  wallImageLoaded: boolean = false
+  wallImageLoaded: boolean = false,
+  fallbackStyle: SideFaceFallbackStyle = DEFAULT_WALL_SIDE_STYLE
 ): void {
   ctx.save();
   ctx.beginPath();
@@ -99,17 +114,23 @@ export function renderWallSideFace(
     ctx.closePath();
   }
 
+  const imageReady = Boolean(
+    wallImage && (wallImageLoaded || (wallImage.complete && wallImage.naturalWidth > 0))
+  );
   const canClip =
     typeof ctx.clip === "function" &&
     typeof ctx.transform === "function" &&
-    wallImage &&
-    wallImageLoaded;
+    imageReady;
 
   if (canClip && ctx.clip && ctx.transform && ctx.drawImage && wallImage) {
     ctx.clip();
 
     const imgW = wallImage.naturalWidth || 16;
     const imgH = wallImage.naturalHeight || 16;
+
+    if (ctx.imageSmoothingEnabled !== undefined) {
+      ctx.imageSmoothingEnabled = false;
+    }
 
     if (side === "left") {
       ctx.transform(halfW / imgW, halfH / imgW, 0, elevH / imgH, u - halfW, v);
@@ -135,7 +156,7 @@ export function renderWallSideFace(
       ctx.lineTo(u + halfW, v + elevH);
       ctx.lineTo(u, v + halfH + elevH);
       ctx.closePath();
-      ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
     }
     ctx.fill();
     ctx.strokeStyle = "#25272c";
@@ -146,27 +167,31 @@ export function renderWallSideFace(
   }
 
   if (side === "left") {
-    ctx.fillStyle = "#33363e";
+    ctx.fillStyle = fallbackStyle.leftFill;
     ctx.fill();
-    ctx.strokeStyle = "#474a54";
+    ctx.strokeStyle = fallbackStyle.stroke;
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(u - halfW / 2, v + halfH / 2);
-    ctx.lineTo(u - halfW / 2, v + halfH / 2 + elevH);
-    ctx.strokeStyle = "#22242a";
-    ctx.stroke();
+    if (fallbackStyle.drawPanelSeam) {
+      ctx.beginPath();
+      ctx.moveTo(u - halfW / 2, v + halfH / 2);
+      ctx.lineTo(u - halfW / 2, v + halfH / 2 + elevH);
+      ctx.strokeStyle = "#22242a";
+      ctx.stroke();
+    }
   } else {
-    ctx.fillStyle = "#3e424c";
+    ctx.fillStyle = fallbackStyle.rightFill;
     ctx.fill();
-    ctx.strokeStyle = "#525763";
+    ctx.strokeStyle = fallbackStyle.stroke;
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(u + halfW / 2, v + halfH / 2);
-    ctx.lineTo(u + halfW / 2, v + halfH / 2 + elevH);
-    ctx.strokeStyle = "#22242a";
-    ctx.stroke();
+    if (fallbackStyle.drawPanelSeam) {
+      ctx.beginPath();
+      ctx.moveTo(u + halfW / 2, v + halfH / 2);
+      ctx.lineTo(u + halfW / 2, v + halfH / 2 + elevH);
+      ctx.strokeStyle = "#22242a";
+      ctx.stroke();
+    }
   }
 
   ctx.restore();

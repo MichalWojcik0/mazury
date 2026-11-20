@@ -1,4 +1,4 @@
-import { screenToWorld } from "./engine-api.js";
+import { screenToWorld, hitTestBoundaryWallFace } from "./engine-api.js";
 import { engine, renderer, canvas, dom } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
@@ -15,6 +15,8 @@ import {
 function getSlotFromCanvasEvent(e) {
   const p = engine.players.get(0);
   if (!p) return null;
+  const room = engine.rooms.get(p.currentRoomId);
+  if (!room) return null;
 
   const rect = canvas.getBoundingClientRect();
   const cursorX = e.clientX - rect.left;
@@ -23,8 +25,36 @@ function getSlotFromCanvasEvent(e) {
   // Active layer Z in world space
   const targetZ = p.z + p.selectedLayerIndex - 1;
   const worldPos = screenToWorld(cursorX, cursorY, targetZ, renderer.camera);
-  const targetX = Math.round(worldPos.x);
-  const targetY = Math.round(worldPos.y);
+  let targetX = Math.round(worldPos.x);
+  let targetY = Math.round(worldPos.y);
+
+  // Hit-test visible NORTH (y = -1) and WEST (x = -1) boundary wall side faces on the active layer
+  if (room.faces && targetZ >= 1 && targetZ <= room.depth) {
+    const interiorTile =
+      targetX >= 0 &&
+      targetX < room.width &&
+      targetY >= 0 &&
+      targetY < room.height &&
+      targetZ < room.depth
+        ? room.voxels[targetZ]?.[targetY]?.[targetX]
+        : null;
+    const hasBlockingInteriorTile = interiorTile && interiorTile.id !== "minecraft:air";
+
+    if (!hasBlockingInteriorTile) {
+      const wallCoord = hitTestBoundaryWallFace(
+        cursorX,
+        cursorY,
+        targetZ,
+        room.width,
+        room.height,
+        renderer.camera
+      );
+      if (wallCoord) {
+        targetX = wallCoord.x;
+        targetY = wallCoord.y;
+      }
+    }
+  }
 
   const dx = targetX - p.x;
   const dy = targetY - p.y;

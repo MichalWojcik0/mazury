@@ -2,41 +2,113 @@ import type { Tile } from "../core/types.ts";
 import type { CanvasContext2DLike } from "./command-types.ts";
 import { getGrowthProgress } from "../mechanics/farming.ts";
 
+function drawCrossedQuadTexture(
+  ctx: CanvasContext2DLike,
+  u: number,
+  baseV: number,
+  dx: number,
+  dy: number,
+  spriteH: number,
+  texture: HTMLImageElement
+): void {
+  const imgW = texture.naturalWidth || 16;
+  const imgH = texture.naturalHeight || 16;
+  const halfImgW = imgW / 2;
+
+  const drawHalf = (
+    sx: number,
+    a: number,
+    b: number,
+    e: number,
+    f: number
+  ) => {
+    ctx.save();
+    if (ctx.imageSmoothingEnabled !== undefined) {
+      ctx.imageSmoothingEnabled = false;
+    }
+    ctx.transform?.(a, b, 0, spriteH / imgH, e, f);
+    ctx.drawImage?.(texture, sx, 0, halfImgW, imgH, 0, 0, halfImgW, imgH);
+    ctx.restore();
+  };
+
+  // True 3D painter's order for two intersecting flat texture planes:
+  // 1. Back half of Plane A (NW -> center)
+  drawHalf(0, dx / halfImgW, dy / halfImgW, u - dx, baseV - dy - spriteH);
+  // 2. Back half of Plane B (center -> NE)
+  drawHalf(halfImgW, dx / halfImgW, -dy / halfImgW, u, baseV - spriteH);
+  // 3. Front half of Plane A (center -> SE)
+  drawHalf(halfImgW, dx / halfImgW, dy / halfImgW, u, baseV - spriteH);
+  // 4. Front half of Plane B (SW -> center)
+  drawHalf(0, dx / halfImgW, -dy / halfImgW, u - dx, baseV + dy - spriteH);
+}
+
+function drawCrossedQuadFallback(
+  ctx: CanvasContext2DLike,
+  u: number,
+  baseV: number,
+  dx: number,
+  dy: number,
+  spriteH: number,
+  isMature: boolean
+): void {
+  const fillA = isMature ? "#2e7d32" : "#4caf50";
+  const fillB = isMature ? "#1b5e20" : "#388e3c";
+
+  // Plane A (NW-SE flat quad)
+  ctx.beginPath();
+  ctx.moveTo(u - dx, baseV - dy - spriteH);
+  ctx.lineTo(u + dx, baseV + dy - spriteH);
+  ctx.lineTo(u + dx, baseV + dy);
+  ctx.lineTo(u - dx, baseV - dy);
+  ctx.closePath();
+  ctx.fillStyle = fillA;
+  ctx.fill();
+
+  // Plane B (SW-NE flat quad)
+  ctx.beginPath();
+  ctx.moveTo(u - dx, baseV + dy - spriteH);
+  ctx.lineTo(u + dx, baseV - dy - spriteH);
+  ctx.lineTo(u + dx, baseV - dy);
+  ctx.lineTo(u - dx, baseV + dy);
+  ctx.closePath();
+  ctx.fillStyle = fillB;
+  ctx.fill();
+}
+
 export function renderCropTile(
   ctx: CanvasContext2DLike,
   u: number,
   v: number,
   halfW: number,
   halfH: number,
+  elevH: number,
   zoom: number,
-  tile: Tile
+  tile: Tile,
+  texture?: HTMLImageElement | null
 ): void {
   const { progress, stage, isMature } = getGrowthProgress(tile);
   const tileId = tile.id;
 
   if (tileId.startsWith("arcadialbonsaitrees:bonsai_")) {
-    ctx.beginPath();
-    ctx.ellipse?.(u, v, halfW * 0.45, halfH * 0.45, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#3e2716";
-    ctx.fill();
+    const baseV = v + elevH;
+    const scale = 0.55 + progress * 0.45;
+    const dx = halfW * 0.6 * scale;
+    const dy = halfH * 0.6 * scale;
+    const spriteH = elevH * 1.8 * scale;
 
-    const trunkH = (5 + progress * 10) * zoom;
-    const trunkW = 3 * zoom;
+    const canDrawTexture = Boolean(
+      texture &&
+        texture.complete &&
+        texture.naturalWidth > 0 &&
+        typeof ctx.transform === "function" &&
+        typeof ctx.drawImage === "function"
+    );
 
-    ctx.fillStyle = "#6d4c41";
-    ctx.fillRect(u - trunkW / 2, v - trunkH, trunkW, trunkH);
-
-    const crownRadius = (3 + progress * 8) * zoom;
-    const crownY = v - trunkH - crownRadius * 0.3;
-
-    ctx.beginPath();
-    if (ctx.arc) {
-      ctx.arc(u, crownY, crownRadius, 0, Math.PI * 2);
+    if (canDrawTexture && texture) {
+      drawCrossedQuadTexture(ctx, u, baseV, dx, dy, spriteH, texture);
     } else {
-      ctx.fillRect(u - crownRadius, crownY - crownRadius, crownRadius * 2, crownRadius * 2);
+      drawCrossedQuadFallback(ctx, u, baseV, dx, dy, spriteH, isMature);
     }
-    ctx.fillStyle = isMature ? "#2e7d32" : "#4caf50";
-    ctx.fill();
   } else if (tileId === "minecraft:wheat") {
     const stalkCount = 4 + stage;
     const stalkH = (4 + progress * 16) * zoom;

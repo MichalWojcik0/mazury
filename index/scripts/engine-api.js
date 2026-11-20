@@ -3,6 +3,7 @@ export {
   StubRenderer,
   resolveTargetCoord,
   screenToWorld,
+  hitTestBoundaryWallFace,
   CHAPTER_1_RECIPES,
   canCraft,
   ITEM_REGISTRY,

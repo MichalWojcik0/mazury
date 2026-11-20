@@ -6,6 +6,7 @@ import { countItem, addItem } from "../src/inventory/inventory.ts";
 import { strikeWall } from "../src/mechanics/wall-punching.ts";
 import { DeterministicRNG } from "../src/core/math.ts";
 import { CHAPTER_1_RECIPES, canCraft, executeCraft } from "../src/crafting/list-crafting.ts";
+import { DEFAULT_CAMERA_CONFIG, worldToScreen, hitTestBoundaryWallFace } from "../src/render/projection.ts";
 
 test("Wall punching loot table produces dirt dust (70%), gravel dust (20%), or miss (10%)", () => {
   const solidWallTile = {
@@ -216,4 +217,62 @@ test("Targeting Layer 0 (Floor) in 3x3 Compact Machine resolves to DOWN face sol
 
   // Floor punch dealt 1 self-damage
   assert.equal(player.health, healthBefore - 1);
+});
+
+test("Punching a wall works while holding starting PSD or non-pickaxe items", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Player starts with PSD equipped in slot 0
+  assert.equal(player.equippedItem, "compactmachines3:psd");
+
+  // Enter tiny machine
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+  assert.equal(player.currentRoomId, "room_tiny_1");
+
+  // Walk North to stand next to NORTH wall (1, -1, 1)
+  engine.enqueueInput({ tick: 2, playerId: 0, action: { type: "MOVE", dx: 0, dy: -1 } });
+  engine.stepTick();
+  assert.equal(player.y, 0);
+
+  // Punch NORTH wall (slot 8) without switching away from PSD
+  const healthBefore = player.health;
+  engine.enqueueInput({
+    tick: 3,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 8, button: "PRIMARY" },
+  });
+  engine.stepTick();
+
+  assert.equal(player.health, healthBefore - 1);
+});
+
+test("hitTestBoundaryWallFace resolves clicks on rendered NORTH and WEST wall faces", () => {
+  const camera = { ...DEFAULT_CAMERA_CONFIG, offsetX: 400, offsetY: 300 };
+  const halfW = (camera.tileWidth / 2) * camera.zoom;
+  const halfH = (camera.tileHeight / 2) * camera.zoom;
+  const elevH = camera.elevationHeight * camera.zoom;
+
+  // Center of NORTH wall face at (1, -1, wallZ = 1)
+  const northAnchor = worldToScreen(1, -1, 1, camera);
+  const northCenterU = northAnchor.u - halfW / 2;
+  const northCenterV = northAnchor.v + halfH / 2 + elevH / 2;
+  assert.deepEqual(hitTestBoundaryWallFace(northCenterU, northCenterV, 1, 3, 3, camera), {
+    x: 1,
+    y: -1,
+  });
+
+  // Center of WEST wall face at (-1, 2, wallZ = 1)
+  const westAnchor = worldToScreen(-1, 2, 1, camera);
+  const westCenterU = westAnchor.u + halfW / 2;
+  const westCenterV = westAnchor.v + halfH / 2 + elevH / 2;
+  assert.deepEqual(hitTestBoundaryWallFace(westCenterU, westCenterV, 1, 3, 3, camera), {
+    x: -1,
+    y: 2,
+  });
+
+  // Interior tile (1, 1, z = 1) center should not match any boundary wall face
+  const interiorAnchor = worldToScreen(1, 1, 1, camera);
+  assert.equal(hitTestBoundaryWallFace(interiorAnchor.u, interiorAnchor.v, 1, 3, 3, camera), null);
 });

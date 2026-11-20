@@ -214,3 +214,105 @@ test("StubRenderer executes 3D wireframe layer outline, block highlight, and flo
     "Layer outline wireframe stroke should be used"
   );
 });
+
+test("StubRenderer renders vertical side walls for placed dirt blocks", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+  room.voxels[1][1][1] = {
+    id: "minecraft:dirt",
+    type: "floor",
+    passable: false,
+  };
+
+  const fills: string[] = [];
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => fills.push(String(mockCtx.fillStyle)),
+    stroke: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    fillText: () => {},
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  const dirtCmd = renderer
+    .generateRenderCommands(room, [], { enableCutaway: true })
+    .find((c) => c.type === "DRAW_TILE" && c.tile?.id === "minecraft:dirt");
+  assert.ok(dirtCmd, "Dirt DRAW_TILE command should be generated");
+
+  renderer.executeCommand(dirtCmd, mockCtx);
+
+  // Left side wall, right side wall, and top diamond should all be drawn
+  assert.equal(fills.length, 3, "Dirt block should draw left side, right side, and top face");
+  assert.ok(fills.includes("#6b4c35"), "Left dirt side face should be rendered");
+  assert.ok(fills.includes("#563b27"), "Right dirt side face should be rendered");
+  assert.ok(fills.includes("#866043"), "Top dirt diamond should be rendered");
+});
+
+test("StubRenderer renders bonsai trees as two intersected flat texture planes instead of a circle", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+  room.voxels[1][1][1] = {
+    id: "minecraft:farmland",
+    type: "farmland",
+    passable: false,
+  };
+  room.voxels[2][1][1] = {
+    id: "arcadialbonsaitrees:bonsai_oak_sapling",
+    type: "crop",
+    passable: true,
+    metadata: { growthTicks: 600 },
+  };
+
+  const fakeTexture = { complete: true, naturalWidth: 16, naturalHeight: 16 } as unknown as HTMLImageElement;
+  renderer.textures.set("arcadialbonsaitrees:bonsai_oak_sapling", fakeTexture);
+
+  const transforms: number[][] = [];
+  const drawImages: unknown[][] = [];
+  let arcCalls = 0;
+
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    transform: (a, b, c, d, e, f) => transforms.push([a, b, c, d, e, f]),
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => {},
+    stroke: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    drawImage: (img, ...args) => drawImages.push([img, ...args]),
+    fillText: () => {},
+    arc: () => {
+      arcCalls++;
+    },
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  const bonsaiCmd = renderer
+    .generateRenderCommands(room, [], { enableCutaway: true })
+    .find((c) => c.type === "DRAW_TILE" && c.tile?.id === "arcadialbonsaitrees:bonsai_oak_sapling");
+  assert.ok(bonsaiCmd, "Bonsai DRAW_TILE command should be generated");
+
+  renderer.executeCommand(bonsaiCmd, mockCtx);
+
+  assert.equal(arcCalls, 0, "Bonsai tree should not render as a circle");
+  assert.equal(drawImages.length, 4, "Two intersected planes should draw 4 depth-sorted half-quads");
+  assert.ok(transforms.some((t) => t[1] > 0), "Plane A should shear along +Y isometric axis");
+  assert.ok(transforms.some((t) => t[1] < 0), "Plane B should shear along -Y isometric axis");
+});

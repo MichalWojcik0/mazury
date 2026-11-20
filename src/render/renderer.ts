@@ -9,6 +9,7 @@ import {
   worldToScreen,
   screenToWorld,
   computeDepthKey,
+  hitTestBoundaryWallFace,
 } from "./projection.ts";
 import type {
   RenderCommandType,
@@ -33,6 +34,7 @@ export {
   worldToScreen,
   screenToWorld,
   computeDepthKey,
+  hitTestBoundaryWallFace,
 };
 
 export class StubRenderer {
@@ -483,8 +485,28 @@ export class StubRenderer {
 
         // Check if rendering a crop / bonsai tile
         if (cmd.tile && (isCropTile(cmd.tile) || cmd.tile.id === "immersiveengineering:hemp_top")) {
-          renderCropTile(ctx, u, v, halfW, halfH, this.camera.zoom, cmd.tile);
+          const cropTexture = tileId ? this.textures.get(tileId) : undefined;
+          renderCropTile(ctx, u, v, halfW, halfH, elevH, this.camera.zoom, cmd.tile, cropTexture);
           break;
+        }
+
+        const blockDef = tileId ? getBlockDefinition(tileId) : undefined;
+        const blockTexture = tileId ? this.textures.get(tileId) : undefined;
+
+        // Render front-facing vertical side walls for solid placed blocks (e.g. dirt, farmland)
+        if (cmd.type === "DRAW_TILE" && cmd.tile && !cmd.tile.passable) {
+          const isDirtLike =
+            tileId === "minecraft:dirt" ||
+            tileId === "minecraft:farmland" ||
+            blockDef?.type === "farmland";
+          const sideTexture = isDirtLike ? this.textures.get("minecraft:dirt") ?? null : blockTexture ?? null;
+          const sideLoaded = Boolean(sideTexture && sideTexture.complete && sideTexture.naturalWidth > 0);
+          const sideFallback = isDirtLike
+            ? { leftFill: "#6b4c35", rightFill: "#563b27", stroke: "#3e2716", drawPanelSeam: false }
+            : { leftFill: "#3f4148", rightFill: "#32343a", stroke: "#25272c", drawPanelSeam: false };
+
+          renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "left", sideTexture, sideLoaded, sideFallback);
+          renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "right", sideTexture, sideLoaded, sideFallback);
         }
 
         // Standard block rendering: top isometric diamond
@@ -495,14 +517,11 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v);
         ctx.closePath();
 
-        const blockDef = tileId ? getBlockDefinition(tileId) : undefined;
-        const blockTexture = tileId ? this.textures.get(tileId) : undefined;
-
         if (tileId === "compactmachines3:wall" || (cmd.type === "DRAW_FLOOR" && cmd.tile?.type === "solid_wall")) {
           // Render textured compact wall floor tile
           renderTexturedTopDiamond(ctx, u, v, halfW, halfH, this.wallImage, this.wallImageLoaded);
         } else if (blockTexture && blockTexture.complete && blockTexture.naturalWidth > 0) {
-          renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture, this.wallImageLoaded);
+          renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture, true);
         } else {
           if (tileId === "minecraft:bedrock") {
             ctx.fillStyle = "#2a2a2a";

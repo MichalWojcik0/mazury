@@ -986,6 +986,7 @@
       StubRenderer,
       resolveTargetCoord,
       screenToWorld,
+      hitTestBoundaryWallFace,
       CHAPTER_1_RECIPES,
       canCraft,
       ITEM_REGISTRY,
@@ -1484,13 +1485,27 @@
       const p = engine.players.get(0);
       if (!p)
         return null;
+      const room = engine.rooms.get(p.currentRoomId);
+      if (!room)
+        return null;
       const rect = canvas.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
       const cursorY = e.clientY - rect.top;
       const targetZ = p.z + p.selectedLayerIndex - 1;
       const worldPos = screenToWorld(cursorX, cursorY, targetZ, renderer.camera);
-      const targetX = Math.round(worldPos.x);
-      const targetY = Math.round(worldPos.y);
+      let targetX = Math.round(worldPos.x);
+      let targetY = Math.round(worldPos.y);
+      if (room.faces && targetZ >= 1 && targetZ <= room.depth) {
+        const interiorTile = targetX >= 0 && targetX < room.width && targetY >= 0 && targetY < room.height && targetZ < room.depth ? room.voxels[targetZ]?.[targetY]?.[targetX] : null;
+        const hasBlockingInteriorTile = interiorTile && interiorTile.id !== "minecraft:air";
+        if (!hasBlockingInteriorTile) {
+          const wallCoord = hitTestBoundaryWallFace(cursorX, cursorY, targetZ, room.width, room.height, renderer.camera);
+          if (wallCoord) {
+            targetX = wallCoord.x;
+            targetY = wallCoord.y;
+          }
+        }
+      }
       const dx = targetX - p.x;
       const dy = targetY - p.y;
       const deltaToSlot = {

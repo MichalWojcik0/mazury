@@ -307,6 +307,7 @@ export class GameEngine {
               for (const drop of punchResult.drops) {
                 addItem(player.inventory, drop.id, drop.count);
               }
+              this.updateActiveEquipped(player);
             }
           }
         } else if (action.button === "SECONDARY") {
