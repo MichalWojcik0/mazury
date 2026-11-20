@@ -26,6 +26,19 @@ import {
   harvestPlant,
 } from "../mechanics/farming.ts";
 
+export interface GameSaveData {
+  version: 1;
+  savedAt: number;
+  currentTick: number;
+  rngState: number;
+  rooms: Array<[string, Room]>;
+  players: Array<[number, Player]>;
+  quests: {
+    completedQuests: number[];
+    eventFlags: string[];
+  };
+}
+
 /**
  * 20 Hz Deterministic Simulation Engine (Chapter 1 Checkpoint).
  */
@@ -37,9 +50,63 @@ export class GameEngine {
   public questTracker: QuestTracker = new QuestTracker();
 
   private inputQueue: PlayerInputPacket[] = [];
+  private initialSeed: number;
 
   constructor(seed: number = 1337) {
+    this.initialSeed = seed;
     this.rng = new DeterministicRNG(seed);
+    this.initWorld();
+  }
+
+  public serialize(): GameSaveData {
+    return JSON.parse(
+      JSON.stringify({
+        version: 1,
+        savedAt: Date.now(),
+        currentTick: this.currentTick,
+        rngState: this.rng.getState(),
+        rooms: Array.from(this.rooms.entries()),
+        players: Array.from(this.players.entries()),
+        quests: this.questTracker.serialize(),
+      })
+    ) as GameSaveData;
+  }
+
+  public deserialize(data: GameSaveData): boolean {
+    if (
+      !data ||
+      data.version !== 1 ||
+      typeof data.currentTick !== "number" ||
+      typeof data.rngState !== "number" ||
+      !Array.isArray(data.rooms) ||
+      !Array.isArray(data.players)
+    ) {
+      return false;
+    }
+
+    const cloned = JSON.parse(JSON.stringify(data)) as GameSaveData;
+    this.currentTick = cloned.currentTick;
+    this.rng.setState(cloned.rngState);
+    this.rooms = new Map(cloned.rooms);
+    this.players = new Map(cloned.players);
+    this.questTracker.deserialize(cloned.quests);
+    this.inputQueue = [];
+
+    for (const player of this.players.values()) {
+      player.isSneaking = false;
+      this.updateActiveEquipped(player);
+    }
+
+    return true;
+  }
+
+  public reset(seed: number = this.initialSeed): void {
+    this.currentTick = 0;
+    this.rng = new DeterministicRNG(seed);
+    this.rooms = new Map();
+    this.players = new Map();
+    this.questTracker = new QuestTracker();
+    this.inputQueue = [];
     this.initWorld();
   }
 

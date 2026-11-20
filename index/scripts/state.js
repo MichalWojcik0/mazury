@@ -31,6 +31,9 @@ export const dom = {
   btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
   btnCloseCrafting: document.getElementById("btn-close-crafting"),
   btnSquat: document.getElementById("btn-squat"),
+  btnSaveGame: document.getElementById("btn-save-game"),
+  btnResetSave: document.getElementById("btn-reset-save"),
+  saveStatus: document.getElementById("save-status"),
 
   voxelTargetName: document.getElementById("voxel-target-name"),
   voxelTargetCoords: document.getElementById("voxel-target-coords"),

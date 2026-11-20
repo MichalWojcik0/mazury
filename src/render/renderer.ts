@@ -19,6 +19,7 @@ import type {
 } from "./command-types.ts";
 import { renderCropTile } from "./draw-crop.ts";
 import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
+import { renderMinecraftSteve } from "./draw-player.ts";
 
 export type {
   ScreenPoint,
@@ -591,56 +592,7 @@ export class StubRenderer {
       }
 
       case "DRAW_PLAYER": {
-        // Draw 2-block tall player marker (crouched when sneaking/squatting) with shadow
-        const isSneaking = Boolean(cmd.player?.isSneaking);
-        const sneakTimer = cmd.player?.sneakTimer ?? 0;
-        const basePlayerH = 2 * this.camera.elevationHeight * this.camera.zoom;
-        const playerH = isSneaking ? basePlayerH * 0.68 : basePlayerH;
-        const width = (isSneaking ? 16 : 14) * this.camera.zoom;
-
-        // Shadow directly on the center of the floor tile diamond
-        ctx.beginPath();
-        if (ctx.ellipse) {
-          ctx.ellipse(u, v, width / 2, width / 4, 0, 0, Math.PI * 2);
-        } else if (ctx.arc) {
-          ctx.arc(u, v, width / 2, 0, Math.PI * 2);
-        }
-        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-        ctx.fill();
-
-        // Player body: feet anchor at (u, v), standing upward
-        ctx.fillStyle = isSneaking ? "#2ecc71" : "#3498db";
-        ctx.fillRect(u - width / 2, v - playerH, width, playerH * 0.65);
-        ctx.strokeStyle = isSneaking ? "#1e8449" : "#1b4f72";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(u - width / 2, v - playerH, width, playerH * 0.65);
-
-        // Player head
-        const headH = playerH * 0.35;
-        ctx.fillStyle = "#f5b041";
-        ctx.fillRect(u - width / 2, v - playerH - headH, width, headH);
-        ctx.strokeStyle = "#b9770e";
-        ctx.strokeRect(u - width / 2, v - playerH - headH, width, headH);
-
-        // Squat progress bar (poop timer) while sneaking
-        if (isSneaking) {
-          const barW = 24 * this.camera.zoom;
-          const barH = 4 * this.camera.zoom;
-          const barX = u - barW / 2;
-          const barY = v - playerH - headH - 10 * this.camera.zoom;
-          const ratio = Math.min(1, sneakTimer / 100);
-
-          ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-          ctx.fillRect(barX, barY, barW, barH);
-          ctx.fillStyle = "#98c379";
-          ctx.fillRect(barX, barY, barW * ratio, barH);
-          ctx.strokeStyle = "#2c313a";
-          ctx.strokeRect(barX, barY, barW, barH);
-        }
-
-        // Name tag or indicator
-        ctx.fillStyle = isSneaking ? "#98c379" : "#ffffff";
-        ctx.fillText(isSneaking ? "P1 [Squat]" : "P1", u - (isSneaking ? 22 : 6), v - playerH - headH - (isSneaking ? 14 : 4));
+        renderMinecraftSteve(ctx, u, v, this.camera.elevationHeight, this.camera.zoom, cmd.player);
         break;
       }
 
@@ -676,7 +628,7 @@ export class StubRenderer {
         ctx.lineTo(u - halfW, v + elevH);
 
         ctx.strokeStyle = "#00ffff";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 0.85;
         ctx.stroke();
         break;
       }
@@ -732,7 +684,7 @@ export class StubRenderer {
         ctx.lineTo(leftU, leftV + elevH);
 
         ctx.strokeStyle = "rgba(97, 175, 239, 0.85)";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 0.75;
         ctx.stroke();
 
         // 4. Subtle inner grid wireframe lines across the layer slab
@@ -758,7 +710,7 @@ export class StubRenderer {
           ctx.lineTo(endPt.u, endPt.v + halfH + elevH);
         }
         ctx.strokeStyle = "rgba(97, 175, 239, 0.3)";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.5;
         ctx.stroke();
         break;
       }

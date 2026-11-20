@@ -116,4 +116,16 @@ export class QuestTracker {
   getCompletedQuestIds(): number[] {
     return Array.from(this.completedQuests);
   }
+
+  serialize(): { completedQuests: number[]; eventFlags: string[] } {
+    return {
+      completedQuests: Array.from(this.completedQuests),
+      eventFlags: Array.from(this.eventFlags),
+    };
+  }
+
+  deserialize(data?: { completedQuests?: number[]; eventFlags?: string[] }): void {
+    this.completedQuests = new Set(Array.isArray(data?.completedQuests) ? data.completedQuests : []);
+    this.eventFlags = new Set(Array.isArray(data?.eventFlags) ? data.eventFlags : []);
+  }
 }

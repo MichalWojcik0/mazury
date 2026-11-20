@@ -376,9 +376,47 @@ test("StubRenderer renders squatting player crouched with squat indicator and pr
   const standing = capturePlayerDraw(standingPlayer);
   const squatting = capturePlayerDraw(squattingPlayer);
 
-  // Squatting player torso height (rects[0][3]) is shorter than standing torso height
+  // Squatting player leg height (rects[0][3]) is shorter than standing leg height
   assert.ok(squatting.rects[0][3] < standing.rects[0][3], "Squatting player should render shorter");
   // Squatting renders progress bar (background + fill = 2 extra rects) and squat label
   assert.ok(squatting.rects.length > standing.rects.length, "Squatting player should render progress bar");
   assert.ok(squatting.texts.includes("P1 [Squat]"), "Squatting label should be displayed");
+});
+
+test("StubRenderer uses thin wireframe strokes (< 1px) for layer outline and voxel highlight", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+
+  const strokeWidths: Array<{ style: string; width: number }> = [];
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => {},
+    stroke: () => strokeWidths.push({ style: String(mockCtx.strokeStyle), width: mockCtx.lineWidth }),
+    fillRect: () => {},
+    strokeRect: () => {},
+    fillText: () => {},
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  renderer.render(room, [], mockCtx, {
+    enableCutaway: true,
+    selectedLayerZ: 1,
+    showLayerOutline: true,
+    highlightCoord: { x: 1, y: 0, z: 1 },
+  });
+
+  const highlightStroke = strokeWidths.find((s) => s.style === "#00ffff");
+  assert.ok(highlightStroke && highlightStroke.width < 1, "Voxel highlight wireframe should be thinner than 1px");
+
+  const layerStrokes = strokeWidths.filter((s) => s.style.includes("97, 175, 239"));
+  assert.ok(layerStrokes.length > 0 && layerStrokes.every((s) => s.width < 1), "Layer outline wireframes should be thinner than 1px");
 });

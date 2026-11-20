@@ -19,6 +19,7 @@ import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel, craftRecipe } from "./crafting.js";
 import { updateHUD } from "./hud.js";
 import { bindInputHandlers } from "./input.js";
+import { saveGame, loadSavedGame, resetSave } from "./storage.js";
 
 function resizeCanvas() {
   canvas.width = canvas.clientWidth * window.devicePixelRatio;
@@ -48,11 +49,31 @@ window.__craftRecipe = craftRecipe;
 window.__startSneak = startSneak;
 window.__stopSneak = stopSneak;
 window.__toggleSneak = toggleSneak;
+window.__saveGame = saveGame;
+window.__loadGame = loadSavedGame;
+window.__resetSave = () => resetSave(updateHUD);
 
-// 20 Hz deterministic simulation loop (50 ms per tick)
+// Load existing local save on startup (if available)
+loadSavedGame();
+
+// Auto-save on page unload / tab hide
+window.addEventListener("beforeunload", () => saveGame(true));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    saveGame(true);
+  }
+});
+
+// 20 Hz deterministic simulation loop (50 ms per tick) + auto-save every 5s (100 ticks)
+let ticksSinceAutoSave = 0;
 setInterval(() => {
   engine.stepTick();
   updateHUD();
+  ticksSinceAutoSave++;
+  if (ticksSinceAutoSave >= 100) {
+    ticksSinceAutoSave = 0;
+    saveGame(true);
+  }
 }, 50);
 
 // Render loop

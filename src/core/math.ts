@@ -12,6 +12,14 @@ export class DeterministicRNG {
     this.state = seed | 0;
   }
 
+  getState(): number {
+    return this.state;
+  }
+
+  setState(state: number): void {
+    this.state = state | 0;
+  }
+
   /**
    * Returns a pseudo-random float in [0, 1).
    */

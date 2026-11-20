@@ -162,6 +162,43 @@
       line-height: 1.45;
     }
 
+    .save-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .save-btn {
+      padding: 4px 10px;
+      background: #2c313a;
+      border: 1px solid #3e4451;
+      border-radius: 5px;
+      color: #e0e6ed;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .save-btn:hover {
+      background: #3e4451;
+      border-color: #61afef;
+    }
+
+    .save-btn-danger:hover {
+      border-color: #e06c75;
+      color: #e06c75;
+    }
+
+    .save-status {
+      font-size: 11px;
+      color: #98c379;
+      margin-left: auto;
+    }
+
     .middle-overlay {
       display: flex;
       justify-content: space-between;
@@ -866,6 +903,11 @@
           <div class="quest-desc" id="hud-quest-desc">
             You spawn confined in the meteor pocket with a Personal Shrinking Device. Use it to shrink into the 3x3 Compact Machine!
           </div>
+          <div class="save-controls">
+            <button class="save-btn" id="btn-save-game" title="Save progress to browser local storage">💾 Save</button>
+            <button class="save-btn save-btn-danger" id="btn-reset-save" title="Clear local save and restart">↺ Reset</button>
+            <span class="save-status" id="save-status"></span>
+          </div>
         </div>
       </div>
 
@@ -1041,6 +1083,9 @@
       btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
       btnCloseCrafting: document.getElementById("btn-close-crafting"),
       btnSquat: document.getElementById("btn-squat"),
+      btnSaveGame: document.getElementById("btn-save-game"),
+      btnResetSave: document.getElementById("btn-reset-save"),
+      saveStatus: document.getElementById("save-status"),
       voxelTargetName: document.getElementById("voxel-target-name"),
       voxelTargetCoords: document.getElementById("voxel-target-coords"),
       voxelActionList: document.getElementById("voxel-action-list"),
@@ -1551,6 +1596,70 @@
       }
     }
 
+    // index/scripts/storage.js
+    var SAVE_STORAGE_KEY = "compact_claustrophobia_save_v1";
+    var statusTimeout = null;
+    function setSaveStatus(text, durationMs = 2000) {
+      if (!dom.saveStatus)
+        return;
+      dom.saveStatus.textContent = text;
+      if (statusTimeout) {
+        clearTimeout(statusTimeout);
+        statusTimeout = null;
+      }
+      if (durationMs > 0) {
+        statusTimeout = setTimeout(() => {
+          if (dom.saveStatus)
+            dom.saveStatus.textContent = "";
+          statusTimeout = null;
+        }, durationMs);
+      }
+    }
+    function saveGame(silent = false) {
+      try {
+        const data = engine.serialize();
+        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(data));
+        if (!silent) {
+          setSaveStatus("Saved ✓");
+        }
+        return true;
+      } catch (err) {
+        console.error("Failed to save game locally:", err);
+        if (!silent) {
+          setSaveStatus("Save failed", 3000);
+        }
+        return false;
+      }
+    }
+    function loadSavedGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_STORAGE_KEY);
+        if (!raw)
+          return false;
+        const parsed = JSON.parse(raw);
+        const ok = engine.deserialize(parsed);
+        if (ok) {
+          setSaveStatus("Loaded save", 2500);
+        }
+        return ok;
+      } catch (err) {
+        console.error("Failed to load local save:", err);
+        return false;
+      }
+    }
+    function resetSave(onReset) {
+      try {
+        localStorage.removeItem(SAVE_STORAGE_KEY);
+      } catch (err) {
+        console.error("Failed to clear local save:", err);
+      }
+      engine.reset();
+      setSaveStatus("Save reset", 2500);
+      if (typeof onReset === "function") {
+        onReset();
+      }
+    }
+
     // index/scripts/input.js
     function getSlotFromCanvasEvent(e) {
       const p = engine.players.get(0);
@@ -1745,6 +1854,16 @@
       if (dom.btnSquat) {
         dom.btnSquat.addEventListener("click", () => toggleSneak());
       }
+      if (dom.btnSaveGame) {
+        dom.btnSaveGame.addEventListener("click", () => saveGame(false));
+      }
+      if (dom.btnResetSave) {
+        dom.btnResetSave.addEventListener("click", () => {
+          if (window.confirm("Reset your local save and start a new game?")) {
+            resetSave(updateHUD);
+          }
+        });
+      }
       canvas.addEventListener("mousemove", (e) => {
         const slot = getSlotFromCanvasEvent(e);
         if (slot) {
@@ -1794,9 +1913,25 @@
     window.__startSneak = startSneak;
     window.__stopSneak = stopSneak;
     window.__toggleSneak = toggleSneak;
+    window.__saveGame = saveGame;
+    window.__loadGame = loadSavedGame;
+    window.__resetSave = () => resetSave(updateHUD);
+    loadSavedGame();
+    window.addEventListener("beforeunload", () => saveGame(true));
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        saveGame(true);
+      }
+    });
+    var ticksSinceAutoSave = 0;
     setInterval(() => {
       engine.stepTick();
       updateHUD();
+      ticksSinceAutoSave++;
+      if (ticksSinceAutoSave >= 100) {
+        ticksSinceAutoSave = 0;
+        saveGame(true);
+      }
     }, 50);
     function renderLoop() {
       const p = engine.players.get(0);

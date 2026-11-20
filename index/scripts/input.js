@@ -2,6 +2,8 @@ import { screenToWorld, hitTestBoundaryWallFace } from "./engine-api.js";
 import { engine, renderer, canvas, dom } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
+import { saveGame, resetSave } from "./storage.js";
+import { updateHUD } from "./hud.js";
 import {
   selectLayer,
   selectQuickSlot,
@@ -239,6 +241,16 @@ export function bindInputHandlers() {
   document.getElementById("btn-use-psd").addEventListener("click", () => usePSD());
   if (dom.btnSquat) {
     dom.btnSquat.addEventListener("click", () => toggleSneak());
+  }
+  if (dom.btnSaveGame) {
+    dom.btnSaveGame.addEventListener("click", () => saveGame(false));
+  }
+  if (dom.btnResetSave) {
+    dom.btnResetSave.addEventListener("click", () => {
+      if (window.confirm("Reset your local save and start a new game?")) {
+        resetSave(updateHUD);
+      }
+    });
   }
 
   // Canvas pointer controls
