@@ -59,11 +59,17 @@ export function strikeWall(player: Player, targetTile: Tile, rng: DeterministicR
   }
 
   if (tool === "minecraft:stone_pickaxe") {
-    // Drops metal grits
+    // Drops metal grits (Iron, Copper, Tin, Lead, Beryllium)
     const drops: Item[] = [{ id: "exnihilocreatio:item_ore_iron:0", count: 1 }];
     const roll = rng.next();
-    if (roll < 0.3) {
+    if (roll < 0.35) {
       drops.push({ id: "exnihilocreatio:item_ore_copper:0", count: 1 });
+    } else if (roll < 0.55) {
+      drops.push({ id: "nuclearcraft:dust:2", count: 1 }); // Tin Grit
+    } else if (roll < 0.75) {
+      drops.push({ id: "immersiveengineering:metal:13", count: 1 }); // Lead Grit
+    } else if (roll < 0.9) {
+      drops.push({ id: "nuclearcraft:dust:1", count: 1 }); // Beryllium Dust
     }
     return {
       success: true,
