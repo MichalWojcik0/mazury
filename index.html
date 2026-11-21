@@ -199,6 +199,61 @@
       margin-left: auto;
     }
 
+    /* Active Status Effects (CropDusting Poop: Nausea, Blindness, Night Vision, Saturation) */
+    .status-effects-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .status-effects-bar:empty {
+      display: none;
+    }
+
+    .effect-pill {
+      font-size: 10px;
+      font-family: monospace;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(33, 37, 43, 0.9);
+      border: 1px solid #3e4451;
+      color: #e0e6ed;
+    }
+
+    .effect-pill.effect-nausea { border-color: #98c379; color: #98c379; }
+    .effect-pill.effect-blindness { border-color: #828997; color: #abb2bf; }
+    .effect-pill.effect-night_vision { border-color: #61afef; color: #61afef; }
+    .effect-pill.effect-saturation { border-color: #e5c07b; color: #e5c07b; }
+
+    @keyframes nausea-wobble {
+      0% { transform: scale(1.02) rotate(-1.2deg); }
+      50% { transform: scale(1.05) rotate(1.2deg); }
+      100% { transform: scale(1.02) rotate(-1.2deg); }
+    }
+
+    #game-container.effect-nausea canvas#game-canvas {
+      animation: nausea-wobble 1.6s ease-in-out infinite;
+      filter: hue-rotate(18deg) saturate(1.2);
+    }
+
+    #game-container.effect-night-vision canvas#game-canvas {
+      filter: brightness(1.18) contrast(1.05);
+    }
+
+    #game-container.effect-nausea.effect-night-vision canvas#game-canvas {
+      filter: hue-rotate(18deg) saturate(1.2) brightness(1.15);
+    }
+
+    #game-container.effect-blindness::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.15) 12%, rgba(0, 0, 0, 0.88) 62%, rgba(0, 0, 0, 0.96) 100%);
+      z-index: 5;
+    }
+
     .middle-overlay {
       display: flex;
       justify-content: space-between;
@@ -1074,6 +1129,7 @@
               </div>
             </div>
           </div>
+          <div class="status-effects-bar" id="hud-effects"></div>
         </div>
 
         <div class="hud-card quest-card ui-interactive">
@@ -1159,6 +1215,9 @@
           </div>
           <button class="ui-btn squat-btn" id="btn-squat" title="Hold Shift or click to toggle Squat (4x crop growth + poop)">
             🧎 Squat [Shift]
+          </button>
+          <button class="ui-btn eat-btn" id="btn-eat" title="Eat equipped food (F or Right-Click)" style="display: none;">
+            🍽 Eat [F]
           </button>
         </div>
 
@@ -1268,6 +1327,7 @@
           <div class="hud-card legend-card">
             Walk: <span class="key-badge">WASD</span> &bull;
             Squat: <span class="key-badge">Shift</span> &bull;
+            Eat: <span class="key-badge">F</span> &bull;
             Layer: <span class="key-badge">F1-F4</span> / <span class="key-badge">[ ]</span> &bull;
             Target: <span class="key-badge">Numpad 1-9</span> &bull;
             Inv: <span class="key-badge">E</span> / <span class="key-badge">1-9</span>
@@ -1316,6 +1376,8 @@
       hudQuestDesc: document.getElementById("hud-quest-desc"),
       hudHearts: document.getElementById("hud-hearts"),
       hudHunger: document.getElementById("hud-hunger"),
+      hudEffects: document.getElementById("hud-effects"),
+      gameContainer: document.getElementById("game-container"),
       hudQuickInventory: document.getElementById("hud-quick-inventory"),
       fullInvDrawer: document.getElementById("full-inv-drawer"),
       grid36Slots: document.getElementById("grid-36-slots"),
@@ -1341,6 +1403,7 @@
       btnToggleCrafting: document.getElementById("btn-toggle-crafting"),
       btnCloseCrafting: document.getElementById("btn-close-crafting"),
       btnSquat: document.getElementById("btn-squat"),
+      btnEat: document.getElementById("btn-eat"),
       btnSaveGame: document.getElementById("btn-save-game"),
       btnResetSave: document.getElementById("btn-reset-save"),
       saveStatus: document.getElementById("save-status"),
@@ -1439,6 +1502,9 @@
         startSneak();
       }
     }
+    function eatEquippedItem(itemId) {
+      dispatchPlayerAction({ type: "EAT_ITEM", itemId });
+    }
 
     // index/scripts/tooltip.js
     function getItemDisplay(itemId) {
@@ -1477,6 +1543,13 @@
         const tag = document.createElement("span");
         tag.className = "tooltip-tag";
         tag.textContent = "Tillable";
+        dom.tooltipItemTags.appendChild(tag);
+      }
+      if (def?.edible) {
+        const tag = document.createElement("span");
+        tag.className = "tooltip-tag";
+        tag.style.color = "#98c379";
+        tag.textContent = "Edible (R-Click / F)";
         dom.tooltipItemTags.appendChild(tag);
       }
       const hintTag = document.createElement("span");
@@ -1638,6 +1711,12 @@
           selectQuickSlot(slotIndex);
         }
       });
+      if (item && display?.def?.edible) {
+        slotEl.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          eatEquippedItem(item.id);
+        });
+      }
       return slotEl;
     }
     function cleanupStaleArrowTimers() {
@@ -1950,6 +2029,35 @@
           dom.btnSquat.textContent = "\uD83E\uDDCE Squat [Shift]";
         }
       }
+      if (dom.btnEat) {
+        const equippedDef = p.equippedItem ? getItemDefinition(p.equippedItem) : null;
+        if (equippedDef?.edible) {
+          dom.btnEat.style.display = "flex";
+          dom.btnEat.textContent = `\uD83C\uDF7D Eat ${equippedDef.name} [F]`;
+        } else {
+          dom.btnEat.style.display = "none";
+        }
+      }
+      const effects = p.effects || [];
+      if (dom.hudEffects) {
+        const effectLabels = {
+          nausea: "\uD83E\uDD22 Nausea",
+          blindness: "\uD83D\uDD76 Blindness",
+          night_vision: "\uD83D\uDC41 Night Vision",
+          saturation: "✨ Saturation"
+        };
+        dom.hudEffects.innerHTML = effects.map((eff) => {
+          const secs = Math.ceil(eff.remainingTicks / 20);
+          const label = effectLabels[eff.id] || eff.id;
+          return `<span class="effect-pill effect-${eff.id}">${label} ${secs}s</span>`;
+        }).join("");
+      }
+      if (dom.gameContainer) {
+        const activeIds = new Set(effects.map((e) => e.id));
+        dom.gameContainer.classList.toggle("effect-nausea", activeIds.has("nausea"));
+        dom.gameContainer.classList.toggle("effect-blindness", activeIds.has("blindness"));
+        dom.gameContainer.classList.toggle("effect-night-vision", activeIds.has("night_vision"));
+      }
       const reticleCenter = document.getElementById("reticle-slot-5");
       if (reticleCenter) {
         if (p.selectedLayerIndex === 1 || p.selectedLayerIndex === 2) {
@@ -2162,6 +2270,11 @@
             toggleCraftingPanel();
             e.preventDefault();
             break;
+          case "f":
+          case "F":
+            eatEquippedItem();
+            e.preventDefault();
+            break;
           case "p":
           case "P":
           case " ":
@@ -2236,6 +2349,9 @@
       if (dom.btnSquat) {
         dom.btnSquat.addEventListener("click", () => toggleSneak());
       }
+      if (dom.btnEat) {
+        dom.btnEat.addEventListener("click", () => eatEquippedItem());
+      }
       if (dom.btnSaveGame) {
         dom.btnSaveGame.addEventListener("click", () => saveGame(false));
       }
@@ -2261,6 +2377,12 @@
       });
       canvas.addEventListener("contextmenu", (e) => {
         e.preventDefault();
+        const p = engine.players.get(0);
+        const equippedDef = p?.equippedItem ? getItemDefinition(p.equippedItem) : null;
+        if (equippedDef?.edible) {
+          eatEquippedItem();
+          return;
+        }
         const slot = getSlotFromCanvasEvent(e);
         if (slot) {
           selectSlot(slot);
@@ -2295,6 +2417,7 @@
     window.__startSneak = startSneak;
     window.__stopSneak = stopSneak;
     window.__toggleSneak = toggleSneak;
+    window.__eatItem = eatEquippedItem;
     window.__saveGame = saveGame;
     window.__loadGame = loadSavedGame;
     window.__resetSave = () => resetSave(updateHUD);

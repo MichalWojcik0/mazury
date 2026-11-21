@@ -157,6 +157,42 @@ export function updateHUD() {
     }
   }
 
+  // Show Eat button when an edible item is equipped
+  if (dom.btnEat) {
+    const equippedDef = p.equippedItem ? getItemDefinition(p.equippedItem) : null;
+    if (equippedDef?.edible) {
+      dom.btnEat.style.display = "flex";
+      dom.btnEat.textContent = `🍽 Eat ${equippedDef.name} [F]`;
+    } else {
+      dom.btnEat.style.display = "none";
+    }
+  }
+
+  // Render active status effect pills & viewport effect classes
+  const effects = p.effects || [];
+  if (dom.hudEffects) {
+    const effectLabels = {
+      nausea: "🤢 Nausea",
+      blindness: "🕶 Blindness",
+      night_vision: "👁 Night Vision",
+      saturation: "✨ Saturation",
+    };
+    dom.hudEffects.innerHTML = effects
+      .map((eff) => {
+        const secs = Math.ceil(eff.remainingTicks / 20);
+        const label = effectLabels[eff.id] || eff.id;
+        return `<span class="effect-pill effect-${eff.id}">${label} ${secs}s</span>`;
+      })
+      .join("");
+  }
+
+  if (dom.gameContainer) {
+    const activeIds = new Set(effects.map((e) => e.id));
+    dom.gameContainer.classList.toggle("effect-nausea", activeIds.has("nausea"));
+    dom.gameContainer.classList.toggle("effect-blindness", activeIds.has("blindness"));
+    dom.gameContainer.classList.toggle("effect-night-vision", activeIds.has("night_vision"));
+  }
+
   // Reticle center button disabled for body layers (1 and 2)
   const reticleCenter = document.getElementById("reticle-slot-5");
   if (reticleCenter) {

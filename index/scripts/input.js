@@ -1,4 +1,4 @@
-import { screenToWorld, hitTestBoundaryWallFace } from "./engine-api.js";
+import { screenToWorld, hitTestBoundaryWallFace, getItemDefinition } from "./engine-api.js";
 import { engine, renderer, canvas, dom } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
@@ -14,6 +14,7 @@ import {
   startSneak,
   stopSneak,
   toggleSneak,
+  eatEquippedItem,
 } from "./actions.js";
 
 // Direct Canvas Interaction: unproject screen coordinates to active layer tile slot
@@ -165,6 +166,11 @@ export function bindInputHandlers() {
         toggleCraftingPanel();
         e.preventDefault();
         break;
+      case "f":
+      case "F":
+        eatEquippedItem();
+        e.preventDefault();
+        break;
       case "p":
       case "P":
       case " ":
@@ -242,6 +248,9 @@ export function bindInputHandlers() {
   if (dom.btnSquat) {
     dom.btnSquat.addEventListener("click", () => toggleSneak());
   }
+  if (dom.btnEat) {
+    dom.btnEat.addEventListener("click", () => eatEquippedItem());
+  }
   if (dom.btnSaveGame) {
     dom.btnSaveGame.addEventListener("click", () => saveGame(false));
   }
@@ -271,6 +280,12 @@ export function bindInputHandlers() {
 
   canvas.addEventListener("contextmenu", (e) => {
     e.preventDefault();
+    const p = engine.players.get(0);
+    const equippedDef = p?.equippedItem ? getItemDefinition(p.equippedItem) : null;
+    if (equippedDef?.edible) {
+      eatEquippedItem();
+      return;
+    }
     const slot = getSlotFromCanvasEvent(e);
     if (slot) {
       selectSlot(slot);

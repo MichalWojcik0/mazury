@@ -42,6 +42,13 @@ export function showItemTooltip(item, mouseX, mouseY) {
     tag.textContent = "Tillable";
     dom.tooltipItemTags.appendChild(tag);
   }
+  if (def?.edible) {
+    const tag = document.createElement("span");
+    tag.className = "tooltip-tag";
+    tag.style.color = "#98c379";
+    tag.textContent = "Edible (R-Click / F)";
+    dom.tooltipItemTags.appendChild(tag);
+  }
 
   const hintTag = document.createElement("span");
   hintTag.className = "tooltip-tag";

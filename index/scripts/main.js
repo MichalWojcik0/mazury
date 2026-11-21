@@ -14,6 +14,7 @@ import {
   startSneak,
   stopSneak,
   toggleSneak,
+  eatEquippedItem,
 } from "./actions.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel, craftRecipe } from "./crafting.js";
@@ -49,6 +50,7 @@ window.__craftRecipe = craftRecipe;
 window.__startSneak = startSneak;
 window.__stopSneak = stopSneak;
 window.__toggleSneak = toggleSneak;
+window.__eatItem = eatEquippedItem;
 window.__saveGame = saveGame;
 window.__loadGame = loadSavedGame;
 window.__resetSave = () => resetSave(updateHUD);

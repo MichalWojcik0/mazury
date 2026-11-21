@@ -13,6 +13,7 @@ import {
 import { createOuterRoom, createTinyCompactMachineRoom } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
+import { eatItem, tickPlayerEffectsAndRegen } from "../mechanics/eating.ts";
 import { resolveSelectedVoxel } from "../mechanics/voxel-actions.ts";
 import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
 import { CHAPTER_1_RECIPES, executeCraft, hasCraftingStationAccess } from "../crafting/list-crafting.ts";
@@ -170,6 +171,9 @@ export class GameEngine {
       }
       player.exhaustion += sneakRes.exhaustionAdded;
 
+      // Active potion/status effects & natural health regeneration
+      tickPlayerEffectsAndRegen(player);
+
       // Exhaustion conversion to hunger
       if (player.exhaustion >= 4.0) {
         player.exhaustion -= 4.0;
@@ -238,6 +242,14 @@ export class GameEngine {
       case "SWAP_INVENTORY_SLOTS": {
         transferOrSwapSlots(player.inventory, action.fromIndex, action.toIndex);
         this.updateActiveEquipped(player);
+        break;
+      }
+
+      case "EAT_ITEM": {
+        const res = eatItem(player, action.itemId);
+        if (res.success) {
+          this.updateActiveEquipped(player);
+        }
         break;
       }
 

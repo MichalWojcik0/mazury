@@ -79,3 +79,7 @@ export function toggleSneak() {
     startSneak();
   }
 }
+
+export function eatEquippedItem(itemId) {
+  dispatchPlayerAction({ type: "EAT_ITEM", itemId });
+}

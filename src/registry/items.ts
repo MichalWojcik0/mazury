@@ -81,6 +81,9 @@ export interface ItemDefinition {
   plantable?: boolean;
   plantableOn?: string[];
   placesCropId?: string;
+  edible?: boolean;
+  alwaysEdible?: boolean;
+  hungerRestore?: number;
 }
 
 export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
@@ -139,6 +142,9 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 64,
     icon: "💩",
     textureDataUrl: POOP_TEXTURE_DATA_URL,
+    edible: true,
+    alwaysEdible: true,
+    hungerRestore: 2,
   },
   "contenttweaker:poopfuel": {
     id: "contenttweaker:poopfuel",

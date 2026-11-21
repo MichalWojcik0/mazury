@@ -99,7 +99,10 @@ export const CHAPTER_1_RECIPES: ListRecipe[] = [
     name: "Poop Fuel",
     category: "basic",
     requiredStation: "none",
-    inputs: [{ itemId: "cropdusting:poop", count: 1 }],
+    inputs: [
+      { itemId: "minecraft:wheat", count: 1 },
+      { itemId: "cropdusting:poop", count: 1 },
+    ],
     outputs: [{ itemId: "contenttweaker:poopfuel", count: 1 }],
   },
   {

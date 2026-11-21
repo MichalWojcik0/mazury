@@ -47,6 +47,14 @@ export interface Room {
   parentBlockCoord?: { x: number; y: number; z: number };
 }
 
+export type StatusEffectId = "nausea" | "blindness" | "night_vision" | "saturation";
+
+export interface StatusEffect {
+  id: StatusEffectId;
+  remainingTicks: number;
+  amplifier: number;
+}
+
 export interface Player {
   id: PlayerId;
   name: string;
@@ -55,6 +63,8 @@ export interface Player {
   exhaustion: number; // 0.0 - 4.0
   isSneaking: boolean;
   sneakTimer: number; // Accumulated ticks while sneaking (poop mechanic)
+  effects?: StatusEffect[]; // Active potion/status effects (e.g. from eating poop)
+  regenTimer?: number; // Accumulated ticks toward natural health regeneration
   currentRoomId: RoomId;
   x: number;
   y: number;
@@ -89,6 +99,7 @@ export type InputAction =
   | { type: "MOVE_ITEM_TO_TOP"; slotIndex: number }
   | { type: "MOVE_ITEM_TO_BOTTOM"; slotIndex: number }
   | { type: "SWAP_INVENTORY_SLOTS"; fromIndex: number; toIndex: number }
+  | { type: "EAT_ITEM"; itemId?: string }
   | { type: "USE_PSD" };
 
 export interface PlayerInputPacket {

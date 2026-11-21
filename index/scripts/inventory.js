@@ -5,6 +5,7 @@ import {
   moveItemToBottom,
   swapInventorySlots,
   selectQuickSlot,
+  eatEquippedItem,
 } from "./actions.js";
 
 function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, containerType = "quick") {
@@ -176,6 +177,13 @@ function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, con
       selectQuickSlot(slotIndex);
     }
   });
+
+  if (item && display?.def?.edible) {
+    slotEl.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      eatEquippedItem(item.id);
+    });
+  }
 
   return slotEl;
 }
