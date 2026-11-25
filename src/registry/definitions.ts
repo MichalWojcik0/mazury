@@ -10,6 +10,10 @@ export function getItemDefinition(itemId: string): ItemDefinition | undefined {
   return ITEM_REGISTRY[itemId];
 }
 
+export function hasItemTrait(itemId: string, trait: string): boolean {
+  return ITEM_REGISTRY[itemId]?.traits?.includes(trait) ?? false;
+}
+
 export function getBlockDefinition(tileId: string): BlockDefinition | undefined {
   return BLOCK_REGISTRY[tileId];
 }

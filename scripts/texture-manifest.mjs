@@ -77,6 +77,24 @@ export const TEXTURE_MANIFEST = [
   // Immersive Engineering
   { constName: "HEMP_SEED_TEXTURE_DATA_URL", mapId: "immersiveengineering:seed", asset: "assets/immersiveengineering/textures/items/seed_hemp.png" },
   { constName: "HEMP_FIBER_TEXTURE_DATA_URL", mapId: "immersiveengineering:material:4", asset: "assets/immersiveengineering/textures/items/material_hemp_fiber.png" },
+
+  // Ex Nihilo & Early Fluids / Sieving
+  { constName: "SAND_TEXTURE_DATA_URL", mapId: "minecraft:sand", asset: "assets/minecraft/textures/blocks/sand.png" },
+  { constName: "DUST_BLOCK_TEXTURE_DATA_URL", mapId: "exnihilocreatio:block_dust", asset: "assets/exnihilocreatio/textures/blocks/blockdust.png" },
+  { constName: "CLAY_BLOCK_TEXTURE_DATA_URL", mapId: "minecraft:clay", asset: "assets/minecraft/textures/blocks/clay.png" },
+  { constName: "CLAY_BALL_TEXTURE_DATA_URL", mapId: "minecraft:clay_ball", asset: "assets/minecraft/textures/items/clay_ball.png" },
+  { constName: "BUCKET_EMPTY_TEXTURE_DATA_URL", mapId: "minecraft:bucket", asset: "assets/minecraft/textures/items/bucket_empty.png" },
+  { constName: "BUCKET_WATER_TEXTURE_DATA_URL", mapId: "minecraft:water_bucket", asset: "assets/minecraft/textures/items/bucket_water.png" },
+  { constName: "WATER_STILL_TEXTURE_DATA_URL", mapId: "minecraft:water_still", asset: "assets/minecraft/textures/blocks/water_still.png" },
+  { constName: "CRUCIBLE_TEXTURE_DATA_URL", mapId: "exnihilocreatio:block_crucible_wood", asset: "assets/exnihilocreatio/textures/blocks/blockcrucible.png" },
+  { constName: "FLINT_TEXTURE_DATA_URL", mapId: "minecraft:flint", asset: "assets/minecraft/textures/items/flint.png" },
+  { constName: "COAL_TEXTURE_DATA_URL", mapId: "minecraft:coal", asset: "assets/minecraft/textures/items/coal.png" },
+  { constName: "REDSTONE_TEXTURE_DATA_URL", mapId: "minecraft:redstone", asset: "assets/minecraft/textures/items/redstone_dust.png" },
+  { constName: "GLOWSTONE_DUST_TEXTURE_DATA_URL", mapId: "minecraft:glowstone_dust", asset: "assets/minecraft/textures/items/glowstone_dust.png" },
+  { constName: "GUNPOWDER_TEXTURE_DATA_URL", mapId: "minecraft:gunpowder", asset: "assets/minecraft/textures/items/gunpowder.png" },
+  { constName: "BONE_MEAL_TEXTURE_DATA_URL", mapId: "minecraft:dye:15", asset: "assets/minecraft/textures/items/dye_powder_white.png" },
+  { constName: "ORE_PIECE_TEXTURE_DATA_URL", mapId: "exnihilocreatio:ore_piece", asset: "assets/exnihilocreatio/textures/items/orepiece.png" },
+  { constName: "ORE_CHUNK_TEXTURE_DATA_URL", mapId: "exnihilocreatio:ore_chunk", asset: "assets/exnihilocreatio/textures/items/orechunk.png" },
 ];
 
 export const BONSAI_WOOD_TYPES = ["oak", "spruce", "birch", "jungle", "acacia", "darkoak"];

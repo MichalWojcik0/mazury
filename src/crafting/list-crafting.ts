@@ -175,6 +175,52 @@ export const CHAPTER_1_RECIPES: ListRecipe[] = [
     inputs: [{ itemId: "minecraft:planks", count: 7 }],
     outputs: [{ itemId: "exnihilocreatio:block_barrel_wood", count: 1 }],
   },
+  {
+    id: "recipe:string_mesh",
+    name: "String Mesh",
+    category: "machinery",
+    requiredStation: "crafting_station",
+    inputs: [{ itemId: "minecraft:string", count: 9 }],
+    outputs: [{ itemId: "exnihilocreatio:item_mesh:1", count: 1 }],
+  },
+  {
+    id: "recipe:flint_mesh",
+    name: "Flint Mesh",
+    category: "machinery",
+    requiredStation: "crafting_station",
+    inputs: [
+      { itemId: "exnihilocreatio:item_mesh:1", count: 1 },
+      { itemId: "minecraft:flint", count: 6 },
+    ],
+    outputs: [{ itemId: "exnihilocreatio:item_mesh:2", count: 1 }],
+  },
+  {
+    id: "recipe:iron_mesh",
+    name: "Iron Mesh",
+    category: "machinery",
+    requiredStation: "crafting_station",
+    inputs: [
+      { itemId: "exnihilocreatio:item_mesh:2", count: 1 },
+      { itemId: "minecraft:iron_ingot", count: 6 },
+    ],
+    outputs: [{ itemId: "exnihilocreatio:item_mesh:3", count: 1 }],
+  },
+  {
+    id: "recipe:bucket",
+    name: "Bucket",
+    category: "fluid",
+    requiredStation: "crafting_station",
+    inputs: [{ itemId: "minecraft:iron_ingot", count: 3 }],
+    outputs: [{ itemId: "minecraft:bucket", count: 1 }],
+  },
+  {
+    id: "recipe:iron_chunk_from_pieces",
+    name: "Raw Iron Chunk",
+    category: "basic",
+    requiredStation: "none",
+    inputs: [{ itemId: "exnihilocreatio:ore_piece_iron", count: 4 }],
+    outputs: [{ itemId: "exnihilocreatio:ore_chunk_iron", count: 1 }],
+  },
 ];
 
 /**

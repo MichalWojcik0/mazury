@@ -18,14 +18,8 @@ import { resolveSelectedVoxel } from "../mechanics/voxel-actions.ts";
 import { getItemDefinition, getBlockDefinition } from "../registry/definitions.ts";
 import { CHAPTER_1_RECIPES, executeCraft, hasCraftingStationAccess } from "../crafting/list-crafting.ts";
 import { QuestTracker } from "../quests/quest-manager.ts";
-import {
-  isCropTile,
-  getGrowthProgress,
-  canPlant,
-  plantCrop,
-  tickFarming,
-  harvestPlant,
-} from "../mechanics/farming.ts";
+import { canPlant, plantCrop } from "../mechanics/farming.ts";
+import { getBlockComponent, tickRoomBlocks } from "../registry/block-components.ts";
 
 export interface GameSaveData {
   version: 1;
@@ -181,9 +175,9 @@ export class GameEngine {
       }
     }
 
-    // Tick farming simulation across all active rooms
+    // Tick block components (crops, crucibles, barrels) across all active rooms
     for (const room of this.rooms.values()) {
-      tickFarming(room, this.players.values(), this.rng);
+      tickRoomBlocks(room, this.players.values(), this.rng);
     }
 
     // Evaluate quests for Player 0
@@ -316,47 +310,8 @@ export class GameEngine {
         if (action.button === "PRIMARY") {
           // Check if targeting a breakable in-world voxel block
           if (isInBounds && blockDef?.breakable) {
-            // If crop block, breaking destroys it completely and drops appropriate items
-            if (isCropTile(targetTile) || targetTile.id === "immersiveengineering:hemp_top") {
-              const { isMature } = getGrowthProgress(targetTile);
-              room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
-                id: "minecraft:air",
-                type: "air",
-                passable: true,
-              };
-
-              if (targetTile.id === "immersiveengineering:hemp_top") {
-                const baseCoord = targetTile.metadata?.baseCoord as Vec3 | undefined;
-                if (baseCoord) {
-                  const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
-                  if (baseTile?.metadata) {
-                    baseTile.metadata.harvestCooldown = 200;
-                  }
-                }
-                addItem(player.inventory, "immersiveengineering:material:4", 1);
-                this.updateActiveEquipped(player);
-                return;
-              }
-
-              if (isMature) {
-                // Mature break: drops harvest yields plus the base replanted seed/sapling from blockDef.drops
-                const harvestRes = harvestPlant(targetTile, this.rng);
-                for (const drop of harvestRes.drops) {
-                  addItem(player.inventory, drop.id, drop.count);
-                }
-                if (blockDef?.drops) {
-                  for (const drop of blockDef.drops) {
-                    addItem(player.inventory, drop.itemId, drop.count);
-                  }
-                }
-              } else {
-                // Immature break: drops just the base sapling/seed
-                if (blockDef?.drops) {
-                  for (const drop of blockDef.drops) {
-                    addItem(player.inventory, drop.itemId, drop.count);
-                  }
-                }
-              }
+            const component = getBlockComponent(targetTile);
+            if (component?.onBreak?.({ room, coord: targetCoord, tile: targetTile, player, rng: this.rng })) {
               this.updateActiveEquipped(player);
               return;
             }
@@ -391,34 +346,12 @@ export class GameEngine {
             }
           }
         } else if (action.button === "SECONDARY") {
-          // 1. Check if targeting a mature crop or bonsai for harvesting (autoplants in place)
-          if (isInBounds && (isCropTile(targetTile) || targetTile.id === "immersiveengineering:hemp_top")) {
-            const { isMature } = getGrowthProgress(targetTile);
-            if (isMature || targetTile.id === "immersiveengineering:hemp_top") {
-              const harvestRes = harvestPlant(targetTile, this.rng);
-              if (harvestRes.success) {
-                for (const drop of harvestRes.drops) {
-                  addItem(player.inventory, drop.id, drop.count);
-                }
-                if (harvestRes.destroysTile) {
-                  room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {
-                    id: "minecraft:air",
-                    type: "air",
-                    passable: true,
-                  };
-                  if (targetTile.id === "immersiveengineering:hemp_top") {
-                    const baseCoord = targetTile.metadata?.baseCoord as Vec3 | undefined;
-                    if (baseCoord) {
-                      const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
-                      if (baseTile?.metadata) {
-                        baseTile.metadata.harvestCooldown = 200;
-                      }
-                    }
-                  }
-                }
-                this.updateActiveEquipped(player);
-                return;
-              }
+          // 1. Dispatch to block component interaction (sieve, barrel, crucible, crops)
+          if (isInBounds) {
+            const component = getBlockComponent(targetTile);
+            if (component?.onInteract?.({ room, coord: targetCoord, tile: targetTile, player, rng: this.rng })) {
+              this.updateActiveEquipped(player);
+              return;
             }
           }
 

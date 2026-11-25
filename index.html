@@ -1964,6 +1964,21 @@
         const maxTicks = blockDef?.maxGrowthTicks || 1200;
         const pct = Math.min(100, Math.floor(growthTicks / maxTicks * 100));
         growthText = ` [${pct}%]`;
+      } else if (tile.id === "exnihilocreatio:block_sieve") {
+        const m = tile.metadata || {};
+        growthText = m.substrateId ? ` [${m.progress || 0}%]` : m.meshId ? " [Mesh Ready]" : " [No Mesh]";
+      } else if (tile.id === "exnihilocreatio:block_barrel_wood") {
+        const m = tile.metadata || {};
+        if (m.outputItem)
+          growthText = " [Ready]";
+        else if (m.solidItem) {
+          const pct = m.reactionTargetTicks ? Math.floor((m.reactionTicks || 0) / m.reactionTargetTicks * 100) : 0;
+          growthText = ` [Reacting ${pct}%]`;
+        } else if (m.fluidAmount)
+          growthText = ` [${m.fluidType} ${m.fluidAmount}mB]`;
+      } else if (tile.id === "exnihilocreatio:block_crucible_wood") {
+        const m = tile.metadata || {};
+        growthText = ` [${Math.floor(m.fluidAmount || 0)}mB water]`;
       }
       dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
       dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;

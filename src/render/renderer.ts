@@ -2,7 +2,7 @@ import type { Player, Room, Tile } from "../core/types.ts";
 import type { Vec3 } from "../core/math.ts";
 import { COMPACT_WALL_TEXTURE_DATA_URL, TEXTURE_MAP } from "./textures.ts";
 import { getBlockDefinition } from "../registry/definitions.ts";
-import { isCropTile, getGrowthProgress } from "../mechanics/farming.ts";
+import { getBlockComponent } from "../registry/block-components.ts";
 import type { ScreenPoint, CameraConfig } from "./projection.ts";
 import {
   DEFAULT_CAMERA_CONFIG,
@@ -19,10 +19,8 @@ import type {
   CanvasContext2DLike,
   RenderOptions,
 } from "./command-types.ts";
-import { renderCropTile } from "./draw-crop.ts";
 import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
 import { renderMinecraftSteve } from "./draw-player.ts";
-import { renderCraftingStation } from "./draw-crafting-station.ts";
 
 export type {
   ScreenPoint,
@@ -477,46 +475,19 @@ export class StubRenderer {
       case "DRAW_FLOOR":
       case "DRAW_TILE": {
         const tileId = cmd.tile?.id;
-
-        // Custom styling for specific tiles
-        if (tileId === "minecraft:torch") {
-          ctx.fillStyle = "#ffdd44";
-          ctx.fillRect(u - 2, v - 12, 4, 10);
-          ctx.fillStyle = "#ff3300";
-          ctx.fillRect(u - 3, v - 15, 6, 4);
-          ctx.fillStyle = "#ffffaa";
-          ctx.fillRect(u - 1, v - 14, 2, 2);
-          break;
-        }
-
-        // Check if rendering a crop / bonsai tile
-        if (cmd.tile && (isCropTile(cmd.tile) || cmd.tile.id === "immersiveengineering:hemp_top")) {
-          const cropBlockDef = tileId ? getBlockDefinition(tileId) : undefined;
-          let cropTexture = tileId ? this.textures.get(tileId) : undefined;
-          if (cropBlockDef?.stageTexturePrefix) {
-            const { progress, stage } = getGrowthProgress(cmd.tile);
-            const stageIdx =
-              (cropBlockDef.growthStages ?? 4) > 4
-                ? Math.max(0, Math.min(7, stage))
-                : Math.min(7, Math.floor(progress * 7.999));
-            cropTexture = this.textures.get(`${cropBlockDef.stageTexturePrefix}${stageIdx}`) ?? cropTexture;
-          }
-          renderCropTile(ctx, u, v, halfW, halfH, elevH, this.camera.zoom, cmd.tile, cropTexture);
-          break;
-        }
-
-        // Custom compound table model for Crafting Station (4 wooden legs + thin tabletop + crafting grid top)
-        if (tileId === "craftingstation:crafting_station") {
-          renderCraftingStation(
+        const component = cmd.tile ? getBlockComponent(cmd.tile) : undefined;
+        if (component?.onRender && cmd.tile) {
+          component.onRender({
             ctx,
             u,
             v,
             halfW,
             halfH,
             elevH,
-            this.textures.get("craftingstation:crafting_station") ?? null,
-            this.textures.get("minecraft:planks") ?? null
-          );
+            zoom: this.camera.zoom,
+            tile: cmd.tile,
+            getTexture: (id) => this.textures.get(id) ?? null,
+          });
           break;
         }
 

@@ -150,6 +150,54 @@ function trySpawnHempTop(room: Room, x: number, y: number, z: number): void {
   }
 }
 
+export function tickCropTile(
+  room: Room,
+  coord: Vec3,
+  tile: Tile,
+  sneakingPlayers: Player[]
+): void {
+  if (!isCropTile(tile)) return;
+
+  const { x, y, z } = coord;
+  const blockDef = getBlockDefinition(tile.id);
+  const maxTicks = blockDef?.maxGrowthTicks ?? 1200;
+
+  const currentTicks = (tile.metadata?.growthTicks as number) ?? 0;
+  if (currentTicks >= maxTicks) {
+    if (tile.id === "immersiveengineering:hemp") {
+      const harvestCooldown = (tile.metadata?.harvestCooldown as number) ?? 0;
+      if (harvestCooldown > 0) {
+        tile.metadata!.harvestCooldown = harvestCooldown - 1;
+      } else {
+        trySpawnHempTop(room, x, y, z);
+      }
+    }
+    return;
+  }
+
+  let deltaTicks = 1;
+  const isNearSneaking = sneakingPlayers.some((p) => {
+    const dx = Math.abs(p.x - x);
+    const dy = Math.abs(p.y - y);
+    const dz = Math.abs(p.z - z);
+    return dx <= 1 && dy <= 1 && dz <= 2;
+  });
+
+  if (isNearSneaking) {
+    deltaTicks += 3;
+  }
+
+  const newTicks = Math.min(maxTicks, currentTicks + deltaTicks);
+  tile.metadata = {
+    ...tile.metadata,
+    growthTicks: newTicks,
+  };
+
+  if (tile.id === "immersiveengineering:hemp" && newTicks >= maxTicks) {
+    trySpawnHempTop(room, x, y, z);
+  }
+}
+
 /**
  * Ticks growth simulation for all bonsai and crops in the room.
  * Twerking / Sneaking acceleration: When any player in the room is sneaking adjacent
@@ -158,7 +206,7 @@ function trySpawnHempTop(room: Room, x: number, y: number, z: number): void {
 export function tickFarming(
   room: Room,
   players: Iterable<Player>,
-  rng?: DeterministicRNG
+  _rng?: DeterministicRNG
 ): void {
   const sneakingPlayers: Player[] = [];
   for (const player of players) {
@@ -171,45 +219,8 @@ export function tickFarming(
     for (let y = 0; y < room.height; y++) {
       for (let x = 0; x < room.width; x++) {
         const tile = room.voxels[z]?.[y]?.[x];
-        if (!tile || !isCropTile(tile)) continue;
-
-        const blockDef = getBlockDefinition(tile.id);
-        const maxTicks = blockDef?.maxGrowthTicks ?? 1200;
-
-        let currentTicks = (tile.metadata?.growthTicks as number) ?? 0;
-        if (currentTicks >= maxTicks) {
-          // Check for multi-block crops (e.g. Industrial Hemp extending to height 2)
-          if (tile.id === "immersiveengineering:hemp") {
-            const harvestCooldown = (tile.metadata?.harvestCooldown as number) ?? 0;
-            if (harvestCooldown > 0) {
-              tile.metadata.harvestCooldown = harvestCooldown - 1;
-            } else {
-              trySpawnHempTop(room, x, y, z);
-            }
-          }
-          continue;
-        }
-
-        let deltaTicks = 1;
-        const isNearSneaking = sneakingPlayers.some((p) => {
-          const dx = Math.abs(p.x - x);
-          const dy = Math.abs(p.y - y);
-          const dz = Math.abs(p.z - z);
-          return dx <= 1 && dy <= 1 && dz <= 2;
-        });
-
-        if (isNearSneaking) {
-          deltaTicks += 3;
-        }
-
-        const newTicks = Math.min(maxTicks, currentTicks + deltaTicks);
-        tile.metadata = {
-          ...tile.metadata,
-          growthTicks: newTicks,
-        };
-
-        if (tile.id === "immersiveengineering:hemp" && newTicks >= maxTicks) {
-          trySpawnHempTop(room, x, y, z);
+        if (tile) {
+          tickCropTile(room, { x, y, z }, tile, sneakingPlayers);
         }
       }
     }

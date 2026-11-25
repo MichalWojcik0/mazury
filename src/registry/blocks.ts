@@ -14,6 +14,10 @@ import {
   BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
   BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
   BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
+  SAND_TEXTURE_DATA_URL,
+  DUST_BLOCK_TEXTURE_DATA_URL,
+  CLAY_BLOCK_TEXTURE_DATA_URL,
+  CRUCIBLE_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
 export interface BlockDefinition {
@@ -32,6 +36,7 @@ export interface BlockDefinition {
   maxGrowthTicks?: number;
   growthStages?: number;
   stageTexturePrefix?: string;
+  cropRenderStyle?: "crossed_quad" | "crop_grid" | "hemp";
   harvestDrops?: Array<{ itemId: string; count: number; chance?: number; min?: number; max?: number }>;
   textureDataUrl?: string;
 }
@@ -53,6 +58,7 @@ function createBonsaiBlock(
     maxGrowthTicks: 1200,
     growthStages: 4,
     stageTexturePrefix: `arcadialbonsaitrees:bonsai_${wood}_stage_`,
+    cropRenderStyle: "crossed_quad",
     drops: [{ itemId: `arcadialbonsaitrees:bonsai_${wood}_sapling`, count: 1 }],
     harvestDrops: [{ itemId: `arcadialbonsaitrees:bonsai_${wood}_cutting`, count: 4 }],
     tillable: false,
@@ -189,6 +195,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     maxGrowthTicks: 1200,
     growthStages: 8,
     stageTexturePrefix: "minecraft:wheat_stage_",
+    cropRenderStyle: "crop_grid",
     drops: [{ itemId: "minecraft:wheat_seeds", count: 1 }],
     harvestDrops: [
       { itemId: "minecraft:wheat", count: 1 },
@@ -205,6 +212,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     isCrop: true,
     maxGrowthTicks: 1200,
+    cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:seed", count: 1 }],
     harvestDrops: [
       { itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 },
@@ -219,8 +227,75 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     type: "crop",
     passable: true,
     breakable: true,
+    cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 }],
     tillable: false,
+  },
+  "exnihilocreatio:block_sieve": {
+    id: "exnihilocreatio:block_sieve",
+    name: "Wooden Sieve",
+    icon: "🕸️",
+    type: "machine",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "exnihilocreatio:block_sieve", count: 1 }],
+    tillable: false,
+    textureDataUrl: PLANKS_OAK_TEXTURE_DATA_URL,
+  },
+  "exnihilocreatio:block_barrel_wood": {
+    id: "exnihilocreatio:block_barrel_wood",
+    name: "Wooden Barrel",
+    icon: "🛢️",
+    type: "machine",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "exnihilocreatio:block_barrel_wood", count: 1 }],
+    tillable: false,
+    textureDataUrl: PLANKS_OAK_TEXTURE_DATA_URL,
+  },
+  "exnihilocreatio:block_crucible_wood": {
+    id: "exnihilocreatio:block_crucible_wood",
+    name: "Wooden Crucible",
+    icon: "🥣",
+    type: "machine",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "exnihilocreatio:block_crucible_wood", count: 1 }],
+    tillable: false,
+    textureDataUrl: CRUCIBLE_TEXTURE_DATA_URL,
+  },
+  "minecraft:sand": {
+    id: "minecraft:sand",
+    name: "Sand",
+    icon: "🏜️",
+    type: "floor",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "minecraft:sand", count: 1 }],
+    tillable: false,
+    textureDataUrl: SAND_TEXTURE_DATA_URL,
+  },
+  "exnihilocreatio:block_dust": {
+    id: "exnihilocreatio:block_dust",
+    name: "Dust",
+    icon: "🌫️",
+    type: "floor",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "exnihilocreatio:block_dust", count: 1 }],
+    tillable: false,
+    textureDataUrl: DUST_BLOCK_TEXTURE_DATA_URL,
+  },
+  "minecraft:clay": {
+    id: "minecraft:clay",
+    name: "Clay Block",
+    icon: "🧱",
+    type: "floor",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "minecraft:clay_ball", count: 4 }],
+    tillable: false,
+    textureDataUrl: CLAY_BLOCK_TEXTURE_DATA_URL,
   },
 };
 

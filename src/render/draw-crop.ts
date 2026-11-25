@@ -1,6 +1,7 @@
 import type { Tile } from "../core/types.ts";
 import type { CanvasContext2DLike } from "./command-types.ts";
 import { getGrowthProgress } from "../mechanics/farming.ts";
+import { getBlockDefinition } from "../registry/definitions.ts";
 
 function drawCrossedQuadTexture(
   ctx: CanvasContext2DLike,
@@ -153,10 +154,10 @@ export function renderCropTile(
   tile: Tile,
   texture?: HTMLImageElement | null
 ): void {
-  const { progress, stage, isMature } = getGrowthProgress(tile);
-  const tileId = tile.id;
+  const { progress, isMature } = getGrowthProgress(tile);
+  const style = getBlockDefinition(tile.id)?.cropRenderStyle;
 
-  if (tileId.startsWith("arcadialbonsaitrees:bonsai_")) {
+  if (style === "crossed_quad") {
     const baseV = v + elevH;
     const scale = 0.55 + progress * 0.45;
     const dx = halfW * 0.6 * scale;
@@ -176,7 +177,7 @@ export function renderCropTile(
     } else {
       drawCrossedQuadFallback(ctx, u, baseV, dx, dy, spriteH, isMature);
     }
-  } else if (tileId === "minecraft:wheat") {
+  } else if (style === "crop_grid") {
     const baseV = v + elevH;
     const spriteH = elevH;
 
@@ -193,7 +194,7 @@ export function renderCropTile(
     } else {
       drawCropGridFallback(ctx, u, baseV, halfW, halfH, spriteH, progress, isMature);
     }
-  } else if (tileId === "immersiveengineering:hemp" || tileId === "immersiveengineering:hemp_top") {
+  } else if (style === "hemp") {
     const stalkH = (6 + progress * 16) * zoom;
     ctx.strokeStyle = "#33691e";
     ctx.lineWidth = 2 * zoom;
@@ -203,7 +204,7 @@ export function renderCropTile(
     ctx.lineTo(u, v - stalkH);
     ctx.stroke();
 
-    const leafCount = tileId === "immersiveengineering:hemp_top" ? 3 : 2 + Math.floor(progress * 3);
+    const leafCount = tile.id === "immersiveengineering:hemp_top" ? 3 : 2 + Math.floor(progress * 3);
     ctx.fillStyle = "#558b2f";
     for (let i = 1; i <= leafCount; i++) {
       const ly = v - (stalkH * i) / (leafCount + 1);
