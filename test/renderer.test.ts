@@ -319,6 +319,61 @@ test("StubRenderer renders bonsai trees as two intersected flat texture planes i
   assert.ok(transforms.some((t) => t[1] < 0), "Plane B should shear along -Y isometric axis");
 });
 
+test("StubRenderer renders wheat as Minecraft 4-plane # crop grid using stage textures", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+  room.voxels[0][1][1] = {
+    id: "minecraft:farmland",
+    type: "farmland",
+    passable: false,
+  };
+  room.voxels[1][1][1] = {
+    id: "minecraft:wheat",
+    type: "crop",
+    passable: true,
+    metadata: { growthTicks: 600 }, // stage 3..4
+  };
+
+  const stageTexture = { complete: true, naturalWidth: 16, naturalHeight: 16 } as unknown as HTMLImageElement;
+  renderer.textures.set("minecraft:wheat_stage_3", stageTexture);
+  renderer.textures.set("minecraft:wheat_stage_4", stageTexture);
+
+  const transforms: number[][] = [];
+  const drawImages: unknown[][] = [];
+
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    transform: (a, b, c, d, e, f) => transforms.push([a, b, c, d, e, f]),
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => {},
+    stroke: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    drawImage: (img, ...args) => drawImages.push([img, ...args]),
+    fillText: () => {},
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+
+  const wheatCmd = renderer
+    .generateRenderCommands(room, [], { enableCutaway: true })
+    .find((c) => c.type === "DRAW_TILE" && c.tile?.id === "minecraft:wheat");
+  assert.ok(wheatCmd, "Wheat DRAW_TILE command should be generated");
+
+  renderer.executeCommand(wheatCmd, mockCtx);
+
+  assert.equal(drawImages.length, 4, "Minecraft wheat crop should draw 4 vertical # grid planes");
+  assert.equal(transforms.filter((t) => t[1] > 0).length, 2, "Two parallel planes should shear along +Y isometric axis");
+  assert.equal(transforms.filter((t) => t[1] < 0).length, 2, "Two parallel planes should shear along -Y isometric axis");
+});
+
 test("StubRenderer renders squatting player crouched with squat indicator and progress bar", () => {
   const renderer = new StubRenderer();
   const room = createTinyCompactMachineRoom();

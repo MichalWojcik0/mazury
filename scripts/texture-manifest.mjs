@@ -102,5 +102,15 @@ export function getAllTextureEntries() {
     }
   }
 
+  for (let stage = 0; stage <= 7; stage++) {
+    const asset = `assets/minecraft/textures/blocks/wheat_stage_${stage}.png`;
+    entries.push({
+      constName: null,
+      mapId: `minecraft:wheat_stage_${stage}`,
+      asset,
+      extractedRelPath: asset.replace(/^assets\//, ""),
+    });
+  }
+
   return entries;
 }

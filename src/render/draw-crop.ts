@@ -75,6 +75,73 @@ function drawCrossedQuadFallback(
   ctx.fill();
 }
 
+function drawCropGridTexture(
+  ctx: CanvasContext2DLike,
+  u: number,
+  baseV: number,
+  halfW: number,
+  halfH: number,
+  spriteH: number,
+  texture: HTMLImageElement
+): void {
+  const imgW = texture.naturalWidth || 16;
+  const imgH = texture.naturalHeight || 16;
+  const topV = baseV - spriteH;
+
+  const drawPlane = (u0: number, v0Top: number, dv: number) => {
+    ctx.save();
+    if (ctx.imageSmoothingEnabled !== undefined) {
+      ctx.imageSmoothingEnabled = false;
+    }
+    ctx.transform?.(halfW / imgW, dv / imgW, 0, spriteH / imgH, u0, v0Top);
+    ctx.drawImage?.(texture, 0, 0, imgW, imgH, 0, 0, imgW, imgH);
+    ctx.restore();
+  };
+
+  // Minecraft crop model (#): 4 vertical planes at +/-0.25 along X and Y in back-to-front order
+  // 1. Back X-plane (y = -0.25)
+  drawPlane(u - 0.25 * halfW, topV - 0.75 * halfH, halfH);
+  // 2. Back Y-plane (x = -0.25)
+  drawPlane(u - 0.75 * halfW, topV + 0.25 * halfH, -halfH);
+  // 3. Front X-plane (y = +0.25)
+  drawPlane(u - 0.75 * halfW, topV - 0.25 * halfH, halfH);
+  // 4. Front Y-plane (x = +0.25)
+  drawPlane(u - 0.25 * halfW, topV + 0.75 * halfH, -halfH);
+}
+
+function drawCropGridFallback(
+  ctx: CanvasContext2DLike,
+  u: number,
+  baseV: number,
+  halfW: number,
+  halfH: number,
+  spriteH: number,
+  progress: number,
+  isMature: boolean
+): void {
+  const h = spriteH * (0.25 + progress * 0.75);
+  const topV = baseV - h;
+  const color = isMature ? "#d4af37" : "#689f38";
+  const planes = [
+    { u0: u - 0.25 * halfW, v0: topV - 0.75 * halfH, dv: halfH },
+    { u0: u - 0.75 * halfW, v0: topV + 0.25 * halfH, dv: -halfH },
+    { u0: u - 0.75 * halfW, v0: topV - 0.25 * halfH, dv: halfH },
+    { u0: u - 0.25 * halfW, v0: topV + 0.75 * halfH, dv: -halfH },
+  ];
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, halfW * 0.04);
+  for (const p of planes) {
+    ctx.beginPath();
+    ctx.moveTo(p.u0, p.v0);
+    ctx.lineTo(p.u0 + halfW, p.v0 + p.dv);
+    ctx.lineTo(p.u0 + halfW, p.v0 + p.dv + h);
+    ctx.lineTo(p.u0, p.v0 + h);
+    ctx.closePath();
+    ctx.stroke();
+  }
+}
+
 export function renderCropTile(
   ctx: CanvasContext2DLike,
   u: number,
@@ -110,25 +177,21 @@ export function renderCropTile(
       drawCrossedQuadFallback(ctx, u, baseV, dx, dy, spriteH, isMature);
     }
   } else if (tileId === "minecraft:wheat") {
-    const stalkCount = 4 + stage;
-    const stalkH = (4 + progress * 16) * zoom;
-    ctx.strokeStyle = isMature ? "#d4af37" : "#7cb342";
-    ctx.lineWidth = 1.5 * zoom;
+    const baseV = v + elevH;
+    const spriteH = elevH;
 
-    for (let i = 0; i < stalkCount; i++) {
-      const offsetRatio = i / (stalkCount - 1) - 0.5;
-      const xOff = offsetRatio * halfW * 0.7;
-      const yOff = Math.abs(offsetRatio) * 0.5 * halfH;
+    const canDrawTexture = Boolean(
+      texture &&
+        texture.complete &&
+        texture.naturalWidth > 0 &&
+        typeof ctx.transform === "function" &&
+        typeof ctx.drawImage === "function"
+    );
 
-      ctx.beginPath();
-      ctx.moveTo(u + xOff, v + yOff);
-      ctx.lineTo(u + xOff * 1.2, v + yOff - stalkH);
-      ctx.stroke();
-
-      if (isMature) {
-        ctx.fillStyle = "#f5c542";
-        ctx.fillRect(u + xOff * 1.2 - 1, v + yOff - stalkH - 2, 3, 3);
-      }
+    if (canDrawTexture && texture) {
+      drawCropGridTexture(ctx, u, baseV, halfW, halfH, spriteH, texture);
+    } else {
+      drawCropGridFallback(ctx, u, baseV, halfW, halfH, spriteH, progress, isMature);
     }
   } else if (tileId === "immersiveengineering:hemp" || tileId === "immersiveengineering:hemp_top") {
     const stalkH = (6 + progress * 16) * zoom;

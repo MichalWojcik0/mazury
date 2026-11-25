@@ -502,6 +502,13 @@ export class StubRenderer {
                 cropTexture = stageTexture;
               }
             }
+          } else if (tileId === "minecraft:wheat") {
+            const { stage } = getGrowthProgress(cmd.tile);
+            const stageIdx = Math.max(0, Math.min(7, stage));
+            const stageTexture = this.textures.get(`minecraft:wheat_stage_${stageIdx}`);
+            if (stageTexture) {
+              cropTexture = stageTexture;
+            }
           }
           renderCropTile(ctx, u, v, halfW, halfH, elevH, this.camera.zoom, cmd.tile, cropTexture);
           break;

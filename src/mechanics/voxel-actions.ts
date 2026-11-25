@@ -63,6 +63,15 @@ export function resolveSelectedVoxel(
     if (boundary) {
       tile = boundary.tile;
       isBoundary = true;
+    } else if (
+      targetCoord.x >= 0 &&
+      targetCoord.x < room.width &&
+      targetCoord.y >= 0 &&
+      targetCoord.y < room.height &&
+      targetCoord.z === room.depth
+    ) {
+      // Top layer inside the room's wall height (z === depth) is open air, not the UP ceiling
+      tile = { id: "minecraft:air", type: "air", passable: true };
     }
   }
 
@@ -86,7 +95,8 @@ export function getAvailableVoxelActions(
   tile: Tile,
   isBoundary: boolean = false,
   player?: Player,
-  targetCoord?: Vec3
+  targetCoord?: Vec3,
+  isInBounds: boolean = true
 ): VoxelAction[] {
   // Machine walls or boundary faces: only choice is punch
   if (tile.id === "compactmachines3:wall" || isBoundary || tile.type === "solid_wall") {
@@ -159,7 +169,7 @@ export function getAvailableVoxelActions(
   }
 
   // If targeting empty air and player has an equipped placeable item (do not overwrite crops/saplings)
-  if (tile.id === "minecraft:air" && player?.equippedItem) {
+  if (tile.id === "minecraft:air" && isInBounds && player?.equippedItem) {
     const equippedItemDef = getItemDefinition(player.equippedItem);
     if (equippedItemDef?.placeable) {
       // Check that targeted coord doesn't overlap player's body if targetCoord is provided

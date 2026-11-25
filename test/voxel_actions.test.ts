@@ -196,3 +196,33 @@ test("Voxel Actions: resolveSelectedVoxel accurately identifies target tile and 
   assert.ok(postBreakSelected);
   assert.equal(postBreakSelected.tile.id, "minecraft:air");
 });
+
+test("Voxel Actions: top layer (Layer 3) inside 3x3 Compact Machine resolves to air, not solid compact wall", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Enter Tiny Compact Machine at (1, 1, 1)
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+
+  const room = engine.rooms.get(player.currentRoomId)!;
+  player.selectedLayerIndex = 3; // Layer 3: z = 3 (top layer inside 3-high walls)
+
+  // Center and interior slots on Layer 3 should resolve to air
+  for (const slot of [1, 2, 3, 4, 5, 6, 7, 8, 9] as const) {
+    const selected = resolveSelectedVoxel(room, player, slot);
+    assert.ok(selected, `Slot ${slot} on Layer 3 should resolve`);
+    assert.equal(selected.coord.z, 3);
+    assert.equal(selected.tile.id, "minecraft:air");
+    assert.equal(selected.isBoundary, false);
+    assert.equal(getAvailableVoxelActions(selected.tile, selected.isBoundary, player, selected.coord, selected.isInBounds).length, 0);
+  }
+
+  // Move to North edge (y = 0) and target North boundary wall on Layer 3 (y = -1, z = 3)
+  player.y = 0;
+  const northWall = resolveSelectedVoxel(room, player, 8);
+  assert.ok(northWall);
+  assert.deepEqual(northWall.coord, { x: 1, y: -1, z: 3 });
+  assert.equal(northWall.tile.id, "compactmachines3:wall");
+  assert.equal(northWall.isBoundary, true);
+});

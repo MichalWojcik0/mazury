@@ -59,7 +59,7 @@ export function updateSelectedVoxelUI(player, room) {
   dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
   dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
 
-  const actions = getAvailableVoxelActions(tile, isBoundary, player, coord);
+  const actions = getAvailableVoxelActions(tile, isBoundary, player, coord, selected.isInBounds);
   const actionSig = `${player.selectedSlot}:${coord.x},${coord.y},${coord.z}:${tile.id}:${actions
     .map((a) => `${a.id}:${a.label}:${a.buttonType}`)
     .join(",")}`;

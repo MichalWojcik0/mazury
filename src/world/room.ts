@@ -135,8 +135,8 @@ export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentR
  * a Compact Machine room boundary.
  *
  * For a room with size (width, height, depth):
- * - z < 0 -> face DOWN, [y][x]
- * - z >= depth -> face UP, [y][x]
+ * - z <= 0 -> face DOWN, [y][x]
+ * - z > depth -> face UP, [y][x]
  * - y < 0 -> face NORTH, [z][x]
  * - y >= height -> face SOUTH, [z][x]
  * - x < 0 -> face WEST, [z][y]
@@ -159,7 +159,7 @@ const BOUNDARY_FACE_RULES: BoundaryFaceRule[] = [
   },
   {
     face: "UP",
-    matches: ({ z }, { depth }) => z >= depth,
+    matches: ({ z }, { depth }) => z > depth,
     getIndices: ({ x, y }, { width, height }) => ({
       row: Math.max(0, Math.min(height - 1, y)),
       col: Math.max(0, Math.min(width - 1, x)),
