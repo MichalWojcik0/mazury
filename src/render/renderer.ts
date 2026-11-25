@@ -491,24 +491,15 @@ export class StubRenderer {
 
         // Check if rendering a crop / bonsai tile
         if (cmd.tile && (isCropTile(cmd.tile) || cmd.tile.id === "immersiveengineering:hemp_top")) {
+          const cropBlockDef = tileId ? getBlockDefinition(tileId) : undefined;
           let cropTexture = tileId ? this.textures.get(tileId) : undefined;
-          if (tileId && tileId.startsWith("arcadialbonsaitrees:bonsai_")) {
-            const match = tileId.match(/^arcadialbonsaitrees:bonsai_([a-z]+)_sapling$/);
-            if (match) {
-              const { progress } = getGrowthProgress(cmd.tile);
-              const stageIdx = Math.min(7, Math.floor(progress * 7.999));
-              const stageTexture = this.textures.get(`arcadialbonsaitrees:bonsai_${match[1]}_stage_${stageIdx}`);
-              if (stageTexture) {
-                cropTexture = stageTexture;
-              }
-            }
-          } else if (tileId === "minecraft:wheat") {
-            const { stage } = getGrowthProgress(cmd.tile);
-            const stageIdx = Math.max(0, Math.min(7, stage));
-            const stageTexture = this.textures.get(`minecraft:wheat_stage_${stageIdx}`);
-            if (stageTexture) {
-              cropTexture = stageTexture;
-            }
+          if (cropBlockDef?.stageTexturePrefix) {
+            const { progress, stage } = getGrowthProgress(cmd.tile);
+            const stageIdx =
+              (cropBlockDef.growthStages ?? 4) > 4
+                ? Math.max(0, Math.min(7, stage))
+                : Math.min(7, Math.floor(progress * 7.999));
+            cropTexture = this.textures.get(`${cropBlockDef.stageTexturePrefix}${stageIdx}`) ?? cropTexture;
           }
           renderCropTile(ctx, u, v, halfW, halfH, elevH, this.camera.zoom, cmd.tile, cropTexture);
           break;

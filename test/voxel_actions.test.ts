@@ -226,3 +226,15 @@ test("Voxel Actions: top layer (Layer 3) inside 3x3 Compact Machine resolves to 
   assert.equal(northWall.tile.id, "compactmachines3:wall");
   assert.equal(northWall.isBoundary, true);
 });
+
+test("Voxel Actions: hemp_top offers both harvest and break actions", () => {
+  const hempTopTile = {
+    id: "immersiveengineering:hemp_top",
+    type: "crop" as const,
+    passable: true,
+    metadata: { baseCoord: { x: 1, y: 1, z: 1 } },
+  };
+  const actions = getAvailableVoxelActions(hempTopTile, false);
+  assert.ok(actions.some((a) => a.id === "harvest" && a.buttonType === "SECONDARY"));
+  assert.ok(actions.some((a) => a.id === "break" && a.buttonType === "PRIMARY"));
+});

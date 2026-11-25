@@ -30,8 +30,34 @@ export interface BlockDefinition {
   tilledDrops?: Array<{ itemId: string; count: number; chance?: number }>;
   isCrop?: boolean;
   maxGrowthTicks?: number;
+  growthStages?: number;
+  stageTexturePrefix?: string;
   harvestDrops?: Array<{ itemId: string; count: number; chance?: number; min?: number; max?: number }>;
   textureDataUrl?: string;
+}
+
+function createBonsaiBlock(
+  wood: string,
+  name: string,
+  icon: string,
+  textureDataUrl: string
+): BlockDefinition {
+  return {
+    id: `arcadialbonsaitrees:bonsai_${wood}_sapling`,
+    name,
+    icon,
+    type: "crop",
+    passable: true,
+    breakable: true,
+    isCrop: true,
+    maxGrowthTicks: 1200,
+    growthStages: 4,
+    stageTexturePrefix: `arcadialbonsaitrees:bonsai_${wood}_stage_`,
+    drops: [{ itemId: `arcadialbonsaitrees:bonsai_${wood}_sapling`, count: 1 }],
+    harvestDrops: [{ itemId: `arcadialbonsaitrees:bonsai_${wood}_cutting`, count: 4 }],
+    tillable: false,
+    textureDataUrl,
+  };
 }
 
 export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
@@ -146,102 +172,12 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     tillable: false,
     textureDataUrl: TORCH_TEXTURE_DATA_URL,
   },
-  "arcadialbonsaitrees:bonsai_oak_sapling": {
-    id: "arcadialbonsaitrees:bonsai_oak_sapling",
-    name: "Bonsai Oak Sapling",
-    icon: "🌳",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_oak_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_oak_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_OAK_SAPLING_TEXTURE_DATA_URL,
-  },
-  "arcadialbonsaitrees:bonsai_spruce_sapling": {
-    id: "arcadialbonsaitrees:bonsai_spruce_sapling",
-    name: "Bonsai Spruce Sapling",
-    icon: "🌲",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_spruce_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_spruce_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL,
-  },
-  "arcadialbonsaitrees:bonsai_birch_sapling": {
-    id: "arcadialbonsaitrees:bonsai_birch_sapling",
-    name: "Bonsai Birch Sapling",
-    icon: "🌳",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_birch_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_birch_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL,
-  },
-  "arcadialbonsaitrees:bonsai_jungle_sapling": {
-    id: "arcadialbonsaitrees:bonsai_jungle_sapling",
-    name: "Bonsai Jungle Sapling",
-    icon: "🌴",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_jungle_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_jungle_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL,
-  },
-  "arcadialbonsaitrees:bonsai_acacia_sapling": {
-    id: "arcadialbonsaitrees:bonsai_acacia_sapling",
-    name: "Bonsai Acacia Sapling",
-    icon: "🎋",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_acacia_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_acacia_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL,
-  },
-  "arcadialbonsaitrees:bonsai_darkoak_sapling": {
-    id: "arcadialbonsaitrees:bonsai_darkoak_sapling",
-    name: "Bonsai Dark Oak Sapling",
-    icon: "🌳",
-    type: "crop",
-    passable: true,
-    breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
-    drops: [{ itemId: "arcadialbonsaitrees:bonsai_darkoak_sapling", count: 1 }],
-    harvestDrops: [
-      { itemId: "arcadialbonsaitrees:bonsai_darkoak_cutting", count: 4 },
-    ],
-    tillable: false,
-    textureDataUrl: BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL,
-  },
+  "arcadialbonsaitrees:bonsai_oak_sapling": createBonsaiBlock("oak", "Bonsai Oak Sapling", "🌳", BONSAI_OAK_SAPLING_TEXTURE_DATA_URL),
+  "arcadialbonsaitrees:bonsai_spruce_sapling": createBonsaiBlock("spruce", "Bonsai Spruce Sapling", "🌲", BONSAI_SPRUCE_SAPLING_TEXTURE_DATA_URL),
+  "arcadialbonsaitrees:bonsai_birch_sapling": createBonsaiBlock("birch", "Bonsai Birch Sapling", "🌳", BONSAI_BIRCH_SAPLING_TEXTURE_DATA_URL),
+  "arcadialbonsaitrees:bonsai_jungle_sapling": createBonsaiBlock("jungle", "Bonsai Jungle Sapling", "🌴", BONSAI_JUNGLE_SAPLING_TEXTURE_DATA_URL),
+  "arcadialbonsaitrees:bonsai_acacia_sapling": createBonsaiBlock("acacia", "Bonsai Acacia Sapling", "🎋", BONSAI_ACACIA_SAPLING_TEXTURE_DATA_URL),
+  "arcadialbonsaitrees:bonsai_darkoak_sapling": createBonsaiBlock("darkoak", "Bonsai Dark Oak Sapling", "🌳", BONSAI_DARKOAK_SAPLING_TEXTURE_DATA_URL),
   "minecraft:wheat": {
     id: "minecraft:wheat",
     name: "Wheat Crop",
@@ -251,6 +187,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     isCrop: true,
     maxGrowthTicks: 1200,
+    growthStages: 8,
+    stageTexturePrefix: "minecraft:wheat_stage_",
     drops: [{ itemId: "minecraft:wheat_seeds", count: 1 }],
     harvestDrops: [
       { itemId: "minecraft:wheat", count: 1 },

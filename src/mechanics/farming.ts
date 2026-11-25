@@ -46,16 +46,17 @@ export function getGrowthProgress(tile: Tile): {
   const progress = Math.min(1.0, growthTicks / maxTicks);
   const isMature = progress >= 1.0;
 
-  let stage = 0;
-  if (tile.id === "minecraft:wheat") {
-    stage = Math.min(7, Math.floor(progress * 7));
-  } else {
-    // 0: sapling (< 0.33), 1: sprout (0.33..0.66), 2: bushy (0.66..1.0), 3: mature (1.0)
-    if (progress >= 1.0) stage = 3;
-    else if (progress >= 0.66) stage = 2;
-    else if (progress >= 0.33) stage = 1;
-    else stage = 0;
-  }
+  const growthStages = blockDef?.growthStages ?? 4;
+  const stage =
+    growthStages > 4
+      ? Math.min(growthStages - 1, Math.floor(progress * (growthStages - 1)))
+      : progress >= 1.0
+        ? 3
+        : progress >= 0.66
+          ? 2
+          : progress >= 0.33
+            ? 1
+            : 0;
 
   return {
     growthTicks,
@@ -133,6 +134,22 @@ export function plantCrop(room: Room, coord: Vec3, itemId: string): Tile | null 
   return tile;
 }
 
+function trySpawnHempTop(room: Room, x: number, y: number, z: number): void {
+  const aboveZ = z + 1;
+  if (aboveZ >= room.depth) return;
+  const aboveTile = room.voxels[aboveZ]?.[y]?.[x];
+  if (aboveTile && aboveTile.id === "minecraft:air") {
+    room.voxels[aboveZ][y][x] = {
+      id: "immersiveengineering:hemp_top",
+      type: "crop",
+      passable: true,
+      metadata: {
+        baseCoord: { x, y, z },
+      },
+    };
+  }
+}
+
 /**
  * Ticks growth simulation for all bonsai and crops in the room.
  * Twerking / Sneaking acceleration: When any player in the room is sneaking adjacent
@@ -167,20 +184,7 @@ export function tickFarming(
             if (harvestCooldown > 0) {
               tile.metadata.harvestCooldown = harvestCooldown - 1;
             } else {
-              const aboveZ = z + 1;
-              if (aboveZ < room.depth) {
-                const aboveTile = room.voxels[aboveZ]?.[y]?.[x];
-                if (aboveTile && aboveTile.id === "minecraft:air") {
-                  room.voxels[aboveZ][y][x] = {
-                    id: "immersiveengineering:hemp_top",
-                    type: "crop",
-                    passable: true,
-                    metadata: {
-                      baseCoord: { x, y, z },
-                    },
-                  };
-                }
-              }
+              trySpawnHempTop(room, x, y, z);
             }
           }
           continue;
@@ -205,20 +209,7 @@ export function tickFarming(
         };
 
         if (tile.id === "immersiveengineering:hemp" && newTicks >= maxTicks) {
-          const aboveZ = z + 1;
-          if (aboveZ < room.depth) {
-            const aboveTile = room.voxels[aboveZ]?.[y]?.[x];
-            if (aboveTile && aboveTile.id === "minecraft:air") {
-              room.voxels[aboveZ][y][x] = {
-                id: "immersiveengineering:hemp_top",
-                type: "crop",
-                passable: true,
-                metadata: {
-                  baseCoord: { x, y, z },
-                },
-              };
-            }
-          }
+          trySpawnHempTop(room, x, y, z);
         }
       }
     }
@@ -264,29 +255,6 @@ export function harvestPlant(
 
   const drops: Array<{ id: string; count: number }> = [];
 
-  // Bonsai harvest (mature only): drops 4 cuttings of corresponding type, no leaves, autoplanted back to stage 0
-  if (tile.id.startsWith("arcadialbonsaitrees:bonsai_")) {
-    const cuttingId = tile.id.endsWith("_sapling")
-      ? tile.id.replace(/_sapling$/, "_cutting")
-      : "arcadialbonsaitrees:bonsai_oak_cutting";
-    drops.push({
-      id: cuttingId,
-      count: 4,
-    });
-
-    // Reset growth ticks to 0 (autoplanted back to first stage)
-    if (tile.metadata) {
-      tile.metadata.growthTicks = 0;
-    }
-
-    return {
-      success: true,
-      drops,
-      resetsGrowth: true,
-      destroysTile: false,
-    };
-  }
-
   // Wheat harvest (mature only): drops 1 wheat + 1-4 wheat seeds with Minecraft binomial weights:
   // 1 seed: ~7.87% (0.0787)
   // 2 seeds: ~31.49% (0.0787 + 0.3149 = 0.3936)
@@ -295,7 +263,7 @@ export function harvestPlant(
   if (tile.id === "minecraft:wheat") {
     drops.push({ id: "minecraft:wheat", count: 1 });
 
-    const roll = rng ? rng.next() : Math.random();
+    const roll = rng ? rng.next() : 0.5;
     let seedCount: number;
     if (roll < 0.0787) {
       seedCount = 1;

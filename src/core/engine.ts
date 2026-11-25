@@ -339,15 +339,15 @@ export class GameEngine {
               }
 
               if (isMature) {
-                // Mature break: drops harvest yields plus the replanted seed/sapling that wasn't consumed
+                // Mature break: drops harvest yields plus the base replanted seed/sapling from blockDef.drops
                 const harvestRes = harvestPlant(targetTile, this.rng);
                 for (const drop of harvestRes.drops) {
                   addItem(player.inventory, drop.id, drop.count);
                 }
-                if (targetTile.id.startsWith("arcadialbonsaitrees:bonsai_")) {
-                  addItem(player.inventory, targetTile.id, 1);
-                } else if (targetTile.id === "minecraft:wheat") {
-                  addItem(player.inventory, "minecraft:wheat_seeds", 1);
+                if (blockDef?.drops) {
+                  for (const drop of blockDef.drops) {
+                    addItem(player.inventory, drop.itemId, drop.count);
+                  }
                 }
               } else {
                 // Immature break: drops just the base sapling/seed

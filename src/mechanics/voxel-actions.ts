@@ -111,31 +111,11 @@ export function getAvailableVoxelActions(
     ];
   }
 
-  // Dirt block: choice is either break or till
-  if (tile.id === "minecraft:dirt") {
-    return [
-      {
-        id: "break",
-        label: "Break Dirt",
-        buttonType: "PRIMARY",
-        icon: "⛏️",
-        description: "Break the dirt block into inventory",
-      },
-      {
-        id: "till",
-        label: "Till Soil",
-        buttonType: "SECONDARY",
-        icon: "🌾",
-        description: "Till dirt into farmland for farming",
-      },
-    ];
-  }
-
   const actions: VoxelAction[] = [];
   const blockDef = getBlockDefinition(tile.id);
 
-  // If crop / bonsai tile
-  if (isCropTile(tile)) {
+  // If crop / bonsai tile (including multi-block hemp top)
+  if (isCropTile(tile) || tile.id === "immersiveengineering:hemp_top") {
     const { isMature } = getGrowthProgress(tile);
     if (isMature || tile.id === "immersiveengineering:hemp_top") {
       actions.push({
