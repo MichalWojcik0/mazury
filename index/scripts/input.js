@@ -1,5 +1,11 @@
-import { screenToWorld, hitTestBoundaryWallFace, getItemDefinition } from "./engine-api.js";
-import { engine, renderer, canvas, dom } from "./state.js";
+import {
+  screenToWorld,
+  hitTestBoundaryWallFace,
+  isPointInPlayArea,
+  clampCameraPan,
+  getItemDefinition,
+} from "./engine-api.js";
+import { engine, renderer, canvas, dom, cameraState } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
 import { saveGame, resetSave } from "./storage.js";
@@ -121,10 +127,14 @@ export function bindInputHandlers() {
 
   // Keyboard handlers
   let isShiftHeld = false;
+  let isMiddleDragging = false;
+  let lastDragX = 0;
+  let lastDragY = 0;
+
   window.addEventListener("keydown", (e) => {
     const p = engine.players.get(0);
     if (e.key === "Shift") {
-      if (!e.repeat) {
+      if (!e.repeat && !isMiddleDragging) {
         isShiftHeld = true;
         startSneak();
       }
@@ -236,6 +246,111 @@ export function bindInputHandlers() {
     if (isShiftHeld) {
       isShiftHeld = false;
       stopSneak();
+    }
+    isMiddleDragging = false;
+  });
+
+  // Helper: check if a mouse event is pointing inside the room play area
+  const isEventInPlayArea = (e) => {
+    const p = engine.players.get(0);
+    const room = p ? engine.rooms.get(p.currentRoomId) : null;
+    if (!room) return false;
+    const rect = canvas.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+    return isPointInPlayArea(
+      cursorX,
+      cursorY,
+      room.width,
+      room.height,
+      room.depth,
+      Boolean(room.faces),
+      renderer.camera
+    );
+  };
+
+  // Scroll wheel: over play area -> change layer; pointing nowhere -> change hotbar item
+  window.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.target && e.target.closest?.(".crafting-panel, .full-inventory-drawer")) {
+        return; // Allow scrolling inside crafting/inventory panels
+      }
+      const p = engine.players.get(0);
+      if (!p || e.deltaY === 0) return;
+
+      e.preventDefault();
+      const dir = e.deltaY > 0 ? 1 : -1;
+
+      if (isEventInPlayArea(e)) {
+        // Scroll up (dir = -1) -> higher layer; scroll down (dir = +1) -> lower layer
+        const nextLayer = Math.max(0, Math.min(3, p.selectedLayerIndex - dir));
+        if (nextLayer !== p.selectedLayerIndex) {
+          selectLayer(nextLayer);
+        }
+      } else {
+        // Pointing nowhere -> cycle quick hotbar slot 0..8
+        const currentQuick = p.selectedQuickSlotIndex ?? 0;
+        const nextQuick = (currentQuick + dir + 9) % 9;
+        selectQuickSlot(nextQuick);
+      }
+    },
+    { passive: false }
+  );
+
+  // Middle-click drag on play area: pan (clamped within view), or Shift + middle-click drag: zoom
+  canvas.addEventListener("mousedown", (e) => {
+    if (e.button !== 1) return;
+    if (!e.shiftKey && !isEventInPlayArea(e)) return;
+
+    e.preventDefault();
+    isMiddleDragging = true;
+    lastDragX = e.clientX;
+    lastDragY = e.clientY;
+    if (isShiftHeld) {
+      isShiftHeld = false;
+      stopSneak();
+    }
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isMiddleDragging) return;
+    const dx = e.clientX - lastDragX;
+    const dy = e.clientY - lastDragY;
+    lastDragX = e.clientX;
+    lastDragY = e.clientY;
+
+    if (e.shiftKey) {
+      // Shift + middle-click drag: drag up zooms in, drag down zooms out
+      const factor = Math.exp(-dy * 0.008);
+      cameraState.zoom = Math.max(
+        cameraState.minZoom,
+        Math.min(cameraState.maxZoom, cameraState.zoom * factor)
+      );
+      return;
+    }
+
+    const p = engine.players.get(0);
+    const room = p ? engine.rooms.get(p.currentRoomId) : null;
+    if (!room) return;
+
+    const clamped = clampCameraPan(
+      cameraState.panX + dx,
+      cameraState.panY + dy,
+      room.width,
+      room.height,
+      room.depth,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      renderer.camera
+    );
+    cameraState.panX = clamped.panX;
+    cameraState.panY = clamped.panY;
+  });
+
+  window.addEventListener("mouseup", (e) => {
+    if (e.button === 1) {
+      isMiddleDragging = false;
     }
   });
 

@@ -10,6 +10,8 @@ import {
   screenToWorld,
   computeDepthKey,
   hitTestBoundaryWallFace,
+  isPointInPlayArea,
+  clampCameraPan,
 } from "./projection.ts";
 import type {
   RenderCommandType,
@@ -37,6 +39,8 @@ export {
   screenToWorld,
   computeDepthKey,
   hitTestBoundaryWallFace,
+  isPointInPlayArea,
+  clampCameraPan,
 };
 
 export class StubRenderer {

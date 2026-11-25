@@ -84,6 +84,15 @@ export const uiState = {
   draggedSlotIndex: null,
 };
 
+export const cameraState = {
+  panX: 0,
+  panY: 0,
+  zoom: 1.0,
+  minZoom: 0.5,
+  maxZoom: 2.5,
+  lastRoomId: null,
+};
+
 // Track active hover timers and states across re-renders
 // Key: slot container type ('quick' or 'drawer') + '-' + slotIndex
 export const arrowVisibleUntil = new Map();

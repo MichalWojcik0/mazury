@@ -5,6 +5,8 @@ import {
   worldToScreen,
   screenToWorld,
   computeDepthKey,
+  isPointInPlayArea,
+  clampCameraPan,
   StubRenderer,
   DEFAULT_CAMERA_CONFIG,
   type CanvasContext2DLike,
@@ -469,4 +471,28 @@ test("StubRenderer renders crafting station as a 4-legged wooden table with craf
   assert.equal(drawnImages.length, 11);
   assert.ok(drawnImages.slice(0, 10).every((img) => img === planksTex), "Legs and tabletop rim should use planks texture");
   assert.equal(drawnImages[10], topTex, "Top surface should use crafting grid texture");
+});
+
+test("isPointInPlayArea and clampCameraPan accurately bound play-area detection and panning", () => {
+  const renderer = new StubRenderer();
+  const room = createTinyCompactMachineRoom();
+  renderer.centerOnRoom(room, 800, 600);
+
+  // Center of room floor (1, 1, 0) is inside the play area
+  const centerPt = worldToScreen(1, 1, 0, renderer.camera);
+  assert.equal(
+    isPointInPlayArea(centerPt.u, centerPt.v, room.width, room.height, room.depth, true, renderer.camera),
+    true
+  );
+
+  // Far corner of viewport (5, 5) is outside the play area
+  assert.equal(
+    isPointInPlayArea(5, 5, room.width, room.height, room.depth, true, renderer.camera),
+    false
+  );
+
+  // Extreme pan offsets get clamped so the room cannot leave the camera view
+  const clamped = clampCameraPan(5000, -5000, room.width, room.height, room.depth, 800, 600, renderer.camera);
+  assert.ok(clamped.panX > 0 && clamped.panX <= 800 * 0.35);
+  assert.ok(clamped.panY < 0 && clamped.panY >= -600 * 0.35);
 });

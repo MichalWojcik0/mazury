@@ -337,3 +337,34 @@ test("Farming: Wheat and Industrial Hemp multi-block growth and harvesting", () 
   const fiberAfter = countItem(player.inventory, "immersiveengineering:material:4");
   assert.ok(fiberAfter > fiberBefore, "Should have received hemp fibers");
 });
+
+test("Placing planks is blocked when a sapling occupies the target block", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+
+  const room = engine.rooms.get("room_tiny_1")!;
+  room.voxels[0][1][2] = { id: "minecraft:farmland", type: "farmland", passable: false };
+  plantCrop(room, { x: 2, y: 1, z: 1 }, "arcadialbonsaitrees:bonsai_oak_sapling");
+
+  addItem(player.inventory, "minecraft:planks", 4);
+  player.selectedQuickSlotIndex = 1;
+  player.equippedItem = "minecraft:planks";
+
+  // Available actions should NOT include "place" on a tile occupied by a sapling
+  const actions = getAvailableVoxelActions(room.voxels[1][1][2], false, player, { x: 2, y: 1, z: 1 });
+  assert.equal(actions.some((a) => a.id === "place"), false);
+
+  // Attempting to place planks on slot 6 (2, 1, 1) must not overwrite sapling or consume planks
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 6, button: "SECONDARY" },
+  });
+  engine.stepTick();
+
+  assert.equal(room.voxels[1][1][2].id, "arcadialbonsaitrees:bonsai_oak_sapling");
+  assert.equal(countItem(player.inventory, "minecraft:planks"), 4);
+});

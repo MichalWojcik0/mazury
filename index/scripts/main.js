@@ -1,5 +1,5 @@
-import { resolveTargetCoord } from "./engine-api.js";
-import { engine, renderer, canvas, ctx } from "./state.js";
+import { resolveTargetCoord, clampCameraPan } from "./engine-api.js";
+import { engine, renderer, canvas, ctx, cameraState } from "./state.js";
 import {
   setOnActionComplete,
   selectLayer,
@@ -89,8 +89,30 @@ function renderLoop() {
   ctx.clearRect(0, 0, logicalW, logicalH);
 
   if (room && p) {
-    // Auto-center camera for current room
+    // Reset pan when entering/exiting a room
+    if (cameraState.lastRoomId !== room.id) {
+      cameraState.lastRoomId = room.id;
+      cameraState.panX = 0;
+      cameraState.panY = 0;
+    }
+
+    // Apply zoom and center camera for current room, then apply clamped pan offset
+    renderer.camera.zoom = cameraState.zoom;
     renderer.centerOnRoom(room, logicalW, logicalH);
+    const clamped = clampCameraPan(
+      cameraState.panX,
+      cameraState.panY,
+      room.width,
+      room.height,
+      room.depth,
+      logicalW,
+      logicalH,
+      renderer.camera
+    );
+    cameraState.panX = clamped.panX;
+    cameraState.panY = clamped.panY;
+    renderer.camera.offsetX += cameraState.panX;
+    renderer.camera.offsetY += cameraState.panY;
 
     // Active layer Z elevation in world space (player.z + selectedLayerIndex - 1)
     const selectedLayerZ = p.z + p.selectedLayerIndex - 1;

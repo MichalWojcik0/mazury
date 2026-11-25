@@ -256,9 +256,16 @@
 
     .middle-overlay {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       width: 100%;
+    }
+
+    .targeting-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 10px;
     }
 
     /* Vertical 4-Layer Selection Widget */
@@ -1147,41 +1154,43 @@
 
       <!-- Middle Side Floating Widgets -->
       <div class="middle-overlay">
-        <!-- 4-Layer Selection Widget -->
-        <div class="layer-selector-card ui-interactive">
-          <div class="widget-title">Target Layer</div>
-          <button class="layer-btn" data-layer="3" id="layer-btn-3">
-            <span>3: Ceiling</span>
-            <span class="hotkey">[F4]</span>
-          </button>
-          <button class="layer-btn" data-layer="2" id="layer-btn-2">
-            <span>2: Head</span>
-            <span class="hotkey">[F3]</span>
-          </button>
-          <button class="layer-btn active" data-layer="1" id="layer-btn-1">
-            <span>1: Feet</span>
-            <span class="hotkey">[F2]</span>
-          </button>
-          <button class="layer-btn" data-layer="0" id="layer-btn-0">
-            <span>0: Floor</span>
-            <span class="hotkey">[F1]</span>
-          </button>
-        </div>
-
-        <!-- 3x3 Auxiliary Reticle Widget & Target Voxel Action Card -->
+        <!-- Target Layer + 3x3 Auxiliary Reticle + Target Voxel Action Card -->
         <div class="reticle-action-container">
-          <div class="aux-reticle-card ui-interactive">
-            <div class="widget-title">Target Reticle</div>
-            <div class="reticle-grid">
-              <button class="reticle-cell" data-slot="7" title="North-West (Numpad 7)">7</button>
-              <button class="reticle-cell" data-slot="8" title="North (Numpad 8)">8</button>
-              <button class="reticle-cell" data-slot="9" title="North-East (Numpad 9)">9</button>
-              <button class="reticle-cell" data-slot="4" title="West (Numpad 4)">4</button>
-              <button class="reticle-cell player-cell" data-slot="5" id="reticle-slot-5" title="Center (Numpad 5)">●</button>
-              <button class="reticle-cell" data-slot="6" title="East (Numpad 6)">6</button>
-              <button class="reticle-cell" data-slot="1" title="South-West (Numpad 1)">1</button>
-              <button class="reticle-cell" data-slot="2" title="South (Numpad 2)">2</button>
-              <button class="reticle-cell" data-slot="3" title="South-East (Numpad 3)">3</button>
+          <div class="targeting-row">
+            <!-- 4-Layer Selection Widget (next to Target Reticle) -->
+            <div class="layer-selector-card ui-interactive">
+              <div class="widget-title">Target Layer</div>
+              <button class="layer-btn" data-layer="3" id="layer-btn-3">
+                <span>3: Ceiling</span>
+                <span class="hotkey">[F4]</span>
+              </button>
+              <button class="layer-btn" data-layer="2" id="layer-btn-2">
+                <span>2: Head</span>
+                <span class="hotkey">[F3]</span>
+              </button>
+              <button class="layer-btn active" data-layer="1" id="layer-btn-1">
+                <span>1: Feet</span>
+                <span class="hotkey">[F2]</span>
+              </button>
+              <button class="layer-btn" data-layer="0" id="layer-btn-0">
+                <span>0: Floor</span>
+                <span class="hotkey">[F1]</span>
+              </button>
+            </div>
+
+            <div class="aux-reticle-card ui-interactive">
+              <div class="widget-title">Target Reticle</div>
+              <div class="reticle-grid">
+                <button class="reticle-cell" data-slot="7" title="North-West (Numpad 7)">7</button>
+                <button class="reticle-cell" data-slot="8" title="North (Numpad 8)">8</button>
+                <button class="reticle-cell" data-slot="9" title="North-East (Numpad 9)">9</button>
+                <button class="reticle-cell" data-slot="4" title="West (Numpad 4)">4</button>
+                <button class="reticle-cell player-cell" data-slot="5" id="reticle-slot-5" title="Center (Numpad 5)">●</button>
+                <button class="reticle-cell" data-slot="6" title="East (Numpad 6)">6</button>
+                <button class="reticle-cell" data-slot="1" title="South-West (Numpad 1)">1</button>
+                <button class="reticle-cell" data-slot="2" title="South (Numpad 2)">2</button>
+                <button class="reticle-cell" data-slot="3" title="South-East (Numpad 3)">3</button>
+              </div>
             </div>
           </div>
 
@@ -1345,6 +1354,8 @@
       resolveTargetCoord,
       screenToWorld,
       hitTestBoundaryWallFace,
+      isPointInPlayArea,
+      clampCameraPan,
       CHAPTER_1_RECIPES,
       canCraft,
       getCraftability,
@@ -1432,6 +1443,14 @@
         { filter: "station", groupBy: "category", sortBy: "craftable" }
       ],
       draggedSlotIndex: null
+    };
+    var cameraState = {
+      panX: 0,
+      panY: 0,
+      zoom: 1,
+      minZoom: 0.5,
+      maxZoom: 2.5,
+      lastRoomId: null
     };
     var arrowVisibleUntil = new Map;
     var arrowHideTimeouts = new Map;
@@ -2225,10 +2244,13 @@
         });
       });
       let isShiftHeld = false;
+      let isMiddleDragging = false;
+      let lastDragX = 0;
+      let lastDragY = 0;
       window.addEventListener("keydown", (e) => {
         const p = engine.players.get(0);
         if (e.key === "Shift") {
-          if (!e.repeat) {
+          if (!e.repeat && !isMiddleDragging) {
             isShiftHeld = true;
             startSneak();
           }
@@ -2340,6 +2362,76 @@
           isShiftHeld = false;
           stopSneak();
         }
+        isMiddleDragging = false;
+      });
+      const isEventInPlayArea = (e) => {
+        const p = engine.players.get(0);
+        const room = p ? engine.rooms.get(p.currentRoomId) : null;
+        if (!room)
+          return false;
+        const rect = canvas.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        return isPointInPlayArea(cursorX, cursorY, room.width, room.height, room.depth, Boolean(room.faces), renderer.camera);
+      };
+      window.addEventListener("wheel", (e) => {
+        if (e.target && e.target.closest?.(".crafting-panel, .full-inventory-drawer")) {
+          return;
+        }
+        const p = engine.players.get(0);
+        if (!p || e.deltaY === 0)
+          return;
+        e.preventDefault();
+        const dir = e.deltaY > 0 ? 1 : -1;
+        if (isEventInPlayArea(e)) {
+          const nextLayer = Math.max(0, Math.min(3, p.selectedLayerIndex - dir));
+          if (nextLayer !== p.selectedLayerIndex) {
+            selectLayer(nextLayer);
+          }
+        } else {
+          const currentQuick = p.selectedQuickSlotIndex ?? 0;
+          const nextQuick = (currentQuick + dir + 9) % 9;
+          selectQuickSlot(nextQuick);
+        }
+      }, { passive: false });
+      canvas.addEventListener("mousedown", (e) => {
+        if (e.button !== 1)
+          return;
+        if (!e.shiftKey && !isEventInPlayArea(e))
+          return;
+        e.preventDefault();
+        isMiddleDragging = true;
+        lastDragX = e.clientX;
+        lastDragY = e.clientY;
+        if (isShiftHeld) {
+          isShiftHeld = false;
+          stopSneak();
+        }
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (!isMiddleDragging)
+          return;
+        const dx = e.clientX - lastDragX;
+        const dy = e.clientY - lastDragY;
+        lastDragX = e.clientX;
+        lastDragY = e.clientY;
+        if (e.shiftKey) {
+          const factor = Math.exp(-dy * 0.008);
+          cameraState.zoom = Math.max(cameraState.minZoom, Math.min(cameraState.maxZoom, cameraState.zoom * factor));
+          return;
+        }
+        const p = engine.players.get(0);
+        const room = p ? engine.rooms.get(p.currentRoomId) : null;
+        if (!room)
+          return;
+        const clamped = clampCameraPan(cameraState.panX + dx, cameraState.panY + dy, room.width, room.height, room.depth, canvas.clientWidth, canvas.clientHeight, renderer.camera);
+        cameraState.panX = clamped.panX;
+        cameraState.panY = clamped.panY;
+      });
+      window.addEventListener("mouseup", (e) => {
+        if (e.button === 1) {
+          isMiddleDragging = false;
+        }
       });
       document.getElementById("btn-up").addEventListener("click", () => movePlayer(0, -1));
       document.getElementById("btn-down").addEventListener("click", () => movePlayer(0, 1));
@@ -2445,7 +2537,18 @@
       const logicalH = canvas.clientHeight;
       ctx.clearRect(0, 0, logicalW, logicalH);
       if (room && p) {
+        if (cameraState.lastRoomId !== room.id) {
+          cameraState.lastRoomId = room.id;
+          cameraState.panX = 0;
+          cameraState.panY = 0;
+        }
+        renderer.camera.zoom = cameraState.zoom;
         renderer.centerOnRoom(room, logicalW, logicalH);
+        const clamped = clampCameraPan(cameraState.panX, cameraState.panY, room.width, room.height, room.depth, logicalW, logicalH, renderer.camera);
+        cameraState.panX = clamped.panX;
+        cameraState.panY = clamped.panY;
+        renderer.camera.offsetX += cameraState.panX;
+        renderer.camera.offsetY += cameraState.panY;
         const selectedLayerZ = p.z + p.selectedLayerIndex - 1;
         let highlightCoord = null;
         if (p.selectedSlot) {

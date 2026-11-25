@@ -109,3 +109,57 @@ export function hitTestBoundaryWallFace(
 
   return null;
 }
+
+/**
+ * Returns true if screen point (u, v) lies over any layer footprint or visible
+ * boundary wall face of the room's play area.
+ */
+export function isPointInPlayArea(
+  u: number,
+  v: number,
+  roomWidth: number,
+  roomHeight: number,
+  roomDepth: number,
+  hasFaces: boolean,
+  camera: CameraConfig = DEFAULT_CAMERA_CONFIG
+): boolean {
+  for (let z = 0; z <= roomDepth; z++) {
+    const w = screenToWorld(u, v, z, camera);
+    if (w.x >= -0.5 && w.x <= roomWidth - 0.5 && w.y >= -0.5 && w.y <= roomHeight - 0.5) {
+      return true;
+    }
+    if (hasFaces && z >= 1 && z <= roomDepth) {
+      if (hitTestBoundaryWallFace(u, v, z, roomWidth, roomHeight, camera)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Clamps camera pan offsets so the room play area cannot be panned out of camera view.
+ */
+export function clampCameraPan(
+  panX: number,
+  panY: number,
+  roomWidth: number,
+  roomHeight: number,
+  roomDepth: number,
+  viewportW: number,
+  viewportH: number,
+  camera: CameraConfig = DEFAULT_CAMERA_CONFIG
+): { panX: number; panY: number } {
+  const roomSpanW = (roomWidth + roomHeight) * (camera.tileWidth / 2) * camera.zoom;
+  const roomSpanH =
+    ((roomWidth + roomHeight) * (camera.tileHeight / 2) + roomDepth * camera.elevationHeight) *
+    camera.zoom;
+
+  const maxPanX = Math.max(40, Math.min(viewportW * 0.35, roomSpanW * 0.65));
+  const maxPanY = Math.max(40, Math.min(viewportH * 0.35, roomSpanH * 0.65));
+
+  return {
+    panX: Math.max(-maxPanX, Math.min(maxPanX, panX)),
+    panY: Math.max(-maxPanY, Math.min(maxPanY, panY)),
+  };
+}

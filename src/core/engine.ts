@@ -479,9 +479,9 @@ export class GameEngine {
                 targetCoord.y === player.y &&
                 (targetCoord.z === player.z || targetCoord.z === player.z + 1);
 
-              if (existingVoxel && (existingVoxel.passable || existingVoxel.id === "minecraft:air") && !overlapsPlayer) {
+              if (existingVoxel && existingVoxel.id === "minecraft:air" && !overlapsPlayer) {
                 const removed = removeItem(player.inventory, equipped, 1);
-                if (removed > 0) {
+                if (removed) {
                   const tileIdToPlace = itemDef.placesTileId ?? equipped;
                   const placedBlockDef = getBlockDefinition(tileIdToPlace);
                   room.voxels[targetCoord.z][targetCoord.y][targetCoord.x] = {

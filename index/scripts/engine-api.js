@@ -4,6 +4,8 @@ export {
   resolveTargetCoord,
   screenToWorld,
   hitTestBoundaryWallFace,
+  isPointInPlayArea,
+  clampCameraPan,
   CHAPTER_1_RECIPES,
   canCraft,
   getCraftability,

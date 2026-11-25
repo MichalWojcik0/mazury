@@ -158,8 +158,8 @@ export function getAvailableVoxelActions(
     });
   }
 
-  // If targeting air or a passable tile and player has an equipped placeable item
-  if ((tile.id === "minecraft:air" || tile.passable) && player?.equippedItem) {
+  // If targeting empty air and player has an equipped placeable item (do not overwrite crops/saplings)
+  if (tile.id === "minecraft:air" && player?.equippedItem) {
     const equippedItemDef = getItemDefinition(player.equippedItem);
     if (equippedItemDef?.placeable) {
       // Check that targeted coord doesn't overlap player's body if targetCoord is provided

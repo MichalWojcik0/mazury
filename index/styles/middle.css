@@ -1,8 +1,15 @@
 .middle-overlay {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
+}
+
+.targeting-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
 }
 
 /* Vertical 4-Layer Selection Widget */
