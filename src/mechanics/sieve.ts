@@ -13,6 +13,13 @@ export interface SieveDropEntry {
 }
 
 export const SIEVE_LOOT_TABLES: Record<string, SieveDropEntry[]> = {
+  "minecraft:dirt": [
+    { itemId: "exnihilocreatio:item_pebble:0", chance: 0.5 },
+    { itemId: "minecraft:wheat_seeds", chance: 0.1 },
+    { itemId: "exnihilocreatio:item_seed_sugarcane", chance: 0.05 },
+    { itemId: "exnihilocreatio:item_seed_cactus", chance: 0.05 },
+    { itemId: "arcadialbonsaitrees:bonsai_oak_sapling", chance: 0.05 },
+  ],
   "minecraft:gravel": [
     { itemId: "exnihilocreatio:ore_piece_iron", chance: 0.15 },
     { itemId: "exnihilocreatio:ore_piece_copper", chance: 0.15 },

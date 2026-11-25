@@ -104,6 +104,14 @@ export const TEXTURE_MANIFEST = [
   { constName: "GLASS_TEXTURE_DATA_URL", mapId: "minecraft:glass", asset: "assets/minecraft/textures/blocks/glass.png" },
   { constName: "STONE_TEXTURE_DATA_URL", mapId: "minecraft:stone", asset: "assets/minecraft/textures/blocks/stone.png" },
   { constName: "BRICK_TEXTURE_DATA_URL", mapId: "minecraft:brick", asset: "assets/minecraft/textures/items/brick.png" },
+
+  // Sugar Cane & Cactus
+  { constName: "SUGARCANE_SEED_TEXTURE_DATA_URL", mapId: "exnihilocreatio:item_seed_sugarcane", asset: "assets/exnihilocreatio/textures/items/seedsugarcane.png" },
+  { constName: "CACTUS_SEED_TEXTURE_DATA_URL", mapId: "exnihilocreatio:item_seed_cactus", asset: "assets/exnihilocreatio/textures/items/seedcactus.png" },
+  { constName: "REEDS_BLOCK_TEXTURE_DATA_URL", mapId: "minecraft:reeds", asset: "assets/minecraft/textures/blocks/reeds.png" },
+  { constName: "REEDS_ITEM_TEXTURE_DATA_URL", mapId: "minecraft:reeds_item", asset: "assets/minecraft/textures/items/reeds.png" },
+  { constName: "CACTUS_SIDE_TEXTURE_DATA_URL", mapId: "minecraft:cactus", asset: "assets/minecraft/textures/blocks/cactus_side.png" },
+  { constName: "CACTUS_TOP_TEXTURE_DATA_URL", mapId: "minecraft:cactus_top", asset: "assets/minecraft/textures/blocks/cactus_top.png" },
 ];
 
 export const BONSAI_WOOD_TYPES = ["oak", "spruce", "birch", "jungle", "acacia", "darkoak"];

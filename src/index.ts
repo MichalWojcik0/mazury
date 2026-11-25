@@ -16,4 +16,5 @@ export * from "./quests/quest-manager.ts";
 export * from "./render/renderer.ts";
 export * from "./render/textures.ts";
 export * from "./registry/definitions.ts";
+export * from "./registry/traits.ts";
 export * from "./registry/block-components.ts";

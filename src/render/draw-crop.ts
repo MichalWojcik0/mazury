@@ -2,6 +2,7 @@ import type { Tile } from "../core/types.ts";
 import type { CanvasContext2DLike } from "./command-types.ts";
 import { getGrowthProgress } from "../mechanics/farming.ts";
 import { getBlockDefinition } from "../registry/definitions.ts";
+import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
 
 function drawCrossedQuadTexture(
   ctx: CanvasContext2DLike,
@@ -214,6 +215,35 @@ export function renderCropTile(
       ctx.beginPath();
       ctx.ellipse?.(u + 5 * zoom, ly, 4 * zoom, 2 * zoom, 0.3, 0, Math.PI * 2);
       ctx.fill();
+    }
+  } else if (style === "cactus") {
+    const cw = halfW * 0.78;
+    const ch = halfH * 0.78;
+    const loaded = Boolean(texture && texture.complete && texture.naturalWidth > 0);
+    const cactusFallback = {
+      leftFill: "#4d8a32",
+      rightFill: "#3b6e24",
+      stroke: "#244714",
+      drawPanelSeam: false,
+    };
+
+    renderWallSideFace(ctx, u, v, cw, ch, elevH, "left", texture ?? null, loaded, cactusFallback);
+    renderWallSideFace(ctx, u, v, cw, ch, elevH, "right", texture ?? null, loaded, cactusFallback);
+
+    if (loaded && texture) {
+      renderTexturedTopDiamond(ctx, u, v, cw, ch, texture, true);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(u, v - ch);
+      ctx.lineTo(u + cw, v);
+      ctx.lineTo(u, v + ch);
+      ctx.lineTo(u - cw, v);
+      ctx.closePath();
+      ctx.fillStyle = "#5fa13f";
+      ctx.fill();
+      ctx.strokeStyle = "#244714";
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
   } else {
     ctx.fillStyle = "#8bc34a";

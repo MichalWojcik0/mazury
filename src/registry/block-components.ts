@@ -4,6 +4,7 @@ import type { CanvasContext2DLike } from "../render/command-types.ts";
 import type { VoxelAction } from "../mechanics/voxel-actions.ts";
 import { addItem, removeItem } from "../inventory/inventory.ts";
 import { getBlockDefinition } from "./definitions.ts";
+import { getTraitDefinition } from "./traits.ts";
 import { getGrowthProgress, harvestPlant, isCropTile, tickCropTile } from "../mechanics/farming.ts";
 import {
   getSieveState,
@@ -91,7 +92,7 @@ const CROP_COMPONENT: BlockComponent = {
   onTick: ({ room, coord, tile, sneakingPlayers }) => {
     tickCropTile(room, coord, tile, sneakingPlayers);
   },
-  onInteract: ({ tile, player, rng }) => {
+  onInteract: ({ room, coord, tile, player, rng }) => {
     const blockDef = getBlockDefinition(tile.id);
     const { isMature } = getGrowthProgress(tile);
     if (!isMature && !blockDef?.isCropTop) return false;
@@ -101,6 +102,20 @@ const CROP_COMPONENT: BlockComponent = {
 
     for (const drop of harvestRes.drops) {
       addItem(player.inventory, drop.id, drop.count);
+    }
+    if (harvestRes.destroysTile) {
+      room.voxels[coord.z][coord.y][coord.x] = {
+        id: "minecraft:air",
+        type: "air",
+        passable: true,
+      };
+      const baseCoord = tile.metadata?.baseCoord as Vec3 | undefined;
+      if (baseCoord) {
+        const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
+        if (baseTile?.metadata) {
+          baseTile.metadata.harvestCooldown = 200;
+        }
+      }
     }
     return true;
   },
@@ -450,6 +465,17 @@ export function getBlockComponent(tile: Tile | string): BlockComponent | undefin
     return BLOCK_COMPONENTS[tileId];
   }
   const blockDef = getBlockDefinition(tileId);
+  if (blockDef?.traits) {
+    for (const traitId of blockDef.traits) {
+      const trait = getTraitDefinition(traitId);
+      if (trait?.componentKey === "crop_segment") {
+        return { ...CROP_COMPONENT, onTick: undefined };
+      }
+      if (trait?.componentKey === "crop_base") {
+        return CROP_COMPONENT;
+      }
+    }
+  }
   if (blockDef?.isCrop || blockDef?.isCropTop || (typeof tile !== "string" && isCropTile(tile))) {
     return CROP_COMPONENT;
   }

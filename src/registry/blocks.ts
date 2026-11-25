@@ -21,7 +21,10 @@ import {
   FURNACE_FRONT_OFF_TEXTURE_DATA_URL,
   GLASS_TEXTURE_DATA_URL,
   STONE_TEXTURE_DATA_URL,
+  REEDS_BLOCK_TEXTURE_DATA_URL,
+  CACTUS_SIDE_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
+import type { TraitId } from "./traits.ts";
 
 export interface BlockDefinition {
   id: string;
@@ -35,13 +38,15 @@ export interface BlockDefinition {
   tillable?: boolean;
   tilledTileId?: string;
   tilledDrops?: Array<{ itemId: string; count: number; chance?: number }>;
+  traits?: TraitId[];
   isCrop?: boolean;
   isCropTop?: boolean;
   multiBlockTopTileId?: string;
+  maxColumnHeight?: number;
   maxGrowthTicks?: number;
   growthStages?: number;
   stageTexturePrefix?: string;
-  cropRenderStyle?: "crossed_quad" | "crop_grid" | "hemp";
+  cropRenderStyle?: "crossed_quad" | "crop_grid" | "hemp" | "cactus";
   harvestDrops?: Array<{ itemId: string; count: number; chance?: number; min?: number; max?: number }>;
   harvestSeedBinomial?: { itemId: string; weights: Array<{ maxRoll: number; count: number }> };
   sideTextureId?: string;
@@ -63,8 +68,7 @@ function createBonsaiBlock(
     type: "crop",
     passable: true,
     breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
+    traits: ["crop_base"],
     growthStages: 4,
     stageTexturePrefix: `arcadialbonsaitrees:bonsai_${wood}_stage_`,
     cropRenderStyle: "crossed_quad",
@@ -208,8 +212,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     type: "crop",
     passable: true,
     breakable: true,
-    isCrop: true,
-    maxGrowthTicks: 1200,
+    traits: ["crop_base"],
     growthStages: 8,
     stageTexturePrefix: "minecraft:wheat_stage_",
     cropRenderStyle: "crop_grid",
@@ -233,9 +236,9 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     type: "crop",
     passable: true,
     breakable: true,
-    isCrop: true,
+    traits: ["crop_base", "crop_column"],
     multiBlockTopTileId: "immersiveengineering:hemp_top",
-    maxGrowthTicks: 1200,
+    maxColumnHeight: 2,
     cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:seed", count: 1 }],
     harvestDrops: [
@@ -251,10 +254,68 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     type: "crop",
     passable: true,
     breakable: true,
-    isCropTop: true,
+    traits: ["crop_segment"],
     cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 }],
     tillable: false,
+  },
+  "minecraft:reeds": {
+    id: "minecraft:reeds",
+    name: "Sugar Cane",
+    icon: "🎋",
+    type: "crop",
+    passable: true,
+    breakable: true,
+    traits: ["crop_base", "crop_column"],
+    multiBlockTopTileId: "minecraft:reeds_top",
+    maxColumnHeight: 3,
+    cropRenderStyle: "crossed_quad",
+    drops: [{ itemId: "minecraft:reeds", count: 1 }],
+    harvestDrops: [{ itemId: "minecraft:reeds", count: 1 }],
+    tillable: false,
+    textureDataUrl: REEDS_BLOCK_TEXTURE_DATA_URL,
+  },
+  "minecraft:reeds_top": {
+    id: "minecraft:reeds_top",
+    name: "Sugar Cane (Upper)",
+    icon: "🎋",
+    type: "crop",
+    passable: true,
+    breakable: true,
+    traits: ["crop_segment"],
+    cropRenderStyle: "crossed_quad",
+    drops: [{ itemId: "minecraft:reeds", count: 1 }],
+    tillable: false,
+    textureDataUrl: REEDS_BLOCK_TEXTURE_DATA_URL,
+  },
+  "minecraft:cactus": {
+    id: "minecraft:cactus",
+    name: "Cactus",
+    icon: "🌵",
+    type: "crop",
+    passable: false,
+    breakable: true,
+    traits: ["crop_base", "crop_column"],
+    multiBlockTopTileId: "minecraft:cactus_top",
+    maxColumnHeight: 3,
+    cropRenderStyle: "cactus",
+    drops: [{ itemId: "minecraft:cactus", count: 1 }],
+    harvestDrops: [{ itemId: "minecraft:cactus", count: 1 }],
+    tillable: false,
+    textureDataUrl: CACTUS_SIDE_TEXTURE_DATA_URL,
+  },
+  "minecraft:cactus_top": {
+    id: "minecraft:cactus_top",
+    name: "Cactus (Upper)",
+    icon: "🌵",
+    type: "crop",
+    passable: false,
+    breakable: true,
+    traits: ["crop_segment"],
+    cropRenderStyle: "cactus",
+    drops: [{ itemId: "minecraft:cactus", count: 1 }],
+    tillable: false,
+    textureDataUrl: CACTUS_SIDE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:block_sieve": {
     id: "exnihilocreatio:block_sieve",

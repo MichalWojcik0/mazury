@@ -70,7 +70,12 @@ import {
   GLASS_TEXTURE_DATA_URL,
   STONE_TEXTURE_DATA_URL,
   BRICK_TEXTURE_DATA_URL,
+  SUGARCANE_SEED_TEXTURE_DATA_URL,
+  CACTUS_SEED_TEXTURE_DATA_URL,
+  REEDS_ITEM_TEXTURE_DATA_URL,
+  CACTUS_SIDE_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
+import type { TraitId } from "./traits.ts";
 
 /**
  * Data-driven registry definitions for Items and Blocks.
@@ -103,7 +108,7 @@ export interface ItemDefinition {
   edible?: boolean;
   alwaysEdible?: boolean;
   hungerRestore?: number;
-  traits?: string[];
+  traits?: TraitId[];
   crucibleMeltMb?: number;
   burnTimeTicks?: number;
   smeltsInto?: string;
@@ -121,7 +126,6 @@ function createBonsaiCuttingItem(
     maxStackSize: 64,
     icon: "🌿",
     traits: ["bonsai_cutting", "foliage"],
-    crucibleMeltMb: 250,
     textureDataUrl,
   };
 }
@@ -139,12 +143,10 @@ function createBonsaiSaplingItem(
     maxStackSize: 64,
     placeable: true,
     plantable: true,
-    plantableOn: ["minecraft:farmland", "minecraft:dirt"],
     placesTileId: id,
     placesCropId: id,
     icon,
     traits: ["bonsai_sapling"],
-    crucibleMeltMb: 250,
     textureDataUrl,
   };
 }
@@ -179,6 +181,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:dirt",
     icon: "🧱",
+    traits: ["sieve_substrate"],
     textureDataUrl: DIRT_TEXTURE_DATA_URL,
   },
   "minecraft:farmland": {
@@ -731,6 +734,58 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 64,
     icon: "🧱",
     textureDataUrl: BRICK_TEXTURE_DATA_URL,
+  },
+  "exnihilocreatio:item_seed_sugarcane": {
+    id: "exnihilocreatio:item_seed_sugarcane",
+    name: "Sugar Cane Seeds",
+    maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:dirt", "minecraft:sand"],
+    placesTileId: "minecraft:reeds",
+    placesCropId: "minecraft:reeds",
+    icon: "🎋",
+    crucibleMeltMb: 100,
+    textureDataUrl: SUGARCANE_SEED_TEXTURE_DATA_URL,
+  },
+  "exnihilocreatio:item_seed_cactus": {
+    id: "exnihilocreatio:item_seed_cactus",
+    name: "Cactus Seeds",
+    maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:sand", "minecraft:dirt"],
+    placesTileId: "minecraft:cactus",
+    placesCropId: "minecraft:cactus",
+    icon: "🌵",
+    crucibleMeltMb: 100,
+    textureDataUrl: CACTUS_SEED_TEXTURE_DATA_URL,
+  },
+  "minecraft:reeds": {
+    id: "minecraft:reeds",
+    name: "Sugar Cane",
+    maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:dirt", "minecraft:sand"],
+    placesTileId: "minecraft:reeds",
+    placesCropId: "minecraft:reeds",
+    icon: "🎋",
+    crucibleMeltMb: 200,
+    textureDataUrl: REEDS_ITEM_TEXTURE_DATA_URL,
+  },
+  "minecraft:cactus": {
+    id: "minecraft:cactus",
+    name: "Cactus",
+    maxStackSize: 64,
+    placeable: true,
+    plantable: true,
+    plantableOn: ["minecraft:sand", "minecraft:dirt"],
+    placesTileId: "minecraft:cactus",
+    placesCropId: "minecraft:cactus",
+    icon: "🌵",
+    crucibleMeltMb: 200,
+    textureDataUrl: CACTUS_SIDE_TEXTURE_DATA_URL,
   },
 };
 

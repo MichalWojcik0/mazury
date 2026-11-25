@@ -9,8 +9,11 @@ import { getSieveState } from "../src/mechanics/sieve.ts";
 import { getAvailableVoxelActions } from "../src/mechanics/voxel-actions.ts";
 import { StubRenderer, type CanvasContext2DLike } from "../src/render/renderer.ts";
 import { createTinyCompactMachineRoom } from "../src/world/room.ts";
-import { hasItemTrait } from "../src/registry/definitions.ts";
+import { hasItemTrait, getItemDefinition, getItemTraits } from "../src/registry/definitions.ts";
 import { getBlockComponent } from "../src/registry/block-components.ts";
+import { getTraitDefinition } from "../src/registry/traits.ts";
+import { SIEVE_LOOT_TABLES, isSieveSubstrate } from "../src/mechanics/sieve.ts";
+import { canPlant, plantCrop } from "../src/mechanics/farming.ts";
 import { getFurnaceState } from "../src/mechanics/furnace.ts";
 import { CHAPTER_1_RECIPES, buildRecipeGroups } from "../src/crafting/list-crafting.ts";
 
@@ -459,4 +462,55 @@ test("Furnace: crafts from 8 cobblestone, burns fuel only with input, smelts san
   assert.ok(furnaceCmd);
   renderer.executeCommand(furnaceCmd, mockCtx);
   assert.ok(fills >= 3);
+});
+
+test("Trait definitions resolve item defaults and dirt sieving + multi-block cane/cactus growth", () => {
+  // Trait definitions provide defaults (crucibleMeltMb, plantableOn)
+  const foliageTrait = getTraitDefinition("foliage");
+  assert.equal(foliageTrait?.defaults?.crucibleMeltMb, 250);
+  const cuttingDef = getItemDefinition("arcadialbonsaitrees:bonsai_oak_cutting");
+  assert.equal(cuttingDef?.crucibleMeltMb, 250);
+  assert.ok(getItemTraits("arcadialbonsaitrees:bonsai_oak_cutting").some((t) => t.id === "bonsai_cutting"));
+
+  // Dirt is a sieve substrate and drops cane + cactus seeds
+  assert.equal(isSieveSubstrate("minecraft:dirt"), true);
+  const dirtDrops = SIEVE_LOOT_TABLES["minecraft:dirt"].map((d) => d.itemId);
+  assert.ok(dirtDrops.includes("exnihilocreatio:item_seed_sugarcane"));
+  assert.ok(dirtDrops.includes("exnihilocreatio:item_seed_cactus"));
+
+  // Multi-block column growth for Sugar Cane (up to 3 tall) and Cactus
+  const { engine } = setupTinyRoomEngine();
+  const player = engine.players.get(0)!;
+  const room = engine.rooms.get(player.currentRoomId)!;
+
+  // Soil at z=0: dirt at (0,0,0), sand at (2,0,0)
+  room.voxels[0][0][0] = { id: "minecraft:dirt", type: "floor", passable: false };
+  room.voxels[0][0][2] = { id: "minecraft:sand", type: "floor", passable: false };
+
+  assert.equal(canPlant(room, { x: 0, y: 0, z: 1 }, "exnihilocreatio:item_seed_sugarcane").allowed, true);
+  assert.equal(canPlant(room, { x: 2, y: 0, z: 1 }, "exnihilocreatio:item_seed_cactus").allowed, true);
+
+  plantCrop(room, { x: 0, y: 0, z: 1 }, "exnihilocreatio:item_seed_sugarcane");
+  plantCrop(room, { x: 2, y: 0, z: 1 }, "exnihilocreatio:item_seed_cactus");
+
+  // Grow both to maturity so they spawn upper segments at z=2
+  for (let t = 0; t < 1205; t++) {
+    engine.stepTick();
+  }
+  assert.equal(room.voxels[1][0][0].id, "minecraft:reeds");
+  assert.equal(room.voxels[2][0][0].id, "minecraft:reeds_top");
+  assert.equal(room.voxels[1][0][2].id, "minecraft:cactus");
+  assert.equal(room.voxels[2][0][2].id, "minecraft:cactus_top");
+
+  // Harvest upper segment of sugar cane
+  const reedsTopComp = getBlockComponent("minecraft:reeds_top");
+  assert.ok(reedsTopComp?.onInteract);
+  reedsTopComp.onInteract({
+    room,
+    coord: { x: 0, y: 0, z: 2 },
+    tile: room.voxels[2][0][0],
+    player,
+  });
+  assert.equal(room.voxels[2][0][0].id, "minecraft:air");
+  assert.equal(countItem(player.inventory, "minecraft:reeds"), 1);
 });

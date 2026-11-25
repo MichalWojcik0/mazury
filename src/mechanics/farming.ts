@@ -134,20 +134,32 @@ export function plantCrop(room: Room, coord: Vec3, itemId: string): Tile | null 
   return tile;
 }
 
-function trySpawnMultiBlockTop(room: Room, x: number, y: number, z: number, topTileId: string): void {
-  const aboveZ = z + 1;
-  if (aboveZ >= room.depth) return;
-  const aboveTile = room.voxels[aboveZ]?.[y]?.[x];
-  if (aboveTile && aboveTile.id === "minecraft:air") {
-    const topDef = getBlockDefinition(topTileId);
-    room.voxels[aboveZ][y][x] = {
-      id: topTileId,
-      type: topDef?.type ?? "crop",
-      passable: topDef?.passable ?? true,
-      metadata: {
-        baseCoord: { x, y, z },
-      },
-    };
+function trySpawnMultiBlockTop(
+  room: Room,
+  x: number,
+  y: number,
+  z: number,
+  topTileId: string,
+  maxColumnHeight: number = 2
+): void {
+  const topDef = getBlockDefinition(topTileId);
+  for (let offset = 1; offset < maxColumnHeight; offset++) {
+    const targetZ = z + offset;
+    if (targetZ >= room.depth) return;
+    const tile = room.voxels[targetZ]?.[y]?.[x];
+    if (!tile) return;
+    if (tile.id === "minecraft:air") {
+      room.voxels[targetZ][y][x] = {
+        id: topTileId,
+        type: topDef?.type ?? "crop",
+        passable: topDef?.passable ?? true,
+        metadata: {
+          baseCoord: { x, y, z },
+        },
+      };
+      return;
+    }
+    if (tile.id !== topTileId) return;
   }
 }
 
@@ -162,6 +174,7 @@ export function tickCropTile(
   const { x, y, z } = coord;
   const blockDef = getBlockDefinition(tile.id);
   const maxTicks = blockDef?.maxGrowthTicks ?? 1200;
+  const maxHeight = blockDef?.maxColumnHeight ?? 2;
 
   const currentTicks = (tile.metadata?.growthTicks as number) ?? 0;
   if (currentTicks >= maxTicks) {
@@ -170,7 +183,7 @@ export function tickCropTile(
       if (harvestCooldown > 0) {
         tile.metadata!.harvestCooldown = harvestCooldown - 1;
       } else {
-        trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId);
+        trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId, maxHeight);
       }
     }
     return;
@@ -195,7 +208,7 @@ export function tickCropTile(
   };
 
   if (blockDef?.multiBlockTopTileId && newTicks >= maxTicks) {
-    trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId);
+    trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId, maxHeight);
   }
 }
 
