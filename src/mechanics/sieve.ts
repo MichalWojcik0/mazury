@@ -1,44 +1,10 @@
 import type { Tile } from "../core/types.ts";
 import type { DeterministicRNG } from "../core/math.ts";
+import { getItemDefinition, hasItemTrait } from "../registry/definitions.ts";
 
-export interface MeshDefinition {
-  id: string;
-  name: string;
-  tier: number;
-  maxDurability: number;
-  color: string;
+export function getMeshDefinition(meshId: string) {
+  return getItemDefinition(meshId)?.sieveMesh;
 }
-
-export const MESH_REGISTRY: Record<string, MeshDefinition> = {
-  "exnihilocreatio:item_mesh:1": {
-    id: "exnihilocreatio:item_mesh:1",
-    name: "String Mesh",
-    tier: 1,
-    maxDurability: 64,
-    color: "#e6e0d4",
-  },
-  "exnihilocreatio:item_mesh:2": {
-    id: "exnihilocreatio:item_mesh:2",
-    name: "Flint Mesh",
-    tier: 2,
-    maxDurability: 128,
-    color: "#6b6e75",
-  },
-  "exnihilocreatio:item_mesh:3": {
-    id: "exnihilocreatio:item_mesh:3",
-    name: "Iron Mesh",
-    tier: 3,
-    maxDurability: 256,
-    color: "#c8cdd4",
-  },
-  "exnihilocreatio:item_mesh:4": {
-    id: "exnihilocreatio:item_mesh:4",
-    name: "Diamond Mesh",
-    tier: 4,
-    maxDurability: 512,
-    color: "#4de1e8",
-  },
-};
 
 export interface SieveDropEntry {
   itemId: string;
@@ -90,15 +56,15 @@ function setSieveState(tile: Tile, state: SieveState): void {
 }
 
 export function isSieveMesh(itemId: string): boolean {
-  return itemId in MESH_REGISTRY;
+  return hasItemTrait(itemId, "sieve_mesh") && Boolean(getMeshDefinition(itemId));
 }
 
 export function isSieveSubstrate(itemId: string): boolean {
-  return itemId in SIEVE_LOOT_TABLES;
+  return hasItemTrait(itemId, "sieve_substrate") && itemId in SIEVE_LOOT_TABLES;
 }
 
 export function installSieveMesh(tile: Tile, meshId: string): boolean {
-  const def = MESH_REGISTRY[meshId];
+  const def = getMeshDefinition(meshId);
   if (!def) return false;
   const state = getSieveState(tile);
   if (state.meshId) return false;
@@ -158,7 +124,7 @@ export function siftSieve(tile: Tile, rng?: DeterministicRNG): SiftResult {
   }
 
   // Completed sifting 1 substrate block
-  const meshDef = MESH_REGISTRY[state.meshId];
+  const meshDef = getMeshDefinition(state.meshId);
   const tierBonus = meshDef ? (meshDef.tier - 1) * 0.05 : 0;
   const table = SIEVE_LOOT_TABLES[state.substrateId] ?? [];
   const drops: Array<{ id: string; count: number }> = [];

@@ -24,9 +24,9 @@ export interface HarvestResult {
  * Checks whether a given tile is a growing crop or bonsai.
  */
 export function isCropTile(tile: Tile): boolean {
-  if (tile.id === "immersiveengineering:hemp_top") return false;
-  if (tile.type === "crop") return true;
   const blockDef = getBlockDefinition(tile.id);
+  if (blockDef?.isCropTop) return false;
+  if (tile.type === "crop") return true;
   return Boolean(blockDef?.isCrop);
 }
 
@@ -134,15 +134,16 @@ export function plantCrop(room: Room, coord: Vec3, itemId: string): Tile | null 
   return tile;
 }
 
-function trySpawnHempTop(room: Room, x: number, y: number, z: number): void {
+function trySpawnMultiBlockTop(room: Room, x: number, y: number, z: number, topTileId: string): void {
   const aboveZ = z + 1;
   if (aboveZ >= room.depth) return;
   const aboveTile = room.voxels[aboveZ]?.[y]?.[x];
   if (aboveTile && aboveTile.id === "minecraft:air") {
+    const topDef = getBlockDefinition(topTileId);
     room.voxels[aboveZ][y][x] = {
-      id: "immersiveengineering:hemp_top",
-      type: "crop",
-      passable: true,
+      id: topTileId,
+      type: topDef?.type ?? "crop",
+      passable: topDef?.passable ?? true,
       metadata: {
         baseCoord: { x, y, z },
       },
@@ -164,12 +165,12 @@ export function tickCropTile(
 
   const currentTicks = (tile.metadata?.growthTicks as number) ?? 0;
   if (currentTicks >= maxTicks) {
-    if (tile.id === "immersiveengineering:hemp") {
+    if (blockDef?.multiBlockTopTileId) {
       const harvestCooldown = (tile.metadata?.harvestCooldown as number) ?? 0;
       if (harvestCooldown > 0) {
         tile.metadata!.harvestCooldown = harvestCooldown - 1;
       } else {
-        trySpawnHempTop(room, x, y, z);
+        trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId);
       }
     }
     return;
@@ -193,8 +194,8 @@ export function tickCropTile(
     growthTicks: newTicks,
   };
 
-  if (tile.id === "immersiveengineering:hemp" && newTicks >= maxTicks) {
-    trySpawnHempTop(room, x, y, z);
+  if (blockDef?.multiBlockTopTileId && newTicks >= maxTicks) {
+    trySpawnMultiBlockTop(room, x, y, z, blockDef.multiBlockTopTileId);
   }
 }
 
@@ -240,12 +241,18 @@ export function harvestPlant(
   const blockDef = getBlockDefinition(tile.id);
   const { isMature } = getGrowthProgress(tile);
 
-  // If top hemp block
-  if (tile.id === "immersiveengineering:hemp_top") {
+  // Multi-block crop top (destroys top block on harvest)
+  if (blockDef?.isCropTop) {
     const drops: Array<{ id: string; count: number }> = [];
     const roll = rng ? rng.next() : 0.4;
-    const count = roll < 0.5 ? 1 : 2;
-    drops.push({ id: "immersiveengineering:material:4", count });
+    const drop = blockDef.drops?.[0];
+    if (drop) {
+      const count =
+        drop.min !== undefined && drop.max !== undefined
+          ? drop.min + Math.floor(roll * (drop.max - drop.min + 1))
+          : drop.count;
+      drops.push({ id: drop.itemId, count });
+    }
     return {
       success: true,
       drops,
@@ -266,46 +273,7 @@ export function harvestPlant(
 
   const drops: Array<{ id: string; count: number }> = [];
 
-  // Wheat harvest (mature only): drops 1 wheat + 1-4 wheat seeds with Minecraft binomial weights:
-  // 1 seed: ~7.87% (0.0787)
-  // 2 seeds: ~31.49% (0.0787 + 0.3149 = 0.3936)
-  // 3 seeds: ~41.98% (0.3936 + 0.4198 = 0.8134)
-  // 4 seeds: ~18.66% (remaining)
-  if (tile.id === "minecraft:wheat") {
-    drops.push({ id: "minecraft:wheat", count: 1 });
-
-    const roll = rng ? rng.next() : 0.5;
-    let seedCount: number;
-    if (roll < 0.0787) {
-      seedCount = 1;
-    } else if (roll < 0.3936) {
-      seedCount = 2;
-    } else if (roll < 0.8134) {
-      seedCount = 3;
-    } else {
-      seedCount = 4;
-    }
-
-    // 1 seed is autoplanted (resets growth to 0), remaining seeds reach inventory
-    const excessSeeds = seedCount - 1;
-    if (excessSeeds > 0) {
-      drops.push({ id: "minecraft:wheat_seeds", count: excessSeeds });
-    }
-
-    // Reset growth ticks to 0 (autoplanted back to first stage)
-    if (tile.metadata) {
-      tile.metadata.growthTicks = 0;
-    }
-
-    return {
-      success: true,
-      drops,
-      resetsGrowth: true,
-      destroysTile: false,
-    };
-  }
-
-  // Generic harvest drops from block definition
+  // Generic harvest drops from block definition (plus optional binomial seed yield)
   if (blockDef?.harvestDrops) {
     for (const drop of blockDef.harvestDrops) {
       const chance = drop.chance ?? 1.0;
@@ -318,6 +286,15 @@ export function harvestPlant(
         if (count > 0) {
           drops.push({ id: drop.itemId, count });
         }
+      }
+    }
+
+    if (blockDef.harvestSeedBinomial) {
+      const roll = rng ? rng.next() : 0.5;
+      const match = blockDef.harvestSeedBinomial.weights.find((w) => roll < w.maxRoll);
+      const excessSeeds = (match?.count ?? 1) - 1;
+      if (excessSeeds > 0) {
+        drops.push({ id: blockDef.harvestSeedBinomial.itemId, count: excessSeeds });
       }
     }
 

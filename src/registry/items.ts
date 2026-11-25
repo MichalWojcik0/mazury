@@ -107,6 +107,7 @@ export interface ItemDefinition {
   crucibleMeltMb?: number;
   burnTimeTicks?: number;
   smeltsInto?: string;
+  sieveMesh?: { tier: number; maxDurability: number; color: string };
 }
 
 function createBonsaiCuttingItem(
@@ -196,6 +197,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:gravel",
     icon: "⚪",
+    traits: ["sieve_substrate"],
     textureDataUrl: GRAVEL_TEXTURE_DATA_URL,
   },
   "cropdusting:poop": {
@@ -524,6 +526,8 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "String Mesh",
     maxStackSize: 16,
     icon: "🕸️",
+    traits: ["sieve_mesh"],
+    sieveMesh: { tier: 1, maxDurability: 64, color: "#e6e0d4" },
     textureDataUrl: STRING_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_mesh:2": {
@@ -531,6 +535,8 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Flint Mesh",
     maxStackSize: 16,
     icon: "🕸️",
+    traits: ["sieve_mesh"],
+    sieveMesh: { tier: 2, maxDurability: 128, color: "#6b6e75" },
     textureDataUrl: FLINT_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_mesh:3": {
@@ -538,6 +544,8 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Iron Mesh",
     maxStackSize: 16,
     icon: "🕸️",
+    traits: ["sieve_mesh"],
+    sieveMesh: { tier: 3, maxDurability: 256, color: "#c8cdd4" },
     textureDataUrl: IRON_INGOT_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_mesh:4": {
@@ -545,6 +553,8 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Diamond Mesh",
     maxStackSize: 16,
     icon: "💎",
+    traits: ["sieve_mesh"],
+    sieveMesh: { tier: 4, maxDurability: 512, color: "#4de1e8" },
     textureDataUrl: DIAMOND_PICKAXE_TEXTURE_DATA_URL,
   },
   "minecraft:bucket": {
@@ -568,6 +578,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:sand",
     icon: "🏜️",
+    traits: ["sieve_substrate"],
     smeltsInto: "minecraft:glass",
     textureDataUrl: SAND_TEXTURE_DATA_URL,
   },
@@ -578,6 +589,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "exnihilocreatio:block_dust",
     icon: "🌫️",
+    traits: ["sieve_substrate"],
     textureDataUrl: DUST_BLOCK_TEXTURE_DATA_URL,
   },
   "minecraft:clay": {

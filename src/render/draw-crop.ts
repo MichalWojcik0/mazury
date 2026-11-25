@@ -204,7 +204,7 @@ export function renderCropTile(
     ctx.lineTo(u, v - stalkH);
     ctx.stroke();
 
-    const leafCount = tile.id === "immersiveengineering:hemp_top" ? 3 : 2 + Math.floor(progress * 3);
+    const leafCount = getBlockDefinition(tile.id)?.isCropTop ? 3 : 2 + Math.floor(progress * 3);
     ctx.fillStyle = "#558b2f";
     for (let i = 1; i <= leafCount; i++) {
       const ly = v - (stalkH * i) / (leafCount + 1);

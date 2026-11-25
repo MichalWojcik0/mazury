@@ -494,17 +494,14 @@ export class StubRenderer {
         const blockDef = tileId ? getBlockDefinition(tileId) : undefined;
         const blockTexture = tileId ? this.textures.get(tileId) : undefined;
 
-        // Render front-facing vertical side walls for solid placed blocks (e.g. dirt, farmland)
+        // Render front-facing vertical side walls for solid placed blocks (data-driven side texture/fallback)
         if (cmd.type === "DRAW_TILE" && cmd.tile && !cmd.tile.passable) {
-          const isDirtLike =
-            tileId === "minecraft:dirt" ||
-            tileId === "minecraft:farmland" ||
-            blockDef?.type === "farmland";
-
-          const sideTexture = isDirtLike ? this.textures.get("minecraft:dirt") ?? null : blockTexture ?? null;
+          const sideTexture = blockDef?.sideTextureId
+            ? this.textures.get(blockDef.sideTextureId) ?? null
+            : blockTexture ?? null;
           const sideLoaded = Boolean(sideTexture && sideTexture.complete && sideTexture.naturalWidth > 0);
-          const sideFallback = isDirtLike
-            ? { leftFill: "#6b4c35", rightFill: "#563b27", stroke: "#3e2716", drawPanelSeam: false }
+          const sideFallback = blockDef?.sideFallback
+            ? { ...blockDef.sideFallback, drawPanelSeam: false }
             : { leftFill: "#3f4148", rightFill: "#32343a", stroke: "#25272c", drawPanelSeam: false };
 
           renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "left", sideTexture, sideLoaded, sideFallback);
@@ -525,22 +522,10 @@ export class StubRenderer {
         } else if (blockTexture && blockTexture.complete && blockTexture.naturalWidth > 0) {
           renderTexturedTopDiamond(ctx, u, v, halfW, halfH, blockTexture, true);
         } else {
-          if (tileId === "minecraft:bedrock") {
-            ctx.fillStyle = "#2a2a2a";
-            ctx.strokeStyle = "#151515";
-            ctx.lineWidth = 1;
-          } else if (tileId === "compactmachines3:machine_tiny") {
-            ctx.fillStyle = "#1e3a5f";
-            ctx.strokeStyle = "#4da6ff";
-            ctx.lineWidth = 2;
-          } else if (tileId === "minecraft:dirt") {
-            ctx.fillStyle = "#866043"; // Rich earthy brown for dirt block
-            ctx.strokeStyle = "#5c3d26";
-            ctx.lineWidth = 1;
-          } else if (tileId === "minecraft:farmland" || blockDef?.type === "farmland") {
-            ctx.fillStyle = "#5c3d26"; // Darker cultivated farmland soil
-            ctx.strokeStyle = "#3e2716";
-            ctx.lineWidth = 1;
+          if (blockDef?.fallbackStyle) {
+            ctx.fillStyle = blockDef.fallbackStyle.fill;
+            ctx.strokeStyle = blockDef.fallbackStyle.stroke;
+            ctx.lineWidth = blockDef.fallbackStyle.lineWidth ?? 1;
           } else if (cmd.tile?.type === "solid_wall") {
             ctx.fillStyle = "#3a3c42";
             ctx.strokeStyle = "#25272c";
@@ -562,7 +547,7 @@ export class StubRenderer {
             }
             ctx.fillStyle = "#66ccff";
             ctx.fill();
-          } else if (tileId === "minecraft:farmland" || blockDef?.type === "farmland") {
+          } else if (blockDef?.type === "farmland") {
             // Draw furrowed lines for tilled farmland
             ctx.beginPath();
             ctx.moveTo(u - halfW * 0.5, v);

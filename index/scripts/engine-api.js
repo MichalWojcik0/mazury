@@ -15,6 +15,7 @@ export {
   ITEM_REGISTRY,
   getItemDefinition,
   getBlockDefinition,
+  getBlockComponent,
   resolveSelectedVoxel,
   getAvailableVoxelActions,
 } from "./dist/bundle.js";

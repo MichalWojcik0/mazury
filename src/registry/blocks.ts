@@ -36,11 +36,17 @@ export interface BlockDefinition {
   tilledTileId?: string;
   tilledDrops?: Array<{ itemId: string; count: number; chance?: number }>;
   isCrop?: boolean;
+  isCropTop?: boolean;
+  multiBlockTopTileId?: string;
   maxGrowthTicks?: number;
   growthStages?: number;
   stageTexturePrefix?: string;
   cropRenderStyle?: "crossed_quad" | "crop_grid" | "hemp";
   harvestDrops?: Array<{ itemId: string; count: number; chance?: number; min?: number; max?: number }>;
+  harvestSeedBinomial?: { itemId: string; weights: Array<{ maxRoll: number; count: number }> };
+  sideTextureId?: string;
+  sideFallback?: { leftFill: string; rightFill: string; stroke: string };
+  fallbackStyle?: { fill: string; stroke: string; lineWidth?: number };
   textureDataUrl?: string;
 }
 
@@ -110,6 +116,9 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       { itemId: "immersiveengineering:seed", count: 1, chance: 0.02 },
       { itemId: "exnihilocreatio:item_pebble:0", count: 1, chance: 0.2 },
     ],
+    sideTextureId: "minecraft:dirt",
+    sideFallback: { leftFill: "#6b4c35", rightFill: "#563b27", stroke: "#3e2716" },
+    fallbackStyle: { fill: "#866043", stroke: "#5c3d26" },
     textureDataUrl: DIRT_TEXTURE_DATA_URL,
   },
   "minecraft:farmland": {
@@ -121,6 +130,9 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     breakable: true,
     drops: [{ itemId: "minecraft:dirt", count: 1 }],
     tillable: false,
+    sideTextureId: "minecraft:dirt",
+    sideFallback: { leftFill: "#6b4c35", rightFill: "#563b27", stroke: "#3e2716" },
+    fallbackStyle: { fill: "#5c3d26", stroke: "#3e2716" },
     textureDataUrl: FARMLAND_DRY_TEXTURE_DATA_URL,
   },
   "minecraft:bedrock": {
@@ -130,6 +142,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     passable: false,
     breakable: false,
     tillable: false,
+    fallbackStyle: { fill: "#2a2a2a", stroke: "#151515" },
     textureDataUrl: BEDROCK_TEXTURE_DATA_URL,
   },
   "compactmachines3:machine_tiny": {
@@ -139,6 +152,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     passable: false,
     breakable: false,
     tillable: false,
+    fallbackStyle: { fill: "#1e3a5f", stroke: "#4da6ff", lineWidth: 2 },
     textureDataUrl: COMPACT_MACHINE_TINY_TEXTURE_DATA_URL,
   },
   "craftingstation:crafting_station": {
@@ -200,10 +214,16 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     stageTexturePrefix: "minecraft:wheat_stage_",
     cropRenderStyle: "crop_grid",
     drops: [{ itemId: "minecraft:wheat_seeds", count: 1 }],
-    harvestDrops: [
-      { itemId: "minecraft:wheat", count: 1 },
-      { itemId: "minecraft:wheat_seeds", count: 1, min: 1, max: 3 },
-    ],
+    harvestDrops: [{ itemId: "minecraft:wheat", count: 1 }],
+    harvestSeedBinomial: {
+      itemId: "minecraft:wheat_seeds",
+      weights: [
+        { maxRoll: 0.0787, count: 1 },
+        { maxRoll: 0.3936, count: 2 },
+        { maxRoll: 0.8134, count: 3 },
+        { maxRoll: 1.0, count: 4 },
+      ],
+    },
     tillable: false,
   },
   "immersiveengineering:hemp": {
@@ -214,6 +234,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     passable: true,
     breakable: true,
     isCrop: true,
+    multiBlockTopTileId: "immersiveengineering:hemp_top",
     maxGrowthTicks: 1200,
     cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:seed", count: 1 }],
@@ -230,6 +251,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     type: "crop",
     passable: true,
     breakable: true,
+    isCropTop: true,
     cropRenderStyle: "hemp",
     drops: [{ itemId: "immersiveengineering:material:4", count: 1, min: 1, max: 2 }],
     tillable: false,

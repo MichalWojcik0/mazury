@@ -1,6 +1,7 @@
 import {
   getItemDefinition,
   getBlockDefinition,
+  getBlockComponent,
   resolveSelectedVoxel,
   getAvailableVoxelActions,
 } from "./engine-api.js";
@@ -48,36 +49,9 @@ export function updateSelectedVoxelUI(player, room) {
   const itemDef = getItemDefinition(tile.id);
   const icon = blockDef?.icon ?? itemDef?.icon ?? "📦";
 
-  let growthText = "";
-  if (tile.type === "crop" || blockDef?.isCrop) {
-    const growthTicks = tile.metadata?.growthTicks || 0;
-    const maxTicks = blockDef?.maxGrowthTicks || 1200;
-    const pct = Math.min(100, Math.floor((growthTicks / maxTicks) * 100));
-    growthText = ` [${pct}%]`;
-  } else if (tile.id === "exnihilocreatio:block_sieve") {
-    const m = tile.metadata || {};
-    growthText = m.substrateId ? ` [${m.progress || 0}%]` : m.meshId ? " [Mesh Ready]" : " [No Mesh]";
-  } else if (tile.id === "exnihilocreatio:block_barrel_wood") {
-    const m = tile.metadata || {};
-    if (m.outputItem) growthText = " [Ready]";
-    else if (m.solidItem) {
-      const pct = m.reactionTargetTicks ? Math.floor(((m.reactionTicks || 0) / m.reactionTargetTicks) * 100) : 0;
-      growthText = ` [Reacting ${pct}%]`;
-    } else if (m.fluidAmount) growthText = ` [${m.fluidType} ${m.fluidAmount}mB]`;
-  } else if (tile.id === "exnihilocreatio:block_crucible_wood") {
-    const m = tile.metadata || {};
-    growthText = ` [${Math.floor(m.fluidAmount || 0)}mB water]`;
-  } else if (tile.id === "minecraft:furnace") {
-    const m = tile.metadata || {};
-    if (m.outputCount > 0) growthText = ` [Output ×${m.outputCount}]`;
-    else if (m.fuelTimeRemaining > 0 && m.inputCount > 0) {
-      const pct = Math.floor(((m.smeltProgress || 0) / 200) * 100);
-      growthText = ` [Lit ${pct}%]`;
-    } else if (m.fuelTimeRemaining > 0) growthText = " [Lit]";
-    else growthText = " [Idle]";
-  }
+  const statusText = getBlockComponent(tile)?.getStatusText?.(tile) ?? "";
 
-  dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
+  dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${statusText}</span>`;
   dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;
 
   const actions = getAvailableVoxelActions(tile, isBoundary, player, coord, selected.isInBounds);

@@ -84,6 +84,7 @@ export interface BlockComponent {
   onBreak?: (ctx: BlockInteractContext) => boolean;
   getActions?: (ctx: BlockActionContext) => VoxelAction[];
   onRender?: (ctx: BlockRenderContext) => void;
+  getStatusText?: (tile: Tile) => string;
 }
 
 const CROP_COMPONENT: BlockComponent = {
@@ -91,8 +92,9 @@ const CROP_COMPONENT: BlockComponent = {
     tickCropTile(room, coord, tile, sneakingPlayers);
   },
   onInteract: ({ tile, player, rng }) => {
+    const blockDef = getBlockDefinition(tile.id);
     const { isMature } = getGrowthProgress(tile);
-    if (!isMature && tile.id !== "immersiveengineering:hemp_top") return false;
+    if (!isMature && !blockDef?.isCropTop) return false;
 
     const harvestRes = harvestPlant(tile, rng);
     if (!harvestRes.success) return false;
@@ -111,7 +113,7 @@ const CROP_COMPONENT: BlockComponent = {
       passable: true,
     };
 
-    if (tile.id === "immersiveengineering:hemp_top") {
+    if (blockDef?.isCropTop) {
       const baseCoord = tile.metadata?.baseCoord as Vec3 | undefined;
       if (baseCoord) {
         const baseTile = room.voxels[baseCoord.z]?.[baseCoord.y]?.[baseCoord.x];
@@ -119,7 +121,9 @@ const CROP_COMPONENT: BlockComponent = {
           baseTile.metadata.harvestCooldown = 200;
         }
       }
-      addItem(player.inventory, "immersiveengineering:material:4", 1);
+      if (blockDef.drops?.[0]) {
+        addItem(player.inventory, blockDef.drops[0].itemId, blockDef.drops[0].count);
+      }
       return true;
     }
 
@@ -137,8 +141,9 @@ const CROP_COMPONENT: BlockComponent = {
     return true;
   },
   getActions: ({ tile }) => {
+    const blockDef = getBlockDefinition(tile.id);
     const { isMature } = getGrowthProgress(tile);
-    if (!isMature && tile.id !== "immersiveengineering:hemp_top") return [];
+    if (!isMature && !blockDef?.isCropTop) return [];
     return [
       {
         id: "harvest",
@@ -161,6 +166,12 @@ const CROP_COMPONENT: BlockComponent = {
       cropTexture = getTexture(`${blockDef.stageTexturePrefix}${stageIdx}`) ?? cropTexture;
     }
     renderCropTile(ctx, u, v, halfW, halfH, elevH, zoom, tile, cropTexture);
+  },
+  getStatusText: (tile) => {
+    const blockDef = getBlockDefinition(tile.id);
+    if (!blockDef?.isCrop) return "";
+    const { progress } = getGrowthProgress(tile);
+    return ` [${Math.min(100, Math.floor(progress * 100))}%]`;
   },
 };
 
@@ -236,6 +247,10 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
     onRender: ({ ctx, u, v, halfW, halfH, elevH, tile, getTexture }) => {
       renderSieve(ctx, u, v, halfW, halfH, elevH, tile, getTexture("minecraft:planks"));
     },
+    getStatusText: (tile) => {
+      const s = getSieveState(tile);
+      return s.substrateId ? ` [${s.progress}%]` : s.meshId ? " [Mesh Ready]" : " [No Mesh]";
+    },
   },
   "exnihilocreatio:block_barrel_wood": {
     onTick: ({ tile }) => {
@@ -244,9 +259,7 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
     onInteract: ({ tile, player }) => {
       const harvested = harvestBarrelOutput(tile);
       if (harvested) {
-        const dropId = harvested.itemId === "minecraft:clay" ? "minecraft:clay_ball" : harvested.itemId;
-        const dropCount = harvested.itemId === "minecraft:clay" ? 4 : harvested.count;
-        addItem(player.inventory, dropId, dropCount);
+        addItem(player.inventory, harvested.itemId, harvested.count);
         return true;
       }
       const equipped = player.equippedItem;
@@ -303,6 +316,15 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
         getTexture("minecraft:clay")
       );
     },
+    getStatusText: (tile) => {
+      const b = getBarrelState(tile);
+      if (b.outputItem) return " [Ready]";
+      if (b.solidItem) {
+        const pct = b.reactionTargetTicks ? Math.floor((b.reactionTicks / b.reactionTargetTicks) * 100) : 0;
+        return ` [Reacting ${pct}%]`;
+      }
+      return b.fluidAmount > 0 ? ` [${b.fluidType} ${b.fluidAmount}mB]` : "";
+    },
   },
   "exnihilocreatio:block_crucible_wood": {
     onTick: ({ tile }) => {
@@ -345,6 +367,7 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
         getTexture("minecraft:water_still")
       );
     },
+    getStatusText: (tile) => ` [${Math.floor(getCrucibleState(tile).fluidAmount)}mB water]`,
   },
   "minecraft:furnace": {
     onTick: ({ tile }) => {
@@ -406,6 +429,14 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
         getTexture("minecraft:furnace_on")
       );
     },
+    getStatusText: (tile) => {
+      const f = getFurnaceState(tile);
+      if (f.outputCount > 0) return ` [Output ×${f.outputCount}]`;
+      if (f.fuelTimeRemaining > 0 && f.inputCount > 0) {
+        return ` [Lit ${Math.floor((f.smeltProgress / FURNACE_SMELT_TICKS) * 100)}%]`;
+      }
+      return f.fuelTimeRemaining > 0 ? " [Lit]" : " [Idle]";
+    },
   },
   "immersiveengineering:hemp_top": {
     ...CROP_COMPONENT,
@@ -419,7 +450,7 @@ export function getBlockComponent(tile: Tile | string): BlockComponent | undefin
     return BLOCK_COMPONENTS[tileId];
   }
   const blockDef = getBlockDefinition(tileId);
-  if (blockDef?.isCrop || (typeof tile !== "string" && isCropTile(tile))) {
+  if (blockDef?.isCrop || blockDef?.isCropTop || (typeof tile !== "string" && isCropTile(tile))) {
     return CROP_COMPONENT;
   }
   return undefined;

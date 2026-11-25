@@ -117,6 +117,7 @@ export interface BarrelReactionDef {
   resultFluid?: BarrelFluidType;
   outputItem?: string;
   outputCount?: number;
+  harvestDrops?: { itemId: string; count: number };
 }
 
 export const BARREL_REACTIONS: BarrelReactionDef[] = [
@@ -126,6 +127,7 @@ export const BARREL_REACTIONS: BarrelReactionDef[] = [
     durationTicks: BARREL_CLAY_REACTION_TICKS,
     outputItem: "minecraft:clay",
     outputCount: 1,
+    harvestDrops: { itemId: "minecraft:clay_ball", count: 4 },
   },
   {
     fluid: "water",
@@ -213,7 +215,8 @@ export function harvestBarrelOutput(tile: Tile): { itemId: string; count: number
   const state = getBarrelState(tile);
   if (!state.outputItem || state.outputCount <= 0) return null;
 
-  const result = { itemId: state.outputItem, count: state.outputCount };
+  const reaction = BARREL_REACTIONS.find((r) => r.outputItem === state.outputItem);
+  const result = reaction?.harvestDrops ?? { itemId: state.outputItem, count: state.outputCount };
   setBarrelState(tile, {
     fluidType: null,
     fluidAmount: 0,

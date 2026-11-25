@@ -1,7 +1,7 @@
 import type { Tile } from "../core/types.ts";
 import type { CanvasContext2DLike } from "./command-types.ts";
 import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
-import { getSieveState, MESH_REGISTRY } from "../mechanics/sieve.ts";
+import { getSieveState, getMeshDefinition } from "../mechanics/sieve.ts";
 import { getBarrelState, getCrucibleState, FLUID_CAPACITY_MB } from "../mechanics/fluids.ts";
 import { getFurnaceState } from "../mechanics/furnace.ts";
 
@@ -114,7 +114,7 @@ export function renderSieve(
 
   const state = getSieveState(tile);
   if (state.meshId) {
-    const meshColor = MESH_REGISTRY[state.meshId]?.color ?? "#e6e0d4";
+    const meshColor = getMeshDefinition(state.meshId)?.color ?? "#e6e0d4";
     ctx.strokeStyle = meshColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
