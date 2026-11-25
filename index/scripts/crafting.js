@@ -4,7 +4,7 @@ import {
   buildRecipeGroups,
   countItem,
 } from "./engine-api.js";
-import { engine, dom, uiState } from "./state.js";
+import { engine, dom, uiState, HIDDEN_RECIPES_STORAGE_KEY } from "./state.js";
 import { getItemDisplay } from "./tooltip.js";
 import { craftRecipeAction } from "./actions.js";
 
@@ -76,13 +76,30 @@ export function toggleCraftingPanel(open) {
   }
 }
 
+function toggleRecipeHidden(recipeId) {
+  if (uiState.hiddenRecipeIds.has(recipeId)) {
+    uiState.hiddenRecipeIds.delete(recipeId);
+  } else {
+    uiState.hiddenRecipeIds.add(recipeId);
+  }
+  try {
+    localStorage.setItem(
+      HIDDEN_RECIPES_STORAGE_KEY,
+      JSON.stringify(Array.from(uiState.hiddenRecipeIds))
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+  renderCraftingRecipes();
+}
+
 function renderRecipePane(paneDom, config, player, hasStation) {
   if (!paneDom?.listEl) return;
   const groups = buildRecipeGroups(
     CHAPTER_1_RECIPES,
     player.inventory,
     hasStation,
-    config
+    { ...config, hiddenRecipeIds: uiState.hiddenRecipeIds }
   );
 
   paneDom.listEl.innerHTML = "";
@@ -133,14 +150,32 @@ function renderRecipePane(paneDom, config, player, hasStation) {
         })
         .join("");
 
+      const isHidden = uiState.hiddenRecipeIds.has(recipe.id);
+      const hideBtnTitle = isHidden ? "Unhide recipe" : "Hide recipe";
+      const hideBtnLabel = isHidden ? "👁" : "✕";
+
       btn.innerHTML = `
         <div class="craft-btn-top">
           <span class="craft-btn-title"><span class="craft-btn-icon">${outIconHtml}</span><span>${recipe.name}${outQty}</span></span>
-          ${badgeHtml}
+          <span class="craft-btn-right">
+            ${badgeHtml}
+            <span class="craft-hide-btn" role="button" tabindex="0" title="${hideBtnTitle}">${hideBtnLabel}</span>
+          </span>
         </div>
         <div class="craft-btn-inputs">${inputsHtml}</div>
       `;
 
+      const hideEl = btn.querySelector(".craft-hide-btn");
+      if (hideEl) {
+        hideEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleRecipeHidden(recipe.id);
+        });
+      }
+      btn.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        toggleRecipeHidden(recipe.id);
+      });
       btn.addEventListener("click", () => {
         craftRecipe(recipe.id);
       });

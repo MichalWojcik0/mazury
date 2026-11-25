@@ -67,6 +67,14 @@ export function updateSelectedVoxelUI(player, room) {
   } else if (tile.id === "exnihilocreatio:block_crucible_wood") {
     const m = tile.metadata || {};
     growthText = ` [${Math.floor(m.fluidAmount || 0)}mB water]`;
+  } else if (tile.id === "minecraft:furnace") {
+    const m = tile.metadata || {};
+    if (m.outputCount > 0) growthText = ` [Output ×${m.outputCount}]`;
+    else if (m.fuelTimeRemaining > 0 && m.inputCount > 0) {
+      const pct = Math.floor(((m.smeltProgress || 0) / 200) * 100);
+      growthText = ` [Lit ${pct}%]`;
+    } else if (m.fuelTimeRemaining > 0) growthText = " [Lit]";
+    else growthText = " [Idle]";
   }
 
   dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;

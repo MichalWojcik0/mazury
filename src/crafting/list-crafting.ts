@@ -221,6 +221,14 @@ export const CHAPTER_1_RECIPES: ListRecipe[] = [
     inputs: [{ itemId: "exnihilocreatio:ore_piece_iron", count: 4 }],
     outputs: [{ itemId: "exnihilocreatio:ore_chunk_iron", count: 1 }],
   },
+  {
+    id: "recipe:furnace",
+    name: "Furnace",
+    category: "machinery",
+    requiredStation: "crafting_station",
+    inputs: [{ itemId: "minecraft:cobblestone", count: 8 }],
+    outputs: [{ itemId: "minecraft:furnace", count: 1 }],
+  },
 ];
 
 /**
@@ -255,7 +263,8 @@ export type RecipeFilterMode =
   | "basic"
   | "tools"
   | "machinery"
-  | "fluid";
+  | "fluid"
+  | "hidden";
 
 export type RecipeGroupMode = "none" | "category" | "station" | "craftable";
 export type RecipeSortMode = "craftable" | "name" | "category";
@@ -275,6 +284,7 @@ export interface RecipeViewOptions {
   filter?: RecipeFilterMode;
   groupBy?: RecipeGroupMode;
   sortBy?: RecipeSortMode;
+  hiddenRecipeIds?: Iterable<string>;
 }
 
 /**
@@ -422,6 +432,7 @@ export function buildRecipeGroups(
   const filter = options.filter ?? "all";
   const groupBy = options.groupBy ?? "category";
   const sortBy = options.sortBy ?? "craftable";
+  const hiddenSet = options.hiddenRecipeIds ? new Set(options.hiddenRecipeIds) : new Set<string>();
 
   const evaluated: RecipeViewItem[] = recipes.map((recipe) => ({
     recipe,
@@ -429,6 +440,10 @@ export function buildRecipeGroups(
   }));
 
   const filtered = evaluated.filter(({ recipe, status }) => {
+    const isHidden = hiddenSet.has(recipe.id);
+    if (filter === "hidden") return isHidden;
+    if (isHidden) return false;
+
     switch (filter) {
       case "craftable":
         return status.craftable;

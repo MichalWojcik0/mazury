@@ -3,6 +3,14 @@ import type { CanvasContext2DLike } from "./command-types.ts";
 import { renderTexturedTopDiamond, renderWallSideFace } from "./draw-wall.ts";
 import { getSieveState, MESH_REGISTRY } from "../mechanics/sieve.ts";
 import { getBarrelState, getCrucibleState, FLUID_CAPACITY_MB } from "../mechanics/fluids.ts";
+import { getFurnaceState } from "../mechanics/furnace.ts";
+
+const STONE_FALLBACK = {
+  leftFill: "#7a7a7a",
+  rightFill: "#646464",
+  stroke: "#3b3b3b",
+  drawPanelSeam: false,
+};
 
 const OAK_WOOD_FALLBACK = {
   leftFill: "#9c7848",
@@ -244,5 +252,47 @@ export function renderCrucible(
   if (state.solidAmount > 0) {
     const solidScale = 0.35 + 0.3 * Math.min(1, state.solidAmount / FLUID_CAPACITY_MB);
     fillTopInsetDiamond(ctx, u, v - 1, halfW * 0.92, halfH * 0.92, solidScale, "#4f8a36", "#2f571e");
+  }
+}
+
+/**
+ * Renders a Minecraft Furnace:
+ * - Stone top + stone side face + front face (unlit or lit with fire glow)
+ */
+export function renderFurnace(
+  ctx: CanvasContext2DLike,
+  u: number,
+  v: number,
+  halfW: number,
+  halfH: number,
+  elevH: number,
+  tile: Tile,
+  topTex: HTMLImageElement | null,
+  sideTex: HTMLImageElement | null,
+  frontOffTex: HTMLImageElement | null,
+  frontOnTex: HTMLImageElement | null
+): void {
+  const isLit = getFurnaceState(tile).fuelTimeRemaining > 0;
+  const frontTex = isLit && isImgLoaded(frontOnTex) ? frontOnTex : frontOffTex;
+
+  renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "left", sideTex, isImgLoaded(sideTex), STONE_FALLBACK);
+  renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "right", frontTex, isImgLoaded(frontTex), STONE_FALLBACK);
+
+  if (!isImgLoaded(frontTex)) {
+    // Fallback furnace firebox glow on right face when unlit/lit
+    ctx.fillStyle = isLit ? "#ff7722" : "#222222";
+    ctx.beginPath();
+    ctx.moveTo(u + halfW * 0.25, v + halfH * 0.75 + elevH * 0.45);
+    ctx.lineTo(u + halfW * 0.75, v + halfH * 0.25 + elevH * 0.45);
+    ctx.lineTo(u + halfW * 0.75, v + halfH * 0.25 + elevH * 0.85);
+    ctx.lineTo(u + halfW * 0.25, v + halfH * 0.75 + elevH * 0.85);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if (isImgLoaded(topTex)) {
+    renderTexturedTopDiamond(ctx, u, v, halfW, halfH, topTex, true);
+  } else {
+    fillTopInsetDiamond(ctx, u, v, halfW, halfH, 1.0, "#8c8c8c", "#3b3b3b");
   }
 }

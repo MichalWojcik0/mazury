@@ -66,6 +66,10 @@ import {
   BONE_MEAL_TEXTURE_DATA_URL,
   ORE_PIECE_TEXTURE_DATA_URL,
   ORE_CHUNK_TEXTURE_DATA_URL,
+  FURNACE_FRONT_OFF_TEXTURE_DATA_URL,
+  GLASS_TEXTURE_DATA_URL,
+  STONE_TEXTURE_DATA_URL,
+  BRICK_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
 /**
@@ -101,6 +105,8 @@ export interface ItemDefinition {
   hungerRestore?: number;
   traits?: string[];
   crucibleMeltMb?: number;
+  burnTimeTicks?: number;
+  smeltsInto?: string;
 }
 
 function createBonsaiCuttingItem(
@@ -207,6 +213,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Poop Fuel",
     maxStackSize: 64,
     icon: "🔥",
+    burnTimeTicks: 1600,
     textureDataUrl: POOP_FUEL_TEXTURE_DATA_URL,
   },
   "minecraft:planks": {
@@ -216,6 +223,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:planks",
     icon: "🪵",
+    burnTimeTicks: 300,
     textureDataUrl: PLANKS_OAK_TEXTURE_DATA_URL,
   },
   "minecraft:stick": {
@@ -223,6 +231,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Stick",
     maxStackSize: 64,
     icon: "🥢",
+    burnTimeTicks: 100,
     textureDataUrl: STICK_TEXTURE_DATA_URL,
   },
   "craftingstation:crafting_station": {
@@ -288,6 +297,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:cobblestone",
     icon: "🪨",
+    smeltsInto: "minecraft:stone",
     textureDataUrl: COBBLESTONE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_pebble:0": {
@@ -323,6 +333,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Iron Grit",
     maxStackSize: 64,
     icon: "⚙️",
+    smeltsInto: "minecraft:iron_ingot",
     textureDataUrl: IRON_GRIT_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:item_ore_copper:0": {
@@ -330,6 +341,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Copper Grit",
     maxStackSize: 64,
     icon: "🥉",
+    smeltsInto: "immersiveengineering:metal:0",
     textureDataUrl: COPPER_GRIT_TEXTURE_DATA_URL,
   },
   "nuclearcraft:dust:2": {
@@ -337,6 +349,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Tin Grit",
     maxStackSize: 64,
     icon: "⚪",
+    smeltsInto: "nuclearcraft:ingot:2",
     textureDataUrl: TIN_GRIT_TEXTURE_DATA_URL,
   },
   "immersiveengineering:metal:13": {
@@ -344,6 +357,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Lead Grit",
     maxStackSize: 64,
     icon: "⚫",
+    smeltsInto: "immersiveengineering:metal:2",
     textureDataUrl: LEAD_GRIT_TEXTURE_DATA_URL,
   },
   "nuclearcraft:dust:1": {
@@ -554,6 +568,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     placeable: true,
     placesTileId: "minecraft:sand",
     icon: "🏜️",
+    smeltsInto: "minecraft:glass",
     textureDataUrl: SAND_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:block_dust": {
@@ -579,6 +594,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Clay",
     maxStackSize: 64,
     icon: "⚪",
+    smeltsInto: "minecraft:brick",
     textureDataUrl: CLAY_BALL_TEXTURE_DATA_URL,
   },
   "minecraft:flint": {
@@ -593,6 +609,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Coal",
     maxStackSize: 64,
     icon: "⚫",
+    burnTimeTicks: 1600,
     textureDataUrl: COAL_TEXTURE_DATA_URL,
   },
   "minecraft:redstone": {
@@ -628,6 +645,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Iron Ore Piece",
     maxStackSize: 64,
     icon: "🪨",
+    smeltsInto: "minecraft:iron_nugget",
     textureDataUrl: ORE_PIECE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:ore_piece_copper": {
@@ -635,6 +653,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Copper Ore Piece",
     maxStackSize: 64,
     icon: "🪨",
+    smeltsInto: "immersiveengineering:metal:20",
     textureDataUrl: ORE_PIECE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:ore_piece_tin": {
@@ -649,6 +668,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Lead Ore Piece",
     maxStackSize: 64,
     icon: "🪨",
+    smeltsInto: "immersiveengineering:metal:22",
     textureDataUrl: ORE_PIECE_TEXTURE_DATA_URL,
   },
   "exnihilocreatio:ore_chunk_iron": {
@@ -656,6 +676,7 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     name: "Raw Iron Chunk",
     maxStackSize: 64,
     icon: "🪨",
+    smeltsInto: "minecraft:iron_ingot",
     textureDataUrl: ORE_CHUNK_TEXTURE_DATA_URL,
   },
   "thermalfoundation:material:772": {
@@ -664,6 +685,40 @@ export const ITEM_REGISTRY: Record<string, ItemDefinition> = {
     maxStackSize: 64,
     icon: "🪨",
     textureDataUrl: GRAVEL_DUST_TEXTURE_DATA_URL,
+  },
+  "minecraft:furnace": {
+    id: "minecraft:furnace",
+    name: "Furnace",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "minecraft:furnace",
+    icon: "🔥",
+    textureDataUrl: FURNACE_FRONT_OFF_TEXTURE_DATA_URL,
+  },
+  "minecraft:glass": {
+    id: "minecraft:glass",
+    name: "Glass",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "minecraft:glass",
+    icon: "🪟",
+    textureDataUrl: GLASS_TEXTURE_DATA_URL,
+  },
+  "minecraft:stone": {
+    id: "minecraft:stone",
+    name: "Stone",
+    maxStackSize: 64,
+    placeable: true,
+    placesTileId: "minecraft:stone",
+    icon: "🪨",
+    textureDataUrl: STONE_TEXTURE_DATA_URL,
+  },
+  "minecraft:brick": {
+    id: "minecraft:brick",
+    name: "Brick",
+    maxStackSize: 64,
+    icon: "🧱",
+    textureDataUrl: BRICK_TEXTURE_DATA_URL,
   },
 };
 

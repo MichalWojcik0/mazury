@@ -95,6 +95,15 @@ export const TEXTURE_MANIFEST = [
   { constName: "BONE_MEAL_TEXTURE_DATA_URL", mapId: "minecraft:dye:15", asset: "assets/minecraft/textures/items/dye_powder_white.png" },
   { constName: "ORE_PIECE_TEXTURE_DATA_URL", mapId: "exnihilocreatio:ore_piece", asset: "assets/exnihilocreatio/textures/items/orepiece.png" },
   { constName: "ORE_CHUNK_TEXTURE_DATA_URL", mapId: "exnihilocreatio:ore_chunk", asset: "assets/exnihilocreatio/textures/items/orechunk.png" },
+
+  // Furnace & Smelting
+  { constName: "FURNACE_FRONT_OFF_TEXTURE_DATA_URL", mapId: "minecraft:furnace", asset: "assets/minecraft/textures/blocks/furnace_front_off.png" },
+  { constName: "FURNACE_FRONT_ON_TEXTURE_DATA_URL", mapId: "minecraft:furnace_on", asset: "assets/minecraft/textures/blocks/furnace_front_on.png" },
+  { constName: "FURNACE_SIDE_TEXTURE_DATA_URL", mapId: "minecraft:furnace_side", asset: "assets/minecraft/textures/blocks/furnace_side.png" },
+  { constName: "FURNACE_TOP_TEXTURE_DATA_URL", mapId: "minecraft:furnace_top", asset: "assets/minecraft/textures/blocks/furnace_top.png" },
+  { constName: "GLASS_TEXTURE_DATA_URL", mapId: "minecraft:glass", asset: "assets/minecraft/textures/blocks/glass.png" },
+  { constName: "STONE_TEXTURE_DATA_URL", mapId: "minecraft:stone", asset: "assets/minecraft/textures/blocks/stone.png" },
+  { constName: "BRICK_TEXTURE_DATA_URL", mapId: "minecraft:brick", asset: "assets/minecraft/textures/items/brick.png" },
 ];
 
 export const BONSAI_WOOD_TYPES = ["oak", "spruce", "birch", "jungle", "acacia", "darkoak"];

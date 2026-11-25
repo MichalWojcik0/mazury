@@ -786,6 +786,32 @@
       color: #e0e6ed;
     }
 
+    .craft-btn-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .craft-hide-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #6c7380;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .craft-hide-btn:hover {
+      color: #e5c07b;
+      background: rgba(229, 192, 123, 0.14);
+      border-color: rgba(229, 192, 123, 0.4);
+    }
+
     .craft-btn-icon img {
       width: 16px;
       height: 16px;
@@ -1267,6 +1293,7 @@
                     <option value="tools">Tools</option>
                     <option value="machinery">Machinery</option>
                     <option value="fluid">Fluids</option>
+                    <option value="hidden">Hidden</option>
                   </select>
                   <select class="craft-select" id="craft-group-0" title="Group recipes">
                     <option value="category">Group: Category</option>
@@ -1295,6 +1322,7 @@
                     <option value="tools">Tools</option>
                     <option value="machinery">Machinery</option>
                     <option value="fluid">Fluids</option>
+                    <option value="hidden">Hidden</option>
                   </select>
                   <select class="craft-select" id="craft-group-1" title="Group recipes (List 2)">
                     <option value="category">Group: Category</option>
@@ -1434,10 +1462,23 @@
       ]
     };
     var layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
+    var HIDDEN_RECIPES_STORAGE_KEY = "compact_claustrophobia_hidden_recipes_v1";
+    function loadHiddenRecipes() {
+      try {
+        const raw = localStorage.getItem(HIDDEN_RECIPES_STORAGE_KEY);
+        if (!raw)
+          return new Set;
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? new Set(arr) : new Set;
+      } catch {
+        return new Set;
+      }
+    }
     var uiState = {
       isInventoryDrawerOpen: false,
       isCraftingOpen: false,
       isDualCraftingOpen: false,
+      hiddenRecipeIds: loadHiddenRecipes(),
       craftingPaneConfigs: [
         { filter: "all", groupBy: "category", sortBy: "craftable" },
         { filter: "station", groupBy: "category", sortBy: "craftable" }
@@ -1843,10 +1884,21 @@
         dom.btnToggleCrafting.textContent = "\uD83D\uDD28 Crafting [C]";
       }
     }
+    function toggleRecipeHidden(recipeId) {
+      if (uiState.hiddenRecipeIds.has(recipeId)) {
+        uiState.hiddenRecipeIds.delete(recipeId);
+      } else {
+        uiState.hiddenRecipeIds.add(recipeId);
+      }
+      try {
+        localStorage.setItem(HIDDEN_RECIPES_STORAGE_KEY, JSON.stringify(Array.from(uiState.hiddenRecipeIds)));
+      } catch {}
+      renderCraftingRecipes();
+    }
     function renderRecipePane(paneDom, config, player, hasStation) {
       if (!paneDom?.listEl)
         return;
-      const groups = buildRecipeGroups(CHAPTER_1_RECIPES, player.inventory, hasStation, config);
+      const groups = buildRecipeGroups(CHAPTER_1_RECIPES, player.inventory, hasStation, { ...config, hiddenRecipeIds: uiState.hiddenRecipeIds });
       paneDom.listEl.innerHTML = "";
       if (groups.length === 0) {
         const empty = document.createElement("div");
@@ -1884,13 +1936,30 @@
             const name = getItemDisplay(inp.itemId).name;
             return `<span class="${ok ? "craft-input-ok" : "craft-input-missing"}">${avail}/${inp.count} ${name}</span>`;
           }).join("");
+          const isHidden = uiState.hiddenRecipeIds.has(recipe.id);
+          const hideBtnTitle = isHidden ? "Unhide recipe" : "Hide recipe";
+          const hideBtnLabel = isHidden ? "\uD83D\uDC41" : "✕";
           btn.innerHTML = `
             <div class="craft-btn-top">
               <span class="craft-btn-title"><span class="craft-btn-icon">${outIconHtml}</span><span>${recipe.name}${outQty}</span></span>
-              ${badgeHtml}
+              <span class="craft-btn-right">
+                ${badgeHtml}
+                <span class="craft-hide-btn" role="button" tabindex="0" title="${hideBtnTitle}">${hideBtnLabel}</span>
+              </span>
             </div>
             <div class="craft-btn-inputs">${inputsHtml}</div>
           `;
+          const hideEl = btn.querySelector(".craft-hide-btn");
+          if (hideEl) {
+            hideEl.addEventListener("click", (e) => {
+              e.stopPropagation();
+              toggleRecipeHidden(recipe.id);
+            });
+          }
+          btn.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            toggleRecipeHidden(recipe.id);
+          });
           btn.addEventListener("click", () => {
             craftRecipe(recipe.id);
           });
@@ -1979,6 +2048,17 @@
       } else if (tile.id === "exnihilocreatio:block_crucible_wood") {
         const m = tile.metadata || {};
         growthText = ` [${Math.floor(m.fluidAmount || 0)}mB water]`;
+      } else if (tile.id === "minecraft:furnace") {
+        const m = tile.metadata || {};
+        if (m.outputCount > 0)
+          growthText = ` [Output ×${m.outputCount}]`;
+        else if (m.fuelTimeRemaining > 0 && m.inputCount > 0) {
+          const pct = Math.floor((m.smeltProgress || 0) / 200 * 100);
+          growthText = ` [Lit ${pct}%]`;
+        } else if (m.fuelTimeRemaining > 0)
+          growthText = " [Lit]";
+        else
+          growthText = " [Idle]";
       }
       dom.voxelTargetName.innerHTML = `<span>${icon}</span> <span>${blockDisplayName}${growthText}</span>`;
       dom.voxelTargetCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})${isBoundary ? " [Perimeter Wall]" : ""}`;

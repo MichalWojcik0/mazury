@@ -10,6 +10,7 @@ export * from "./mechanics/voxel-actions.ts";
 export * from "./mechanics/farming.ts";
 export * from "./mechanics/sieve.ts";
 export * from "./mechanics/fluids.ts";
+export * from "./mechanics/furnace.ts";
 export * from "./crafting/list-crafting.ts";
 export * from "./quests/quest-manager.ts";
 export * from "./render/renderer.ts";

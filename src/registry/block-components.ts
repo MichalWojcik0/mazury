@@ -31,7 +31,17 @@ import {
 } from "../mechanics/fluids.ts";
 import { renderCropTile } from "../render/draw-crop.ts";
 import { renderCraftingStation } from "../render/draw-crafting-station.ts";
-import { renderBarrel, renderCrucible, renderSieve } from "../render/draw-machines.ts";
+import { renderBarrel, renderCrucible, renderFurnace, renderSieve } from "../render/draw-machines.ts";
+import {
+  collectFurnaceOutput,
+  FURNACE_SMELT_TICKS,
+  getFurnaceState,
+  insertFurnaceFuel,
+  insertFurnaceInput,
+  isFurnaceFuel,
+  isSmeltable,
+  tickFurnaceTile,
+} from "../mechanics/furnace.ts";
 
 export interface BlockTickContext {
   room: Room;
@@ -333,6 +343,67 @@ export const BLOCK_COMPONENTS: Record<string, BlockComponent> = {
         tile,
         getTexture("minecraft:planks"),
         getTexture("minecraft:water_still")
+      );
+    },
+  },
+  "minecraft:furnace": {
+    onTick: ({ tile }) => {
+      tickFurnaceTile(tile);
+    },
+    onInteract: ({ tile, player }) => {
+      const collected = collectFurnaceOutput(tile);
+      if (collected) {
+        addItem(player.inventory, collected.itemId, collected.count);
+        return true;
+      }
+      const equipped = player.equippedItem;
+      if (equipped && isFurnaceFuel(equipped) && insertFurnaceFuel(tile, equipped)) {
+        removeItem(player.inventory, equipped, 1);
+        return true;
+      }
+      if (equipped && isSmeltable(equipped) && insertFurnaceInput(tile, equipped)) {
+        removeItem(player.inventory, equipped, 1);
+        return true;
+      }
+      return false;
+    },
+    onBreak: ({ room, coord, tile, player }) => {
+      const state = getFurnaceState(tile);
+      if (state.inputItem && state.inputCount > 0) addItem(player.inventory, state.inputItem, state.inputCount);
+      if (state.outputItem && state.outputCount > 0) addItem(player.inventory, state.outputItem, state.outputCount);
+      if (state.fuelItem && state.fuelCount > 0) addItem(player.inventory, state.fuelItem, state.fuelCount);
+      addItem(player.inventory, "minecraft:furnace", 1);
+      room.voxels[coord.z][coord.y][coord.x] = { id: "minecraft:air", type: "air", passable: true };
+      return true;
+    },
+    getActions: ({ tile, player }) => {
+      const state = getFurnaceState(tile);
+      const equipped = player?.equippedItem;
+      if (state.outputItem && state.outputCount > 0) {
+        return [{ id: "harvest", label: `Collect Output (×${state.outputCount})`, buttonType: "SECONDARY", icon: "🔥" }];
+      }
+      if (equipped && isFurnaceFuel(equipped)) {
+        return [{ id: "harvest", label: "Add Fuel", buttonType: "SECONDARY", icon: "🔥" }];
+      }
+      if (equipped && isSmeltable(equipped)) {
+        const pct = Math.floor((state.smeltProgress / FURNACE_SMELT_TICKS) * 100);
+        return [{ id: "harvest", label: state.inputItem ? `Add Input (${pct}%)` : "Smelt Item", buttonType: "SECONDARY", icon: "🪨" }];
+      }
+      return [];
+    },
+    onRender: ({ ctx, u, v, halfW, halfH, elevH, tile, getTexture }) => {
+      renderFurnace(
+        ctx,
+        u,
+        v,
+        halfW,
+        halfH,
+        elevH,
+        tile,
+        getTexture("minecraft:furnace_top"),
+        getTexture("minecraft:furnace_side"),
+        getTexture("minecraft:furnace"),
+        getTexture("minecraft:furnace_on")
       );
     },
   },

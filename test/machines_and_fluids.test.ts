@@ -11,6 +11,8 @@ import { StubRenderer, type CanvasContext2DLike } from "../src/render/renderer.t
 import { createTinyCompactMachineRoom } from "../src/world/room.ts";
 import { hasItemTrait } from "../src/registry/definitions.ts";
 import { getBlockComponent } from "../src/registry/block-components.ts";
+import { getFurnaceState } from "../src/mechanics/furnace.ts";
+import { CHAPTER_1_RECIPES, buildRecipeGroups } from "../src/crafting/list-crafting.ts";
 
 function setupTinyRoomEngine(seed: number = 1337): { engine: GameEngine; playerId: number } {
   const engine = new GameEngine(seed);
@@ -329,4 +331,132 @@ test("Component & Trait system: bonsai items use traits and blocks resolve compo
 
   const wheatComp = getBlockComponent("minecraft:wheat");
   assert.ok(wheatComp?.onTick && wheatComp?.onInteract && wheatComp?.onBreak && wheatComp?.onRender);
+});
+
+test("List Crafting: hiding recipes excludes them from standard filters and shows them under hidden filter", () => {
+  const { engine } = setupTinyRoomEngine();
+  const player = engine.players.get(0)!;
+
+  const allGroups = buildRecipeGroups(CHAPTER_1_RECIPES, player.inventory, false, {
+    filter: "all",
+    groupBy: "none",
+  });
+  const allIds = allGroups.flatMap((g) => g.items.map((i) => i.recipe.id));
+  assert.ok(allIds.includes("recipe:dirt"));
+
+  const hidden = new Set(["recipe:dirt"]);
+  const visibleGroups = buildRecipeGroups(CHAPTER_1_RECIPES, player.inventory, false, {
+    filter: "all",
+    groupBy: "none",
+    hiddenRecipeIds: hidden,
+  });
+  const visibleIds = visibleGroups.flatMap((g) => g.items.map((i) => i.recipe.id));
+  assert.equal(visibleIds.includes("recipe:dirt"), false);
+
+  const hiddenGroups = buildRecipeGroups(CHAPTER_1_RECIPES, player.inventory, false, {
+    filter: "hidden",
+    groupBy: "none",
+    hiddenRecipeIds: hidden,
+  });
+  const hiddenIds = hiddenGroups.flatMap((g) => g.items.map((i) => i.recipe.id));
+  assert.deepEqual(hiddenIds, ["recipe:dirt"]);
+});
+
+test("Furnace: crafts from 8 cobblestone, burns fuel only with input, smelts sand into glass in 200 ticks, and renders", () => {
+  const { engine } = setupTinyRoomEngine();
+  const player = engine.players.get(0)!;
+  const room = engine.rooms.get(player.currentRoomId)!;
+
+  addItem(player.inventory, "craftingstation:crafting_station", 1);
+  addItem(player.inventory, "minecraft:cobblestone", 8);
+  addItem(player.inventory, "contenttweaker:poopfuel", 1);
+  addItem(player.inventory, "minecraft:sand", 1);
+
+  // Craft furnace
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "CRAFT_RECIPE", recipeId: "recipe:furnace" },
+  });
+  engine.stepTick();
+  assert.equal(countItem(player.inventory, "minecraft:furnace"), 1);
+  assert.equal(countItem(player.inventory, "minecraft:cobblestone"), 0);
+
+  // Place furnace at slot 6 (2, 1, 1)
+  player.equippedItem = "minecraft:furnace";
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 6, button: "SECONDARY" },
+  });
+  engine.stepTick();
+
+  const furnaceTile = room.voxels[1][1][2];
+  assert.equal(furnaceTile.id, "minecraft:furnace");
+
+  // Add fuel without input -> should NOT ignite yet
+  player.equippedItem = "contenttweaker:poopfuel";
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 6, button: "SECONDARY" },
+  });
+  engine.stepTick();
+  for (let t = 0; t < 10; t++) engine.stepTick();
+  assert.equal(getFurnaceState(furnaceTile).fuelTimeRemaining, 0);
+  assert.equal(getFurnaceState(furnaceTile).fuelCount, 1);
+
+  // Add sand input -> ignites fuel (1600 ticks) and smelts in 200 ticks
+  player.equippedItem = "minecraft:sand";
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 6, button: "SECONDARY" },
+  });
+  engine.stepTick();
+  for (let t = 0; t < 200; t++) engine.stepTick();
+
+  const afterSmelt = getFurnaceState(furnaceTile);
+  assert.equal(afterSmelt.outputItem, "minecraft:glass");
+  assert.equal(afterSmelt.outputCount, 1);
+  assert.equal(afterSmelt.inputCount, 0);
+  assert.ok(afterSmelt.fuelTimeRemaining > 0);
+
+  // Collect output
+  player.equippedItem = undefined;
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 6, button: "SECONDARY" },
+  });
+  engine.stepTick();
+  assert.equal(countItem(player.inventory, "minecraft:glass"), 1);
+
+  // Verify furnace renders cleanly
+  const renderer = new StubRenderer();
+  let fills = 0;
+  const mockCtx: CanvasContext2DLike = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fill: () => { fills++; },
+    stroke: () => {},
+    fillRect: () => {},
+    strokeRect: () => {},
+    fillText: () => {},
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+  };
+  const furnaceCmd = renderer
+    .generateRenderCommands(room, [], { enableCutaway: true })
+    .find((c) => c.type === "DRAW_TILE" && c.tile?.id === "minecraft:furnace");
+  assert.ok(furnaceCmd);
+  renderer.executeCommand(furnaceCmd, mockCtx);
+  assert.ok(fills >= 3);
 });

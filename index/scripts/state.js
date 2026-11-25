@@ -73,10 +73,24 @@ export const dom = {
 
 export const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];
 
+export const HIDDEN_RECIPES_STORAGE_KEY = "compact_claustrophobia_hidden_recipes_v1";
+
+function loadHiddenRecipes() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_RECIPES_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
 export const uiState = {
   isInventoryDrawerOpen: false,
   isCraftingOpen: false,
   isDualCraftingOpen: false,
+  hiddenRecipeIds: loadHiddenRecipes(),
   craftingPaneConfigs: [
     { filter: "all", groupBy: "category", sortBy: "craftable" },
     { filter: "station", groupBy: "category", sortBy: "craftable" },

@@ -190,6 +190,32 @@
   color: #e0e6ed;
 }
 
+.craft-btn-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.craft-hide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #6c7380;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.craft-hide-btn:hover {
+  color: #e5c07b;
+  background: rgba(229, 192, 123, 0.14);
+  border-color: rgba(229, 192, 123, 0.4);
+}
+
 .craft-btn-icon img {
   width: 16px;
   height: 16px;

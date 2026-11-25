@@ -18,6 +18,9 @@ import {
   DUST_BLOCK_TEXTURE_DATA_URL,
   CLAY_BLOCK_TEXTURE_DATA_URL,
   CRUCIBLE_TEXTURE_DATA_URL,
+  FURNACE_FRONT_OFF_TEXTURE_DATA_URL,
+  GLASS_TEXTURE_DATA_URL,
+  STONE_TEXTURE_DATA_URL,
 } from "../render/textures.ts";
 
 export interface BlockDefinition {
@@ -296,6 +299,39 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     drops: [{ itemId: "minecraft:clay_ball", count: 4 }],
     tillable: false,
     textureDataUrl: CLAY_BLOCK_TEXTURE_DATA_URL,
+  },
+  "minecraft:furnace": {
+    id: "minecraft:furnace",
+    name: "Furnace",
+    icon: "🔥",
+    type: "machine",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "minecraft:furnace", count: 1 }],
+    tillable: false,
+    textureDataUrl: FURNACE_FRONT_OFF_TEXTURE_DATA_URL,
+  },
+  "minecraft:glass": {
+    id: "minecraft:glass",
+    name: "Glass",
+    icon: "🪟",
+    type: "floor",
+    passable: false,
+    breakable: true,
+    drops: [],
+    tillable: false,
+    textureDataUrl: GLASS_TEXTURE_DATA_URL,
+  },
+  "minecraft:stone": {
+    id: "minecraft:stone",
+    name: "Stone",
+    icon: "🪨",
+    type: "floor",
+    passable: false,
+    breakable: true,
+    drops: [{ itemId: "minecraft:cobblestone", count: 1 }],
+    tillable: false,
+    textureDataUrl: STONE_TEXTURE_DATA_URL,
   },
 };
 
