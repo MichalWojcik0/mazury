@@ -213,35 +213,6 @@ export function tickCropTile(
 }
 
 /**
- * Ticks growth simulation for all bonsai and crops in the room.
- * Twerking / Sneaking acceleration: When any player in the room is sneaking adjacent
- * (Chebyshev distance <= 1 tile in x, y, and within 1 block in z), growth advances by +3 extra ticks.
- */
-export function tickFarming(
-  room: Room,
-  players: Iterable<Player>,
-  _rng?: DeterministicRNG
-): void {
-  const sneakingPlayers: Player[] = [];
-  for (const player of players) {
-    if (player.currentRoomId === room.id && player.isSneaking) {
-      sneakingPlayers.push(player);
-    }
-  }
-
-  for (let z = 0; z < room.depth; z++) {
-    for (let y = 0; y < room.height; y++) {
-      for (let x = 0; x < room.width; x++) {
-        const tile = room.voxels[z]?.[y]?.[x];
-        if (tile) {
-          tickCropTile(room, { x, y, z }, tile, sneakingPlayers);
-        }
-      }
-    }
-  }
-}
-
-/**
  * Harvests a mature crop or bonsai:
  * - Resets growth back to the first stage (stage 0 / growthTicks = 0), autoplanting in place.
  * - The replanting seed/sapling does NOT reach inventory.

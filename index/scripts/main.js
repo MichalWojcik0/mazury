@@ -19,7 +19,7 @@ import {
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel, craftRecipe } from "./crafting.js";
 import { updateHUD } from "./hud.js";
-import { bindInputHandlers } from "./input.js";
+import { bindInputHandlers, setPlayAreaZoom, resetPlayAreaZoom } from "./input.js";
 import { saveGame, loadSavedGame, resetSave } from "./storage.js";
 
 function resizeCanvas() {
@@ -54,6 +54,8 @@ window.__eatItem = eatEquippedItem;
 window.__saveGame = saveGame;
 window.__loadGame = loadSavedGame;
 window.__resetSave = () => resetSave(updateHUD);
+window.__setZoom = setPlayAreaZoom;
+window.__resetZoom = resetPlayAreaZoom;
 
 // Load existing local save on startup (if available)
 loadSavedGame();

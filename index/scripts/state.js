@@ -69,6 +69,9 @@ export const dom = {
     document.getElementById("layer-btn-2"),
     document.getElementById("layer-btn-3"),
   ],
+  btnZoomIn: document.getElementById("btn-zoom-in"),
+  btnZoomOut: document.getElementById("btn-zoom-out"),
+  btnZoomReset: document.getElementById("btn-zoom-reset"),
 };
 
 export const layerLabels = ["0: Floor", "1: Feet", "2: Head", "3: Ceiling"];

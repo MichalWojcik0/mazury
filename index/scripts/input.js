@@ -9,7 +9,7 @@ import { engine, renderer, canvas, dom, cameraState } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
 import { saveGame, resetSave } from "./storage.js";
-import { updateHUD } from "./hud.js";
+import { updateHUD, updateZoomUI } from "./hud.js";
 import {
   selectLayer,
   selectQuickSlot,
@@ -86,6 +86,24 @@ function getSlotFromCanvasEvent(e) {
 
   const key = `${dx},${dy}`;
   return deltaToSlot[key] || null;
+}
+
+const ZOOM_STEP = 0.2;
+
+export function setPlayAreaZoom(nextZoom) {
+  const rounded = Math.round(nextZoom * 100) / 100;
+  cameraState.zoom = Math.max(
+    cameraState.minZoom,
+    Math.min(cameraState.maxZoom, rounded)
+  );
+  updateZoomUI();
+}
+
+export function resetPlayAreaZoom() {
+  cameraState.zoom = 1.0;
+  cameraState.panX = 0;
+  cameraState.panY = 0;
+  updateZoomUI();
 }
 
 export function bindInputHandlers() {
@@ -211,6 +229,20 @@ export function bindInputHandlers() {
         if (p) selectLayer(Math.min(3, p.selectedLayerIndex + 1));
         e.preventDefault();
         break;
+      case "+":
+      case "=":
+        setPlayAreaZoom(cameraState.zoom + ZOOM_STEP);
+        e.preventDefault();
+        break;
+      case "-":
+      case "_":
+        setPlayAreaZoom(cameraState.zoom - ZOOM_STEP);
+        e.preventDefault();
+        break;
+      case "0":
+        resetPlayAreaZoom();
+        e.preventDefault();
+        break;
       case "1":
       case "2":
       case "3":
@@ -327,6 +359,7 @@ export function bindInputHandlers() {
         cameraState.minZoom,
         Math.min(cameraState.maxZoom, cameraState.zoom * factor)
       );
+      updateZoomUI();
       return;
     }
 
@@ -365,6 +398,15 @@ export function bindInputHandlers() {
   }
   if (dom.btnEat) {
     dom.btnEat.addEventListener("click", () => eatEquippedItem());
+  }
+  if (dom.btnZoomIn) {
+    dom.btnZoomIn.addEventListener("click", () => setPlayAreaZoom(cameraState.zoom + ZOOM_STEP));
+  }
+  if (dom.btnZoomOut) {
+    dom.btnZoomOut.addEventListener("click", () => setPlayAreaZoom(cameraState.zoom - ZOOM_STEP));
+  }
+  if (dom.btnZoomReset) {
+    dom.btnZoomReset.addEventListener("click", () => resetPlayAreaZoom());
   }
   if (dom.btnSaveGame) {
     dom.btnSaveGame.addEventListener("click", () => saveGame(false));

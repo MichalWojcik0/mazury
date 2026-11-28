@@ -1,5 +1,10 @@
 import type { Tile } from "../core/types.ts";
+import type { CanvasContext2DLike } from "../render/command-types.ts";
+import type { BlockComponent } from "../registry/block-components.ts";
+import { addItem, removeItem } from "../inventory/inventory.ts";
 import { getItemDefinition } from "../registry/definitions.ts";
+import { renderTexturedTopDiamond, renderWallSideFace } from "../render/draw-wall.ts";
+import { STONE_FALLBACK, fillTopInsetDiamond, isImgLoaded } from "../render/draw-primitives.ts";
 
 export const FURNACE_SMELT_TICKS = 200;
 
@@ -154,3 +159,110 @@ export function tickFurnaceTile(tile: Tile): void {
     smeltProgress,
   });
 }
+
+export function renderFurnace(
+  ctx: CanvasContext2DLike,
+  u: number,
+  v: number,
+  halfW: number,
+  halfH: number,
+  elevH: number,
+  tile: Tile,
+  topTex: HTMLImageElement | null,
+  sideTex: HTMLImageElement | null,
+  frontOffTex: HTMLImageElement | null,
+  frontOnTex: HTMLImageElement | null
+): void {
+  const isLit = getFurnaceState(tile).fuelTimeRemaining > 0;
+  const frontTex = isLit && isImgLoaded(frontOnTex) ? frontOnTex : frontOffTex;
+
+  renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "left", sideTex, isImgLoaded(sideTex), STONE_FALLBACK);
+  renderWallSideFace(ctx, u, v, halfW, halfH, elevH, "right", frontTex, isImgLoaded(frontTex), STONE_FALLBACK);
+
+  if (!isImgLoaded(frontTex)) {
+    ctx.fillStyle = isLit ? "#ff7722" : "#222222";
+    ctx.beginPath();
+    ctx.moveTo(u + halfW * 0.25, v + halfH * 0.75 + elevH * 0.45);
+    ctx.lineTo(u + halfW * 0.75, v + halfH * 0.25 + elevH * 0.45);
+    ctx.lineTo(u + halfW * 0.75, v + halfH * 0.25 + elevH * 0.85);
+    ctx.lineTo(u + halfW * 0.25, v + halfH * 0.75 + elevH * 0.85);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if (isImgLoaded(topTex)) {
+    renderTexturedTopDiamond(ctx, u, v, halfW, halfH, topTex, true);
+  } else {
+    fillTopInsetDiamond(ctx, u, v, halfW, halfH, 1.0, "#8c8c8c", "#3b3b3b");
+  }
+}
+
+export const FURNACE_COMPONENT: BlockComponent = {
+  onTick: ({ tile }) => {
+    tickFurnaceTile(tile);
+  },
+  onInteract: ({ tile, player }) => {
+    const collected = collectFurnaceOutput(tile);
+    if (collected) {
+      addItem(player.inventory, collected.itemId, collected.count);
+      return true;
+    }
+    const equipped = player.equippedItem;
+    if (equipped && isFurnaceFuel(equipped) && insertFurnaceFuel(tile, equipped)) {
+      removeItem(player.inventory, equipped, 1);
+      return true;
+    }
+    if (equipped && isSmeltable(equipped) && insertFurnaceInput(tile, equipped)) {
+      removeItem(player.inventory, equipped, 1);
+      return true;
+    }
+    return false;
+  },
+  onBreak: ({ room, coord, tile, player }) => {
+    const state = getFurnaceState(tile);
+    if (state.inputItem && state.inputCount > 0) addItem(player.inventory, state.inputItem, state.inputCount);
+    if (state.outputItem && state.outputCount > 0) addItem(player.inventory, state.outputItem, state.outputCount);
+    if (state.fuelItem && state.fuelCount > 0) addItem(player.inventory, state.fuelItem, state.fuelCount);
+    addItem(player.inventory, "minecraft:furnace", 1);
+    room.voxels[coord.z][coord.y][coord.x] = { id: "minecraft:air", type: "air", passable: true };
+    return true;
+  },
+  getActions: ({ tile, player }) => {
+    const state = getFurnaceState(tile);
+    const equipped = player?.equippedItem;
+    if (state.outputItem && state.outputCount > 0) {
+      return [{ id: "harvest", label: `Collect Output (×${state.outputCount})`, buttonType: "SECONDARY", icon: "🔥" }];
+    }
+    if (equipped && isFurnaceFuel(equipped)) {
+      return [{ id: "harvest", label: "Add Fuel", buttonType: "SECONDARY", icon: "🔥" }];
+    }
+    if (equipped && isSmeltable(equipped)) {
+      const pct = Math.floor((state.smeltProgress / FURNACE_SMELT_TICKS) * 100);
+      return [{ id: "harvest", label: state.inputItem ? `Add Input (${pct}%)` : "Smelt Item", buttonType: "SECONDARY", icon: "🪨" }];
+    }
+    return [];
+  },
+  onRender: ({ ctx, u, v, halfW, halfH, elevH, tile, getTexture }) => {
+    renderFurnace(
+      ctx,
+      u,
+      v,
+      halfW,
+      halfH,
+      elevH,
+      tile,
+      getTexture("minecraft:furnace_top"),
+      getTexture("minecraft:furnace_side"),
+      getTexture("minecraft:furnace"),
+      getTexture("minecraft:furnace_on")
+    );
+  },
+  getStatusText: (tile) => {
+    const f = getFurnaceState(tile);
+    if (f.outputCount > 0) return ` [Output ×${f.outputCount}]`;
+    if (f.fuelTimeRemaining > 0 && f.inputCount > 0) {
+      return ` [Lit ${Math.floor((f.smeltProgress / FURNACE_SMELT_TICKS) * 100)}%]`;
+    }
+    return f.fuelTimeRemaining > 0 ? " [Lit]" : " [Idle]";
+  },
+};

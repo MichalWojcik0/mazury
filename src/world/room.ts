@@ -257,3 +257,22 @@ export function resolveTargetCoord(player: Player, slot: 1 | 2 | 3 | 4 | 5 | 6 |
     z: targetZ,
   };
 }
+
+/**
+ * Iterates over every non-null voxel in a room's 3D grid.
+ */
+export function forEachRoomVoxel(
+  room: Room,
+  visitor: (coord: Vec3, tile: Tile) => void
+): void {
+  for (let z = 0; z < room.depth; z++) {
+    for (let y = 0; y < room.height; y++) {
+      for (let x = 0; x < room.width; x++) {
+        const tile = room.voxels[z]?.[y]?.[x];
+        if (tile) {
+          visitor({ x, y, z }, tile);
+        }
+      }
+    }
+  }
+}

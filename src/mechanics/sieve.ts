@@ -1,6 +1,11 @@
 import type { Tile } from "../core/types.ts";
 import type { DeterministicRNG } from "../core/math.ts";
+import type { CanvasContext2DLike } from "../render/command-types.ts";
+import type { BlockComponent } from "../registry/block-components.ts";
+import { addItem, removeItem } from "../inventory/inventory.ts";
 import { getItemDefinition, hasItemTrait } from "../registry/definitions.ts";
+import { renderTexturedTopDiamond, renderWallSideFace } from "../render/draw-wall.ts";
+import { OAK_WOOD_FALLBACK, drawFourLegs, fillTopInsetDiamond, isImgLoaded } from "../render/draw-primitives.ts";
 
 export function getMeshDefinition(meshId: string) {
   return getItemDefinition(meshId)?.sieveMesh;
@@ -156,3 +161,111 @@ export function siftSieve(tile: Tile, rng?: DeterministicRNG): SiftResult {
 
   return { progressed: true, completed: true, drops, meshBroken };
 }
+
+export function renderSieve(
+  ctx: CanvasContext2DLike,
+  u: number,
+  v: number,
+  halfW: number,
+  halfH: number,
+  elevH: number,
+  tile: Tile,
+  planksTexture: HTMLImageElement | null
+): void {
+  const loaded = isImgLoaded(planksTexture);
+  const rimH = elevH * 0.35;
+  const legH = elevH - rimH;
+
+  drawFourLegs(ctx, u, v, halfW, halfH, rimH, legH, 0.16, planksTexture);
+
+  renderWallSideFace(ctx, u, v, halfW, halfH, rimH, "left", planksTexture, loaded, OAK_WOOD_FALLBACK);
+  renderWallSideFace(ctx, u, v, halfW, halfH, rimH, "right", planksTexture, loaded, OAK_WOOD_FALLBACK);
+
+  if (loaded && planksTexture) {
+    renderTexturedTopDiamond(ctx, u, v, halfW, halfH, planksTexture, true);
+  } else {
+    fillTopInsetDiamond(ctx, u, v, halfW, halfH, 1.0, "#a37b4b", "#543d20");
+  }
+
+  fillTopInsetDiamond(ctx, u, v, halfW, halfH, 0.78, "#2a1f12", "#4a3520");
+
+  const state = getSieveState(tile);
+  if (state.meshId) {
+    const meshColor = getMeshDefinition(state.meshId)?.color ?? "#e6e0d4";
+    ctx.strokeStyle = meshColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = -2; i <= 2; i++) {
+      const t = i * 0.25;
+      ctx.moveTo(u + (t - 0.72) * halfW * 0.5, v + (t + 0.72) * halfH * 0.5);
+      ctx.lineTo(u + (t + 0.72) * halfW * 0.5, v + (t - 0.72) * halfH * 0.5);
+      ctx.moveTo(u + (-0.72 - t) * halfW * 0.5, v + (-0.72 + t) * halfH * 0.5);
+      ctx.lineTo(u + (0.72 - t) * halfW * 0.5, v + (0.72 + t) * halfH * 0.5);
+    }
+    ctx.stroke();
+  }
+
+  if (state.substrateId) {
+    const subColor =
+      state.substrateId === "minecraft:gravel"
+        ? "#837e7c"
+        : state.substrateId === "minecraft:sand"
+          ? "#dbd3a0"
+          : "#c7c5b8";
+    const shrink = Math.max(0.25, 0.7 - (state.progress / 100) * 0.4);
+    fillTopInsetDiamond(ctx, u, v + 1, halfW, halfH, shrink, subColor, "#4a4744");
+  }
+}
+
+export const SIEVE_COMPONENT: BlockComponent = {
+  onInteract: ({ tile, player, rng }) => {
+    const equipped = player.equippedItem;
+    if (equipped && isSieveMesh(equipped) && installSieveMesh(tile, equipped)) {
+      removeItem(player.inventory, equipped, 1);
+      return true;
+    }
+    if (equipped && isSieveSubstrate(equipped) && insertSieveSubstrate(tile, equipped)) {
+      removeItem(player.inventory, equipped, 1);
+      return true;
+    }
+    const siftRes = siftSieve(tile, rng);
+    if (siftRes.progressed) {
+      for (const drop of siftRes.drops) {
+        addItem(player.inventory, drop.id, drop.count);
+      }
+      return true;
+    }
+    if (!equipped) {
+      const removedMesh = removeSieveMesh(tile);
+      if (removedMesh) {
+        addItem(player.inventory, removedMesh, 1);
+        return true;
+      }
+    }
+    return false;
+  },
+  getActions: ({ tile, player }) => {
+    const sieve = getSieveState(tile);
+    const equipped = player?.equippedItem;
+    if (!sieve.meshId && equipped && isSieveMesh(equipped)) {
+      return [{ id: "harvest", label: "Install Mesh", buttonType: "SECONDARY", icon: "🕸️" }];
+    }
+    if (sieve.meshId && !sieve.substrateId && equipped && isSieveSubstrate(equipped)) {
+      return [{ id: "harvest", label: "Insert Substrate", buttonType: "SECONDARY", icon: "🪨" }];
+    }
+    if (sieve.meshId && sieve.substrateId) {
+      return [{ id: "harvest", label: `Sift (${sieve.progress}%)`, buttonType: "SECONDARY", icon: "🕸️" }];
+    }
+    if (sieve.meshId && !sieve.substrateId && !equipped) {
+      return [{ id: "harvest", label: "Remove Mesh", buttonType: "SECONDARY", icon: "🕸️" }];
+    }
+    return [];
+  },
+  onRender: ({ ctx, u, v, halfW, halfH, elevH, tile, getTexture }) => {
+    renderSieve(ctx, u, v, halfW, halfH, elevH, tile, getTexture("minecraft:planks"));
+  },
+  getStatusText: (tile) => {
+    const s = getSieveState(tile);
+    return s.substrateId ? ` [${s.progress}%]` : s.meshId ? " [Mesh Ready]" : " [No Mesh]";
+  },
+};

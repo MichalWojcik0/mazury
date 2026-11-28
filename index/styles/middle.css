@@ -1,8 +1,71 @@
 .middle-overlay {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+}
+
+/* Play Area Zoom Controls */
+.zoom-controls-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  background: rgba(18, 22, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 7px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 54px;
+}
+
+.zoom-btn,
+.zoom-reset-btn {
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 5px;
+  color: #e0e6ed;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-btn {
+  height: 28px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.zoom-reset-btn {
+  height: 24px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: #61afef;
+}
+
+.zoom-btn:hover:not(:disabled),
+.zoom-reset-btn:hover:not(:disabled) {
+  background: #2c313a;
+  border-color: #61afef;
+  color: #ffffff;
+}
+
+.zoom-btn:active:not(:disabled),
+.zoom-reset-btn:active:not(:disabled) {
+  transform: scale(0.95);
+  background: #1e3a5f;
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .targeting-row {
@@ -38,8 +101,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 12px;
+  gap: 10px;
+  padding: 5px 10px;
   background: #21252b;
   border: 1px solid #3e4451;
   border-radius: 5px;
@@ -48,7 +111,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-width: 130px;
+  min-width: 114px;
 }
 
 .layer-btn:hover {
@@ -86,7 +149,7 @@
 .reticle-action-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-end;
 }
 
@@ -94,12 +157,12 @@
   background: rgba(18, 22, 28, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  min-width: 170px;
+  min-width: 158px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   backdrop-filter: blur(8px);
 }
 
@@ -184,8 +247,8 @@
 
 .reticle-grid {
   display: grid;
-  grid-template-columns: repeat(3, 34px);
-  grid-template-rows: repeat(3, 34px);
+  grid-template-columns: repeat(3, 30px);
+  grid-template-rows: repeat(3, 30px);
   gap: 4px;
 }
 
@@ -229,4 +292,28 @@
   border-color: #00ffff;
   color: #00ffff;
   box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+@media (max-height: 760px), (max-width: 1100px) {
+  .layer-selector-card,
+  .aux-reticle-card {
+    padding: 6px 8px;
+  }
+
+  .layer-btn {
+    padding: 4px 8px;
+    min-width: 104px;
+    font-size: 10px;
+  }
+
+  .reticle-grid {
+    grid-template-columns: repeat(3, 26px);
+    grid-template-rows: repeat(3, 26px);
+    gap: 3px;
+  }
+
+  .voxel-action-card {
+    padding: 6px 10px;
+    gap: 5px;
+  }
 }

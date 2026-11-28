@@ -5,7 +5,7 @@ import {
   resolveSelectedVoxel,
   getAvailableVoxelActions,
 } from "./engine-api.js";
-import { engine, dom, layerLabels, uiState } from "./state.js";
+import { engine, dom, layerLabels, uiState, cameraState } from "./state.js";
 import { updateInventoryUI } from "./inventory.js";
 import { renderCraftingRecipes } from "./crafting.js";
 import { interactSlot } from "./actions.js";
@@ -84,6 +84,19 @@ export function updateSelectedVoxelUI(player, room) {
       interactSlot(player.selectedSlot, act.buttonType);
     });
     dom.voxelActionList.appendChild(btn);
+  }
+}
+
+export function updateZoomUI() {
+  const pct = Math.round(cameraState.zoom * 100);
+  if (dom.btnZoomReset) {
+    dom.btnZoomReset.textContent = `${pct}%`;
+  }
+  if (dom.btnZoomIn) {
+    dom.btnZoomIn.disabled = cameraState.zoom >= cameraState.maxZoom - 0.001;
+  }
+  if (dom.btnZoomOut) {
+    dom.btnZoomOut.disabled = cameraState.zoom <= cameraState.minZoom + 0.001;
   }
 }
 
@@ -222,4 +235,6 @@ export function updateHUD() {
     dom.hudQuestDesc.textContent =
       "Inside the 3x3 Tiny Compact Machine! Punch the side walls (Numpad 1-9) to gather dirt dust, or use PSD to exit.";
   }
+
+  updateZoomUI();
 }
