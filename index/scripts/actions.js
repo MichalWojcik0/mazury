@@ -83,3 +83,13 @@ export function toggleSneak() {
 export function eatEquippedItem(itemId) {
   dispatchPlayerAction({ type: "EAT_ITEM", itemId });
 }
+
+export function furnaceAction(coord, operation, slotIndex, count = 1) {
+  dispatchPlayerAction({
+    type: "FURNACE_ACTION",
+    coord,
+    operation,
+    slotIndex,
+    count,
+  });
+}

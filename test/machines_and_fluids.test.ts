@@ -514,3 +514,71 @@ test("Trait definitions resolve item defaults and dirt sieving + multi-block can
   assert.equal(room.voxels[2][0][0].id, "minecraft:air");
   assert.equal(countItem(player.inventory, "minecraft:reeds"), 1);
 });
+
+test("Furnace UI actions: inserts input/fuel from inventory slots, takes back items, and exposes open_furnace action", () => {
+  const { engine } = setupTinyRoomEngine();
+  const player = engine.players.get(0)!;
+  const room = engine.rooms.get(player.currentRoomId)!;
+
+  room.voxels[1][1][2] = { id: "minecraft:furnace", type: "machine", passable: false };
+  addItem(player.inventory, "minecraft:sand", 5);
+  addItem(player.inventory, "contenttweaker:poopfuel", 3);
+
+  const sandSlot = player.inventory.findIndex((s) => s?.id === "minecraft:sand");
+  const fuelSlot = player.inventory.findIndex((s) => s?.id === "contenttweaker:poopfuel");
+  assert.ok(sandSlot >= 0 && fuelSlot >= 0);
+
+  const coord = { x: 2, y: 1, z: 1 };
+
+  // Check open_furnace action is exposed
+  const furnaceComp = getBlockComponent("minecraft:furnace");
+  const actions = furnaceComp?.getActions?.({ tile: room.voxels[1][1][2], player, coord, isInBounds: true }) ?? [];
+  assert.ok(actions.some((a) => a.id === "open_furnace"));
+
+  // Insert 1 sand and stack of fuel via FURNACE_ACTION
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "FURNACE_ACTION", coord, operation: "INSERT_INPUT", slotIndex: sandSlot, count: 1 },
+  });
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "FURNACE_ACTION", coord, operation: "INSERT_FUEL", slotIndex: fuelSlot, count: 64 },
+  });
+  engine.stepTick();
+
+  let state = getFurnaceState(room.voxels[1][1][2]);
+  assert.equal(state.inputItem, "minecraft:sand");
+  assert.equal(state.inputCount, 1);
+  assert.equal(countItem(player.inventory, "minecraft:sand"), 4);
+  // 1 fuel was consumed immediately on ignition, 2 remain in fuelCount
+  assert.equal(state.fuelCount, 2);
+  assert.ok(state.fuelTimeRemaining > 0);
+  assert.equal(countItem(player.inventory, "contenttweaker:poopfuel"), 0);
+
+  // Wait 200 ticks for sand to smelt into glass
+  for (let t = 0; t < 200; t++) engine.stepTick();
+  state = getFurnaceState(room.voxels[1][1][2]);
+  assert.equal(state.outputItem, "minecraft:glass");
+  assert.equal(state.outputCount, 1);
+
+  // Take output and remaining fuel back into inventory
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "FURNACE_ACTION", coord, operation: "TAKE_OUTPUT" },
+  });
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "FURNACE_ACTION", coord, operation: "TAKE_FUEL" },
+  });
+  engine.stepTick();
+
+  state = getFurnaceState(room.voxels[1][1][2]);
+  assert.equal(state.outputCount, 0);
+  assert.equal(state.fuelCount, 0);
+  assert.equal(countItem(player.inventory, "minecraft:glass"), 1);
+  assert.equal(countItem(player.inventory, "contenttweaker:poopfuel"), 2);
+});

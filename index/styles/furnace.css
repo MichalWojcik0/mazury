@@ -1,0 +1,218 @@
+/* Furnace Smelting Panel */
+.furnace-panel {
+  display: none;
+  position: absolute;
+  bottom: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 22, 28, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  width: 440px;
+  max-width: 92vw;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+
+.furnace-panel.open {
+  display: block;
+}
+
+.furnace-coords-badge {
+  font-size: 10px;
+  font-family: monospace;
+  color: #828997;
+}
+
+.furnace-status-lit {
+  background: rgba(255, 119, 34, 0.2) !important;
+  border-color: #ff7722 !important;
+  color: #ffb86c !important;
+}
+
+.furnace-smelt-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: rgba(13, 16, 21, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.furnace-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.furnace-slot-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.furnace-slot-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #828997;
+}
+
+.furnace-slot {
+  width: 46px;
+  height: 46px;
+  cursor: pointer;
+}
+
+.furnace-slot-output {
+  width: 54px;
+  height: 54px;
+  border-color: #5c6370;
+}
+
+.furnace-slot-output.has-item {
+  border-color: #98c379;
+  box-shadow: 0 0 10px rgba(152, 195, 121, 0.25);
+}
+
+.furnace-flame-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 74px;
+}
+
+.furnace-flame-track {
+  flex: 1;
+  height: 8px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.furnace-flame-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff5500, #ffaa33);
+  transition: width 0.1s linear;
+}
+
+.furnace-burn-text {
+  font-size: 10px;
+  font-family: monospace;
+  color: #d19a66;
+  min-width: 24px;
+  text-align: right;
+}
+
+.furnace-arrow-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 110px;
+}
+
+.furnace-arrow-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #828997;
+}
+
+.furnace-progress-track {
+  width: 100%;
+  height: 12px;
+  background: #21252b;
+  border: 1px solid #3e4451;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.furnace-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #61afef, #98c379);
+  transition: width 0.08s linear;
+}
+
+.furnace-progress-text {
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #abb2bf;
+}
+
+.furnace-right-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.furnace-inv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.furnace-inv-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #828997;
+}
+
+.furnace-legend {
+  display: flex;
+  gap: 6px;
+}
+
+.furnace-tag-smelt {
+  color: #61afef;
+  font-weight: 600;
+}
+
+.furnace-tag-fuel {
+  color: #d19a66;
+  font-weight: 600;
+}
+
+.furnace-inv-slot.smeltable {
+  border-color: rgba(97, 175, 239, 0.7);
+  cursor: pointer;
+}
+
+.furnace-inv-slot.fuel {
+  border-color: rgba(209, 154, 102, 0.7);
+  cursor: pointer;
+}
+
+.furnace-inv-slot.smeltable:hover {
+  border-color: #61afef;
+  background: rgba(97, 175, 239, 0.14);
+}
+
+.furnace-inv-slot.fuel:hover {
+  border-color: #ff9944;
+  background: rgba(209, 154, 102, 0.14);
+}
+
+.furnace-inv-slot.disabled {
+  opacity: 0.3;
+  cursor: default;
+}

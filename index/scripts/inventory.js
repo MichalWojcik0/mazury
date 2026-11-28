@@ -1,5 +1,6 @@
 import { dom, uiState, arrowVisibleUntil, arrowHideTimeouts } from "./state.js";
 import { getItemDisplay, showItemTooltip, hideItemTooltip } from "./tooltip.js";
+import { closeFurnacePanel } from "./furnace.js";
 import {
   moveItemToTop,
   moveItemToBottom,
@@ -227,6 +228,7 @@ export function updateInventoryUI(player) {
 export function toggleInventoryDrawer(open) {
   uiState.isInventoryDrawerOpen = open !== undefined ? open : !uiState.isInventoryDrawerOpen;
   if (uiState.isInventoryDrawerOpen) {
+    closeFurnacePanel();
     dom.fullInvDrawer.classList.add("open");
     dom.btnToggleInv.textContent = "✕ Close [E]";
   } else {

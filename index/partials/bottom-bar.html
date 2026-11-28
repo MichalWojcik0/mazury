@@ -107,6 +107,63 @@
       </div>
     </div>
 
+    <!-- Furnace Smelting Panel -->
+    <div class="furnace-panel" id="furnace-panel">
+      <div class="drawer-title-row">
+        <div class="crafting-header-left">
+          <span>🔥 Furnace</span>
+          <span class="furnace-coords-badge" id="furnace-coords"></span>
+          <span class="station-status-badge" id="furnace-status-badge">Idle</span>
+        </div>
+        <button class="inv-toggle-btn" id="btn-close-furnace">✕ Close</button>
+      </div>
+
+      <div class="furnace-smelt-stage">
+        <div class="furnace-left-col">
+          <div class="furnace-slot-group">
+            <span class="furnace-slot-label">Input</span>
+            <button class="inv-slot furnace-slot" id="furnace-slot-input" title="Input Slot (Click to take)"></button>
+          </div>
+          <div class="furnace-flame-box" title="Fuel Burn Time">
+            <div class="furnace-flame-track">
+              <div class="furnace-flame-fill" id="furnace-flame-fill"></div>
+            </div>
+            <span class="furnace-burn-text" id="furnace-burn-text">0s</span>
+          </div>
+          <div class="furnace-slot-group">
+            <span class="furnace-slot-label">Fuel</span>
+            <button class="inv-slot furnace-slot" id="furnace-slot-fuel" title="Fuel Slot (Click to take)"></button>
+          </div>
+        </div>
+
+        <div class="furnace-arrow-col">
+          <div class="furnace-arrow-label">Smelting</div>
+          <div class="furnace-progress-track">
+            <div class="furnace-progress-fill" id="furnace-progress-fill"></div>
+          </div>
+          <div class="furnace-progress-text" id="furnace-progress-text">0%</div>
+        </div>
+
+        <div class="furnace-right-col">
+          <div class="furnace-slot-group">
+            <span class="furnace-slot-label">Output</span>
+            <button class="inv-slot furnace-slot furnace-slot-output" id="furnace-slot-output" title="Output Slot (Click to collect)"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="furnace-inv-section">
+        <div class="furnace-inv-hint">
+          <span>Inventory — Click to insert 1 • Shift+Click to insert stack</span>
+          <span class="furnace-legend">
+            <span class="furnace-tag-smelt">Smeltable</span>
+            <span class="furnace-tag-fuel">Fuel</span>
+          </span>
+        </div>
+        <div class="inventory-grid-36 furnace-inv-grid" id="furnace-inv-grid"></div>
+      </div>
+    </div>
+
     <div class="inventory-header">
       <span class="widget-title" style="text-align: left; margin: 0;">Quick Use (Top 9 Slots)</span>
       <div style="display: flex; gap: 6px;">

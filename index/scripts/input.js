@@ -4,10 +4,15 @@ import {
   isPointInPlayArea,
   clampCameraPan,
   getItemDefinition,
+  resolveSelectedVoxel,
+  isFurnaceFuel,
+  isSmeltable,
+  getFurnaceState,
 } from "./engine-api.js";
 import { engine, renderer, canvas, dom, cameraState } from "./state.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel } from "./crafting.js";
+import { openFurnacePanel, closeFurnacePanel } from "./furnace.js";
 import { saveGame, resetSave } from "./storage.js";
 import { updateHUD, updateZoomUI } from "./hud.js";
 import {
@@ -160,6 +165,9 @@ export function bindInputHandlers() {
       return;
     }
     switch (e.key) {
+      case "Escape":
+        closeFurnacePanel();
+        break;
       case "ArrowUp":
       case "w":
       case "W":
@@ -305,7 +313,7 @@ export function bindInputHandlers() {
   window.addEventListener(
     "wheel",
     (e) => {
-      if (e.target && e.target.closest?.(".crafting-panel, .full-inventory-drawer")) {
+      if (e.target && e.target.closest?.(".crafting-panel, .full-inventory-drawer, .furnace-panel")) {
         return; // Allow scrolling inside crafting/inventory panels
       }
       const p = engine.players.get(0);
@@ -446,6 +454,19 @@ export function bindInputHandlers() {
     const slot = getSlotFromCanvasEvent(e);
     if (slot) {
       selectSlot(slot);
+      const room = p ? engine.rooms.get(p.currentRoomId) : null;
+      const selected = p && room ? resolveSelectedVoxel(room, p, slot) : null;
+      if (selected && selected.isInBounds && selected.tile.id === "minecraft:furnace") {
+        const fState = getFurnaceState(selected.tile);
+        const equipped = p.equippedItem;
+        const willQuickInteract =
+          (fState.outputItem && fState.outputCount > 0) ||
+          (equipped && (isFurnaceFuel(equipped) || isSmeltable(equipped)));
+        if (!willQuickInteract) {
+          openFurnacePanel(selected.coord);
+          return;
+        }
+      }
       interactSlot(slot, "SECONDARY");
     }
   });

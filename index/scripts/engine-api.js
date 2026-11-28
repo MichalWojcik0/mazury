@@ -18,4 +18,8 @@ export {
   getBlockComponent,
   resolveSelectedVoxel,
   getAvailableVoxelActions,
+  FURNACE_SMELT_TICKS,
+  getFurnaceState,
+  isFurnaceFuel,
+  isSmeltable,
 } from "./dist/bundle.js";

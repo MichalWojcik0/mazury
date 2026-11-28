@@ -3,7 +3,7 @@ import { resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
 import { getBlockDefinition, getItemDefinition } from "../registry/definitions.ts";
 import { getBlockComponent } from "../registry/block-components.ts";
 
-export type VoxelActionId = "punch" | "break" | "till" | "harvest" | "place";
+export type VoxelActionId = "punch" | "break" | "till" | "harvest" | "place" | "open_furnace";
 
 export interface VoxelAction {
   id: VoxelActionId;

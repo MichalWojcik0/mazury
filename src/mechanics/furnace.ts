@@ -1,4 +1,4 @@
-import type { Tile } from "../core/types.ts";
+import type { Player, Tile } from "../core/types.ts";
 import type { CanvasContext2DLike } from "../render/command-types.ts";
 import type { BlockComponent } from "../registry/block-components.ts";
 import { addItem, removeItem } from "../inventory/inventory.ts";
@@ -94,6 +94,101 @@ export function collectFurnaceOutput(tile: Tile): { itemId: string; count: numbe
     outputCount: 0,
   });
   return res;
+}
+
+export type FurnaceActionOperation =
+  | "INSERT_INPUT"
+  | "INSERT_FUEL"
+  | "TAKE_INPUT"
+  | "TAKE_FUEL"
+  | "TAKE_OUTPUT";
+
+/**
+ * Executes a Furnace UI slot operation between a furnace tile and a player's inventory.
+ */
+export function executeFurnaceAction(
+  tile: Tile,
+  player: Player,
+  operation: FurnaceActionOperation,
+  slotIndex?: number,
+  count: number = 1
+): boolean {
+  const state = getFurnaceState(tile);
+
+  switch (operation) {
+    case "INSERT_INPUT": {
+      if (slotIndex === undefined || slotIndex < 0 || slotIndex >= player.inventory.length) return false;
+      const stack = player.inventory[slotIndex];
+      if (!stack || !isSmeltable(stack.id)) return false;
+      if (state.inputItem && state.inputItem !== stack.id) return false;
+      const room = 64 - state.inputCount;
+      if (room <= 0) return false;
+      const toMove = Math.min(Math.max(1, count), stack.count, room);
+      stack.count -= toMove;
+      if (stack.count <= 0) player.inventory[slotIndex] = null;
+      setFurnaceState(tile, {
+        ...state,
+        inputItem: stack.id,
+        inputCount: state.inputCount + toMove,
+      });
+      return true;
+    }
+
+    case "INSERT_FUEL": {
+      if (slotIndex === undefined || slotIndex < 0 || slotIndex >= player.inventory.length) return false;
+      const stack = player.inventory[slotIndex];
+      if (!stack || !isFurnaceFuel(stack.id)) return false;
+      if (state.fuelItem && state.fuelItem !== stack.id) return false;
+      const room = 64 - state.fuelCount;
+      if (room <= 0) return false;
+      const toMove = Math.min(Math.max(1, count), stack.count, room);
+      stack.count -= toMove;
+      if (stack.count <= 0) player.inventory[slotIndex] = null;
+      setFurnaceState(tile, {
+        ...state,
+        fuelItem: stack.id,
+        fuelCount: state.fuelCount + toMove,
+      });
+      return true;
+    }
+
+    case "TAKE_INPUT": {
+      if (!state.inputItem || state.inputCount <= 0) return false;
+      const overflow = addItem(player.inventory, state.inputItem, state.inputCount);
+      if (overflow === state.inputCount) return false;
+      setFurnaceState(tile, {
+        ...state,
+        inputItem: overflow > 0 ? state.inputItem : null,
+        inputCount: overflow,
+        smeltProgress: overflow > 0 ? state.smeltProgress : 0,
+      });
+      return true;
+    }
+
+    case "TAKE_FUEL": {
+      if (!state.fuelItem || state.fuelCount <= 0) return false;
+      const overflow = addItem(player.inventory, state.fuelItem, state.fuelCount);
+      if (overflow === state.fuelCount) return false;
+      setFurnaceState(tile, {
+        ...state,
+        fuelItem: overflow > 0 ? state.fuelItem : null,
+        fuelCount: overflow,
+      });
+      return true;
+    }
+
+    case "TAKE_OUTPUT": {
+      if (!state.outputItem || state.outputCount <= 0) return false;
+      const overflow = addItem(player.inventory, state.outputItem, state.outputCount);
+      if (overflow === state.outputCount) return false;
+      setFurnaceState(tile, {
+        ...state,
+        outputItem: overflow > 0 ? state.outputItem : null,
+        outputCount: overflow,
+      });
+      return true;
+    }
+  }
 }
 
 export function tickFurnaceTile(tile: Tile): void {
@@ -230,17 +325,18 @@ export const FURNACE_COMPONENT: BlockComponent = {
   getActions: ({ tile, player }) => {
     const state = getFurnaceState(tile);
     const equipped = player?.equippedItem;
+    const actions: ReturnType<NonNullable<BlockComponent["getActions"]>> = [
+      { id: "open_furnace", label: "Open Furnace", buttonType: "SECONDARY", icon: "🔥", description: "Open Furnace smelting UI" },
+    ];
     if (state.outputItem && state.outputCount > 0) {
-      return [{ id: "harvest", label: `Collect Output (×${state.outputCount})`, buttonType: "SECONDARY", icon: "🔥" }];
-    }
-    if (equipped && isFurnaceFuel(equipped)) {
-      return [{ id: "harvest", label: "Add Fuel", buttonType: "SECONDARY", icon: "🔥" }];
-    }
-    if (equipped && isSmeltable(equipped)) {
+      actions.push({ id: "harvest", label: `Collect Output (×${state.outputCount})`, buttonType: "SECONDARY", icon: "🔥" });
+    } else if (equipped && isFurnaceFuel(equipped)) {
+      actions.push({ id: "harvest", label: "Add Fuel", buttonType: "SECONDARY", icon: "🔥" });
+    } else if (equipped && isSmeltable(equipped)) {
       const pct = Math.floor((state.smeltProgress / FURNACE_SMELT_TICKS) * 100);
-      return [{ id: "harvest", label: state.inputItem ? `Add Input (${pct}%)` : "Smelt Item", buttonType: "SECONDARY", icon: "🪨" }];
+      actions.push({ id: "harvest", label: state.inputItem ? `Add Input (${pct}%)` : "Smelt Item", buttonType: "SECONDARY", icon: "🪨" });
     }
-    return [];
+    return actions;
   },
   onRender: ({ ctx, u, v, halfW, halfH, elevH, tile, getTexture }) => {
     renderFurnace(

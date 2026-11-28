@@ -18,6 +18,7 @@ import {
 } from "./actions.js";
 import { toggleInventoryDrawer } from "./inventory.js";
 import { toggleCraftingPanel, craftRecipe } from "./crafting.js";
+import { openFurnacePanel, closeFurnacePanel } from "./furnace.js";
 import { updateHUD } from "./hud.js";
 import { bindInputHandlers, setPlayAreaZoom, resetPlayAreaZoom } from "./input.js";
 import { saveGame, loadSavedGame, resetSave } from "./storage.js";
@@ -46,6 +47,8 @@ window.__moveItemToBottom = moveItemToBottom;
 window.__swapInventorySlots = swapInventorySlots;
 window.__toggleInventoryDrawer = toggleInventoryDrawer;
 window.__toggleCraftingPanel = toggleCraftingPanel;
+window.__openFurnacePanel = openFurnacePanel;
+window.__closeFurnacePanel = closeFurnacePanel;
 window.__craftRecipe = craftRecipe;
 window.__startSneak = startSneak;
 window.__stopSneak = stopSneak;

@@ -20,6 +20,7 @@ import { CHAPTER_1_RECIPES, executeCraft, hasCraftingStationAccess } from "../cr
 import { QuestTracker } from "../quests/quest-manager.ts";
 import { canPlant, plantCrop } from "../mechanics/farming.ts";
 import { getBlockComponent, tickRoomBlocks } from "../registry/block-components.ts";
+import { executeFurnaceAction } from "../mechanics/furnace.ts";
 
 export interface GameSaveData {
   version: 1;
@@ -440,6 +441,27 @@ export class GameEngine {
         const hasStation = hasCraftingStationAccess(room, player);
         executeCraft(recipe, player.inventory, hasStation);
         this.updateActiveEquipped(player);
+        break;
+      }
+
+      case "FURNACE_ACTION": {
+        const room = this.rooms.get(player.currentRoomId);
+        if (!room) break;
+        const { x, y, z } = action.coord;
+        const inBounds =
+          x >= 0 && x < room.width && y >= 0 && y < room.height && z >= 0 && z < room.depth;
+        if (!inBounds) break;
+        const inReach =
+          Math.abs(x - player.x) <= 1 &&
+          Math.abs(y - player.y) <= 1 &&
+          z >= player.z - 1 &&
+          z <= player.z + 2;
+        if (!inReach) break;
+        const tile = room.voxels[z]?.[y]?.[x];
+        if (!tile || tile.id !== "minecraft:furnace") break;
+        if (executeFurnaceAction(tile, player, action.operation, action.slotIndex, action.count)) {
+          this.updateActiveEquipped(player);
+        }
         break;
       }
     }

@@ -7,6 +7,7 @@ import {
 import { engine, dom, uiState, HIDDEN_RECIPES_STORAGE_KEY } from "./state.js";
 import { getItemDisplay } from "./tooltip.js";
 import { craftRecipeAction } from "./actions.js";
+import { closeFurnacePanel } from "./furnace.js";
 
 let controlsBound = false;
 
@@ -67,6 +68,7 @@ export function toggleCraftingPanel(open) {
   bindCraftingControlsOnce();
   uiState.isCraftingOpen = open !== undefined ? open : !uiState.isCraftingOpen;
   if (uiState.isCraftingOpen) {
+    closeFurnacePanel();
     dom.craftingPanel.classList.add("open");
     dom.btnToggleCrafting.textContent = "✕ Close [C]";
     renderCraftingRecipes();

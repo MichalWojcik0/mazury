@@ -8,6 +8,7 @@ import {
 import { engine, dom, layerLabels, uiState, cameraState } from "./state.js";
 import { updateInventoryUI } from "./inventory.js";
 import { renderCraftingRecipes } from "./crafting.js";
+import { renderFurnacePanel, openFurnacePanel } from "./furnace.js";
 import { interactSlot } from "./actions.js";
 
 let lastInventorySignature = null;
@@ -75,13 +76,18 @@ export function updateSelectedVoxelUI(player, room) {
   for (const act of actions) {
     const btn = document.createElement("button");
     btn.className = "voxel-action-btn";
+    const keyHint = act.id === "open_furnace" ? "UI" : act.buttonType === "PRIMARY" ? "L-Click" : "R-Click";
     btn.innerHTML = `
       <span>${act.icon || "⚡"} ${act.label}</span>
-      <span style="font-size: 9px; opacity: 0.7;">[${act.buttonType === "PRIMARY" ? "L-Click" : "R-Click"}]</span>
+      <span style="font-size: 9px; opacity: 0.7;">[${keyHint}]</span>
     `;
     btn.title = act.description || act.label;
     btn.addEventListener("click", () => {
-      interactSlot(player.selectedSlot, act.buttonType);
+      if (act.id === "open_furnace") {
+        openFurnacePanel(coord);
+      } else {
+        interactSlot(player.selectedSlot, act.buttonType);
+      }
     });
     dom.voxelActionList.appendChild(btn);
   }
@@ -151,6 +157,11 @@ export function updateHUD() {
     }
   } else {
     lastCraftingContextSignature = null;
+  }
+
+  // Refresh Furnace Panel when open
+  if (uiState.isFurnaceOpen) {
+    renderFurnacePanel();
   }
 
   // Update Squat button state & progress

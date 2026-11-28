@@ -100,7 +100,14 @@ export type InputAction =
   | { type: "MOVE_ITEM_TO_BOTTOM"; slotIndex: number }
   | { type: "SWAP_INVENTORY_SLOTS"; fromIndex: number; toIndex: number }
   | { type: "EAT_ITEM"; itemId?: string }
-  | { type: "USE_PSD" };
+  | { type: "USE_PSD" }
+  | {
+      type: "FURNACE_ACTION";
+      coord: { x: number; y: number; z: number };
+      operation: "INSERT_INPUT" | "INSERT_FUEL" | "TAKE_INPUT" | "TAKE_FUEL" | "TAKE_OUTPUT";
+      slotIndex?: number;
+      count?: number;
+    };
 
 export interface PlayerInputPacket {
   tick: number;
