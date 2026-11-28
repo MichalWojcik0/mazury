@@ -107,12 +107,13 @@ export const uiState = {
   isDualCraftingOpen: false,
   isFurnaceOpen: false,
   openFurnaceCoord: null,
+  draggedSlotIndex: null,
+  draggedFurnaceSlot: null,
   hiddenRecipeIds: loadHiddenRecipes(),
   craftingPaneConfigs: [
     { filter: "all", groupBy: "category", sortBy: "craftable" },
     { filter: "station", groupBy: "category", sortBy: "craftable" },
   ],
-  draggedSlotIndex: null,
 };
 
 export const cameraState = {

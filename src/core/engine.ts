@@ -10,7 +10,7 @@ import {
   swapSlots,
   transferOrSwapSlots,
 } from "../inventory/inventory.ts";
-import { createOuterRoom, createTinyCompactMachineRoom } from "../world/room.ts";
+import { createOuterRoom, createTinyCompactMachineRoom, getMaxInteriorZ, isInteriorCoord } from "../world/room.ts";
 import { strikeWall } from "../mechanics/wall-punching.ts";
 import { updateSneak } from "../mechanics/sneak-poop.ts";
 import { eatItem, tickPlayerEffectsAndRegen } from "../mechanics/eating.ts";
@@ -366,11 +366,11 @@ export class GameEngine {
                 plantCoord = { x: targetCoord.x, y: targetCoord.y, z: targetCoord.z + 1 };
               }
 
-              if (plantCoord.z < room.depth) {
+              if (plantCoord.z <= getMaxInteriorZ(room)) {
                 const check = canPlant(room, plantCoord, equipped);
                 if (check.allowed) {
                   const removed = removeItem(player.inventory, equipped, 1);
-                  if (removed > 0) {
+                  if (removed !== false) {
                     plantCrop(room, plantCoord, equipped);
                     this.updateActiveEquipped(player);
                     return;
@@ -407,6 +407,15 @@ export class GameEngine {
           if (equipped && isInBounds) {
             const itemDef = getItemDefinition(equipped);
             if (itemDef?.placeable && !itemDef?.plantable) {
+              if (!room.voxels[targetCoord.z]) {
+                room.voxels[targetCoord.z] = Array.from({ length: room.height }, () =>
+                  Array.from({ length: room.width }, () => ({
+                    id: "minecraft:air",
+                    type: "air" as const,
+                    passable: true,
+                  }))
+                );
+              }
               const existingVoxel = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
               const overlapsPlayer =
                 targetCoord.x === player.x &&
@@ -448,8 +457,7 @@ export class GameEngine {
         const room = this.rooms.get(player.currentRoomId);
         if (!room) break;
         const { x, y, z } = action.coord;
-        const inBounds =
-          x >= 0 && x < room.width && y >= 0 && y < room.height && z >= 0 && z < room.depth;
+        const inBounds = isInteriorCoord(room, action.coord);
         if (!inBounds) break;
         const inReach =
           Math.abs(x - player.x) <= 1 &&

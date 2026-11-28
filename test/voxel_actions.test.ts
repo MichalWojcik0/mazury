@@ -227,6 +227,63 @@ test("Voxel Actions: top layer (Layer 3) inside 3x3 Compact Machine resolves to 
   assert.equal(northWall.isBoundary, true);
 });
 
+test("Voxel Actions: player can place and break blocks in the top layer (Layer 3) of 3x3 Compact Machine", () => {
+  const engine = new GameEngine(1337);
+  const player = engine.players.get(0)!;
+
+  // Enter Tiny Compact Machine at (1, 1, 1)
+  engine.enqueueInput({ tick: 1, playerId: 0, action: { type: "USE_PSD" } });
+  engine.stepTick();
+
+  const room = engine.rooms.get(player.currentRoomId)!;
+  addItem(player.inventory, "minecraft:dirt", 2);
+  player.selectedQuickSlotIndex = 1;
+  player.equippedItem = "minecraft:dirt";
+  player.selectedLayerIndex = 3; // Layer 3: z = 3 (top layer inside 3-high walls)
+
+  // Center slot 5 on Layer 3 should offer "place" action when dirt is equipped
+  const selectedAir = resolveSelectedVoxel(room, player, 5);
+  assert.ok(selectedAir);
+  assert.deepEqual(selectedAir.coord, { x: 1, y: 1, z: 3 });
+  assert.equal(selectedAir.isInBounds, true);
+  assert.equal(selectedAir.isBoundary, false);
+  const airActions = getAvailableVoxelActions(
+    selectedAir.tile,
+    selectedAir.isBoundary,
+    player,
+    selectedAir.coord,
+    selectedAir.isInBounds
+  );
+  assert.ok(airActions.some((a) => a.id === "place"));
+
+  // Place dirt on Layer 3 slot 5 (1, 1, 3)
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 5, button: "SECONDARY" },
+  });
+  engine.stepTick();
+
+  assert.equal(room.voxels[3][1][1].id, "minecraft:dirt");
+  assert.equal(countItem(player.inventory, "minecraft:dirt"), 1);
+
+  const selectedDirt = resolveSelectedVoxel(room, player, 5);
+  assert.ok(selectedDirt);
+  assert.equal(selectedDirt.tile.id, "minecraft:dirt");
+  assert.equal(selectedDirt.isInBounds, true);
+
+  // Break dirt on Layer 3 slot 5 (1, 1, 3)
+  engine.enqueueInput({
+    tick: engine.currentTick + 1,
+    playerId: 0,
+    action: { type: "INTERACT_TILE", slot: 5, button: "PRIMARY" },
+  });
+  engine.stepTick();
+
+  assert.equal(room.voxels[3][1][1].id, "minecraft:air");
+  assert.equal(countItem(player.inventory, "minecraft:dirt"), 2);
+});
+
 test("Voxel Actions: hemp_top offers both harvest and break actions", () => {
   const hempTopTile = {
     id: "immersiveengineering:hemp_top",

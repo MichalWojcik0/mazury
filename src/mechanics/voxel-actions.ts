@@ -1,5 +1,5 @@
 import type { Room, Player, Tile, Vec3 } from "../core/types.ts";
-import { resolveTargetCoord, resolveBoundaryTile } from "../world/room.ts";
+import { resolveTargetCoord, resolveBoundaryTile, isInteriorCoord } from "../world/room.ts";
 import { getBlockDefinition, getItemDefinition } from "../registry/definitions.ts";
 import { getBlockComponent } from "../registry/block-components.ts";
 
@@ -35,19 +35,17 @@ export function resolveSelectedVoxel(
   const targetCoord = resolveTargetCoord(player, targetSlot);
   if (!targetCoord) return null;
 
-  const isInBounds =
-    targetCoord.x >= 0 &&
-    targetCoord.x < room.width &&
-    targetCoord.y >= 0 &&
-    targetCoord.y < room.height &&
-    targetCoord.z >= 0 &&
-    targetCoord.z < room.depth;
+  const isInBounds = isInteriorCoord(room, targetCoord);
 
   let tile: Tile | undefined;
   let isBoundary = false;
 
   if (isInBounds) {
-    tile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x];
+    tile = room.voxels[targetCoord.z]?.[targetCoord.y]?.[targetCoord.x] ?? {
+      id: "minecraft:air",
+      type: "air",
+      passable: true,
+    };
     // In rooms with boundary faces (e.g. Compact Machines), floor level z=0 without a placed block
     // is backed by the DOWN solid compact machine wall face.
     if ((!tile || tile.id === "minecraft:air") && targetCoord.z === 0 && room.faces) {
@@ -62,15 +60,6 @@ export function resolveSelectedVoxel(
     if (boundary) {
       tile = boundary.tile;
       isBoundary = true;
-    } else if (
-      targetCoord.x >= 0 &&
-      targetCoord.x < room.width &&
-      targetCoord.y >= 0 &&
-      targetCoord.y < room.height &&
-      targetCoord.z === room.depth
-    ) {
-      // Top layer inside the room's wall height (z === depth) is open air, not the UP ceiling
-      tile = { id: "minecraft:air", type: "air", passable: true };
     }
   }
 

@@ -7,6 +7,7 @@ import {
   swapInventorySlots,
   selectQuickSlot,
   eatEquippedItem,
+  furnaceAction,
 } from "./actions.js";
 
 function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, containerType = "quick") {
@@ -128,6 +129,7 @@ function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, con
 
     slotEl.addEventListener("dragend", () => {
       uiState.draggedSlotIndex = null;
+      uiState.draggedFurnaceSlot = null;
       document.querySelectorAll(".inv-slot").forEach((el) => {
         el.classList.remove("dragging", "drag-over");
       });
@@ -135,7 +137,7 @@ function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, con
   }
 
   slotEl.addEventListener("dragover", (e) => {
-    if (uiState.draggedSlotIndex !== null) {
+    if (uiState.draggedSlotIndex !== null || uiState.draggedFurnaceSlot !== null) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       slotEl.classList.add("drag-over");
@@ -151,6 +153,13 @@ function renderInventorySlot(item, slotIndex, isSelected, showArrows = true, con
   slotEl.addEventListener("drop", (e) => {
     e.preventDefault();
     slotEl.classList.remove("drag-over");
+    if (uiState.draggedFurnaceSlot && uiState.openFurnaceCoord) {
+      const opMap = { input: "TAKE_INPUT", fuel: "TAKE_FUEL", output: "TAKE_OUTPUT" };
+      const op = opMap[uiState.draggedFurnaceSlot];
+      if (op) furnaceAction(uiState.openFurnaceCoord, op);
+      uiState.draggedFurnaceSlot = null;
+      return;
+    }
     const rawIndex = e.dataTransfer.getData("text/plain");
     const fromIndex = rawIndex !== "" ? parseInt(rawIndex, 10) : uiState.draggedSlotIndex;
 

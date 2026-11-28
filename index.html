@@ -1785,7 +1785,7 @@
 
             <div class="furnace-inv-section">
               <div class="furnace-inv-hint">
-                <span>Inventory — Click to insert 1 • Shift+Click to insert stack</span>
+                <span>Left-Click: Insert Stack • Right-Click: Insert 1</span>
                 <span class="furnace-legend">
                   <span class="furnace-tag-smelt">Smeltable</span>
                   <span class="furnace-tag-fuel">Fuel</span>
@@ -1952,12 +1952,13 @@
       isDualCraftingOpen: false,
       isFurnaceOpen: false,
       openFurnaceCoord: null,
+      draggedSlotIndex: null,
+      draggedFurnaceSlot: null,
       hiddenRecipeIds: loadHiddenRecipes(),
       craftingPaneConfigs: [
         { filter: "all", groupBy: "category", sortBy: "craftable" },
         { filter: "station", groupBy: "category", sortBy: "craftable" }
-      ],
-      draggedSlotIndex: null
+      ]
     };
     var cameraState = {
       panX: 0,
@@ -2112,7 +2113,8 @@
 
     // index/scripts/furnace.js
     var controlsBound = false;
-    var lastFurnaceSignature = null;
+    var lastFurnaceItemsSignature = null;
+    var lastFurnaceTickSignature = null;
     function bindFurnaceControlsOnce() {
       if (controlsBound)
         return;
@@ -2120,27 +2122,62 @@
       if (dom.btnCloseFurnace) {
         dom.btnCloseFurnace.addEventListener("click", () => closeFurnacePanel());
       }
-      if (dom.furnaceSlotInput) {
-        dom.furnaceSlotInput.addEventListener("click", () => {
+      const setupFurnaceSlotDnd = (slotEl, kind, acceptPredicate, insertOp, takeOp) => {
+        if (!slotEl)
+          return;
+        slotEl.addEventListener("click", () => {
           if (uiState.openFurnaceCoord) {
-            furnaceAction(uiState.openFurnaceCoord, "TAKE_INPUT");
+            furnaceAction(uiState.openFurnaceCoord, takeOp);
           }
         });
-      }
-      if (dom.furnaceSlotFuel) {
-        dom.furnaceSlotFuel.addEventListener("click", () => {
-          if (uiState.openFurnaceCoord) {
-            furnaceAction(uiState.openFurnaceCoord, "TAKE_FUEL");
+        slotEl.addEventListener("dragstart", (e) => {
+          if (!slotEl.classList.contains("has-item")) {
+            e.preventDefault();
+            return;
           }
+          uiState.draggedFurnaceSlot = kind;
+          slotEl.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", `furnace:${kind}`);
         });
-      }
-      if (dom.furnaceSlotOutput) {
-        dom.furnaceSlotOutput.addEventListener("click", () => {
-          if (uiState.openFurnaceCoord) {
-            furnaceAction(uiState.openFurnaceCoord, "TAKE_OUTPUT");
-          }
+        slotEl.addEventListener("dragend", () => {
+          uiState.draggedFurnaceSlot = null;
+          document.querySelectorAll(".inv-slot").forEach((el) => {
+            el.classList.remove("dragging", "drag-over");
+          });
         });
-      }
+        if (acceptPredicate && insertOp) {
+          slotEl.addEventListener("dragover", (e) => {
+            if (uiState.draggedSlotIndex === null)
+              return;
+            const p = engine.players.get(0);
+            const item = p?.inventory[uiState.draggedSlotIndex];
+            if (item && acceptPredicate(item.id)) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              slotEl.classList.add("drag-over");
+            }
+          });
+          slotEl.addEventListener("dragleave", (e) => {
+            if (!slotEl.contains(e.relatedTarget)) {
+              slotEl.classList.remove("drag-over");
+            }
+          });
+          slotEl.addEventListener("drop", (e) => {
+            e.preventDefault();
+            slotEl.classList.remove("drag-over");
+            const raw = e.dataTransfer.getData("text/plain");
+            const fromIndex = raw !== "" && !raw.startsWith("furnace:") ? parseInt(raw, 10) : uiState.draggedSlotIndex;
+            if (uiState.openFurnaceCoord && fromIndex !== null && !isNaN(fromIndex)) {
+              furnaceAction(uiState.openFurnaceCoord, insertOp, fromIndex, 64);
+            }
+            uiState.draggedSlotIndex = null;
+          });
+        }
+      };
+      setupFurnaceSlotDnd(dom.furnaceSlotInput, "input", isSmeltable, "INSERT_INPUT", "TAKE_INPUT");
+      setupFurnaceSlotDnd(dom.furnaceSlotFuel, "fuel", isFurnaceFuel, "INSERT_FUEL", "TAKE_FUEL");
+      setupFurnaceSlotDnd(dom.furnaceSlotOutput, "output", null, null, "TAKE_OUTPUT");
     }
     function getOpenFurnaceContext() {
       if (!uiState.isFurnaceOpen || !uiState.openFurnaceCoord)
@@ -2165,7 +2202,13 @@
       if (!slotEl)
         return;
       slotEl.innerHTML = "";
-      slotEl.classList.toggle("has-item", Boolean(itemId && count > 0));
+      const hasItem = Boolean(itemId && count > 0);
+      slotEl.classList.toggle("has-item", hasItem);
+      if (hasItem) {
+        slotEl.setAttribute("draggable", "true");
+      } else {
+        slotEl.removeAttribute("draggable");
+      }
       slotEl.onmouseenter = null;
       slotEl.onmousemove = null;
       slotEl.onmouseleave = null;
@@ -2215,7 +2258,8 @@
       }
       uiState.openFurnaceCoord = { x: coord.x, y: coord.y, z: coord.z };
       uiState.isFurnaceOpen = true;
-      lastFurnaceSignature = null;
+      lastFurnaceItemsSignature = null;
+      lastFurnaceTickSignature = null;
       dom.furnacePanel?.classList.add("open");
       renderFurnacePanel();
     }
@@ -2224,7 +2268,8 @@
         return;
       uiState.isFurnaceOpen = false;
       uiState.openFurnaceCoord = null;
-      lastFurnaceSignature = null;
+      lastFurnaceItemsSignature = null;
+      lastFurnaceTickSignature = null;
       dom.furnacePanel?.classList.remove("open");
       hideItemTooltip();
     }
@@ -2238,36 +2283,40 @@
       }
       const { player, tile, coord } = ctx;
       const state = getFurnaceState(tile);
+      const tickSig = `${coord.x},${coord.y},${coord.z}:${state.fuelTimeRemaining}:${state.fuelTimeTotal}:${state.smeltProgress}`;
+      if (tickSig !== lastFurnaceTickSignature) {
+        lastFurnaceTickSignature = tickSig;
+        const isLit = state.fuelTimeRemaining > 0;
+        if (dom.furnaceStatusBadge) {
+          dom.furnaceStatusBadge.textContent = isLit ? "\uD83D\uDD25 Lit" : "Idle";
+          dom.furnaceStatusBadge.classList.toggle("furnace-status-lit", isLit);
+        }
+        const burnPct = isLit && state.fuelTimeTotal > 0 ? Math.min(100, Math.round(state.fuelTimeRemaining / state.fuelTimeTotal * 100)) : 0;
+        if (dom.furnaceFlameFill) {
+          dom.furnaceFlameFill.style.width = `${burnPct}%`;
+        }
+        if (dom.furnaceBurnText) {
+          dom.furnaceBurnText.textContent = isLit ? `${Math.ceil(state.fuelTimeRemaining / 20)}s` : "0s";
+        }
+        const smeltPct = Math.min(100, Math.floor(state.smeltProgress / FURNACE_SMELT_TICKS * 100));
+        if (dom.furnaceProgressFill) {
+          dom.furnaceProgressFill.style.width = `${smeltPct}%`;
+        }
+        if (dom.furnaceProgressText) {
+          dom.furnaceProgressText.textContent = `${smeltPct}%`;
+        }
+      }
       const invSig = player.inventory.map((s) => s ? `${s.id}:${s.count}` : "").join("|");
-      const sig = `${coord.x},${coord.y},${coord.z}:${state.inputItem}:${state.inputCount}:${state.fuelItem}:${state.fuelCount}:${state.outputItem}:${state.outputCount}:${state.fuelTimeRemaining}:${state.fuelTimeTotal}:${state.smeltProgress}::${invSig}`;
-      if (sig === lastFurnaceSignature)
+      const itemsSig = `${coord.x},${coord.y},${coord.z}:${state.inputItem}:${state.inputCount}:${state.fuelItem}:${state.fuelCount}:${state.outputItem}:${state.outputCount}::${invSig}`;
+      if (itemsSig === lastFurnaceItemsSignature)
         return;
-      lastFurnaceSignature = sig;
+      lastFurnaceItemsSignature = itemsSig;
       if (dom.furnaceCoords) {
         dom.furnaceCoords.textContent = `(${coord.x}, ${coord.y}, ${coord.z})`;
-      }
-      const isLit = state.fuelTimeRemaining > 0;
-      if (dom.furnaceStatusBadge) {
-        dom.furnaceStatusBadge.textContent = isLit ? "\uD83D\uDD25 Lit" : "Idle";
-        dom.furnaceStatusBadge.classList.toggle("furnace-status-lit", isLit);
       }
       renderFurnaceSlotContent(dom.furnaceSlotInput, state.inputItem, state.inputCount, "In");
       renderFurnaceSlotContent(dom.furnaceSlotFuel, state.fuelItem, state.fuelCount, "Fuel");
       renderFurnaceSlotContent(dom.furnaceSlotOutput, state.outputItem, state.outputCount, "Out");
-      const burnPct = isLit && state.fuelTimeTotal > 0 ? Math.min(100, Math.round(state.fuelTimeRemaining / state.fuelTimeTotal * 100)) : 0;
-      if (dom.furnaceFlameFill) {
-        dom.furnaceFlameFill.style.width = `${burnPct}%`;
-      }
-      if (dom.furnaceBurnText) {
-        dom.furnaceBurnText.textContent = isLit ? `${Math.ceil(state.fuelTimeRemaining / 20)}s` : "0s";
-      }
-      const smeltPct = Math.min(100, Math.floor(state.smeltProgress / FURNACE_SMELT_TICKS * 100));
-      if (dom.furnaceProgressFill) {
-        dom.furnaceProgressFill.style.width = `${smeltPct}%`;
-      }
-      if (dom.furnaceProgressText) {
-        dom.furnaceProgressText.textContent = `${smeltPct}%`;
-      }
       if (dom.furnaceInvGrid) {
         dom.furnaceInvGrid.innerHTML = "";
         for (let i = 0;i < player.inventory.length; i++) {
@@ -2298,17 +2347,64 @@
             qtyEl.className = "inv-slot-qty";
             qtyEl.textContent = item.count;
             slotEl.appendChild(qtyEl);
+            slotEl.setAttribute("draggable", "true");
+            slotEl.addEventListener("dragstart", (e) => {
+              uiState.draggedSlotIndex = i;
+              slotEl.classList.add("dragging");
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/plain", String(i));
+            });
+            slotEl.addEventListener("dragend", () => {
+              uiState.draggedSlotIndex = null;
+              uiState.draggedFurnaceSlot = null;
+              document.querySelectorAll(".inv-slot").forEach((el) => {
+                el.classList.remove("dragging", "drag-over");
+              });
+            });
             slotEl.addEventListener("mouseenter", (e) => showItemTooltip(item, e.clientX, e.clientY));
             slotEl.addEventListener("mousemove", (e) => showItemTooltip(item, e.clientX, e.clientY));
             slotEl.addEventListener("mouseleave", () => hideItemTooltip());
             if (smeltable || fuel) {
-              slotEl.addEventListener("click", (e) => {
-                const count = e.shiftKey ? 64 : 1;
-                const op = smeltable ? "INSERT_INPUT" : "INSERT_FUEL";
-                furnaceAction(coord, op, i, count);
+              const op = smeltable ? "INSERT_INPUT" : "INSERT_FUEL";
+              slotEl.addEventListener("click", () => {
+                furnaceAction(coord, op, i, 64);
+              });
+              slotEl.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                furnaceAction(coord, op, i, 1);
               });
             }
           }
+          slotEl.addEventListener("dragover", (e) => {
+            if (uiState.draggedSlotIndex !== null || uiState.draggedFurnaceSlot !== null) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              slotEl.classList.add("drag-over");
+            }
+          });
+          slotEl.addEventListener("dragleave", (e) => {
+            if (!slotEl.contains(e.relatedTarget)) {
+              slotEl.classList.remove("drag-over");
+            }
+          });
+          slotEl.addEventListener("drop", (e) => {
+            e.preventDefault();
+            slotEl.classList.remove("drag-over");
+            if (uiState.draggedFurnaceSlot) {
+              const opMap = { input: "TAKE_INPUT", fuel: "TAKE_FUEL", output: "TAKE_OUTPUT" };
+              const takeOp = opMap[uiState.draggedFurnaceSlot];
+              if (takeOp)
+                furnaceAction(coord, takeOp);
+              uiState.draggedFurnaceSlot = null;
+              return;
+            }
+            const raw = e.dataTransfer.getData("text/plain");
+            const fromIndex = raw !== "" ? parseInt(raw, 10) : uiState.draggedSlotIndex;
+            if (fromIndex !== null && !isNaN(fromIndex) && fromIndex !== i) {
+              swapInventorySlots(fromIndex, i);
+            }
+            uiState.draggedSlotIndex = null;
+          });
           dom.furnaceInvGrid.appendChild(slotEl);
         }
       }
@@ -2415,13 +2511,14 @@
         });
         slotEl.addEventListener("dragend", () => {
           uiState.draggedSlotIndex = null;
+          uiState.draggedFurnaceSlot = null;
           document.querySelectorAll(".inv-slot").forEach((el) => {
             el.classList.remove("dragging", "drag-over");
           });
         });
       }
       slotEl.addEventListener("dragover", (e) => {
-        if (uiState.draggedSlotIndex !== null) {
+        if (uiState.draggedSlotIndex !== null || uiState.draggedFurnaceSlot !== null) {
           e.preventDefault();
           e.dataTransfer.dropEffect = "move";
           slotEl.classList.add("drag-over");
@@ -2435,6 +2532,14 @@
       slotEl.addEventListener("drop", (e) => {
         e.preventDefault();
         slotEl.classList.remove("drag-over");
+        if (uiState.draggedFurnaceSlot && uiState.openFurnaceCoord) {
+          const opMap = { input: "TAKE_INPUT", fuel: "TAKE_FUEL", output: "TAKE_OUTPUT" };
+          const op = opMap[uiState.draggedFurnaceSlot];
+          if (op)
+            furnaceAction(uiState.openFurnaceCoord, op);
+          uiState.draggedFurnaceSlot = null;
+          return;
+        }
         const rawIndex = e.dataTransfer.getData("text/plain");
         const fromIndex = rawIndex !== "" ? parseInt(rawIndex, 10) : uiState.draggedSlotIndex;
         if (fromIndex !== null && !isNaN(fromIndex) && fromIndex !== slotIndex) {
@@ -2958,7 +3063,8 @@
       let targetX = Math.round(worldPos.x);
       let targetY = Math.round(worldPos.y);
       if (room.faces && targetZ >= 1 && targetZ <= room.depth) {
-        const interiorTile = targetX >= 0 && targetX < room.width && targetY >= 0 && targetY < room.height && targetZ < room.depth ? room.voxels[targetZ]?.[targetY]?.[targetX] : null;
+        const maxInteriorZ = room.faces ? room.depth : room.depth - 1;
+        const interiorTile = targetX >= 0 && targetX < room.width && targetY >= 0 && targetY < room.height && targetZ <= maxInteriorZ ? room.voxels[targetZ]?.[targetY]?.[targetX] : null;
         const hasBlockingInteriorTile = interiorTile && interiorTile.id !== "minecraft:air";
         if (!hasBlockingInteriorTile) {
           const wallCoord = hitTestBoundaryWallFace(cursorX, cursorY, targetZ, room.width, room.height, renderer.camera);

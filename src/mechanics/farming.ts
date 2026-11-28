@@ -1,6 +1,7 @@
 import type { Room, Player, Tile, Vec3 } from "../core/types.ts";
 import type { DeterministicRNG } from "../core/math.ts";
 import { getBlockDefinition, getItemDefinition } from "../registry/definitions.ts";
+import { getMaxInteriorZ } from "../world/room.ts";
 
 export interface HarvestResult {
   success: boolean;
@@ -145,7 +146,7 @@ function trySpawnMultiBlockTop(
   const topDef = getBlockDefinition(topTileId);
   for (let offset = 1; offset < maxColumnHeight; offset++) {
     const targetZ = z + offset;
-    if (targetZ >= room.depth) return;
+    if (targetZ > getMaxInteriorZ(room)) return;
     const tile = room.voxels[targetZ]?.[y]?.[x];
     if (!tile) return;
     if (tile.id === "minecraft:air") {

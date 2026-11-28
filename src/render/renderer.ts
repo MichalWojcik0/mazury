@@ -138,7 +138,7 @@ export class StubRenderer {
       }
 
       // 2. Render internal room voxels (machines, placed blocks, etc.)
-      for (let z = 0; z < room.depth; z++) {
+      for (let z = 0; z <= room.depth; z++) {
         for (let y = 0; y < room.height; y++) {
           for (let x = 0; x < room.width; x++) {
             const tile = room.voxels[z]?.[y]?.[x];

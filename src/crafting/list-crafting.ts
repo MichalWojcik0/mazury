@@ -1,5 +1,6 @@
 import type { ListRecipe, InventoryList, Room, Player } from "../core/types.ts";
 import { countItem, removeItem, addItem } from "../inventory/inventory.ts";
+import { getMaxInteriorZ } from "../world/room.ts";
 
 /**
  * Chapter 1 List Crafting Recipes.
@@ -298,7 +299,7 @@ export function hasNearbyCraftingStation(room: Room | undefined, player: Player)
   const minY = Math.max(0, player.y - 1);
   const maxY = Math.min(room.height - 1, player.y + 1);
   const minZ = Math.max(0, player.z - 1);
-  const maxZ = Math.min(room.depth - 1, player.z + 2);
+  const maxZ = Math.min(getMaxInteriorZ(room), player.z + 2);
 
   for (let z = minZ; z <= maxZ; z++) {
     for (let y = minY; y <= maxY; y++) {

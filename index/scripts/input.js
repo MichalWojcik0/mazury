@@ -47,12 +47,13 @@ function getSlotFromCanvasEvent(e) {
 
   // Hit-test visible NORTH (y = -1) and WEST (x = -1) boundary wall side faces on the active layer
   if (room.faces && targetZ >= 1 && targetZ <= room.depth) {
+    const maxInteriorZ = room.faces ? room.depth : room.depth - 1;
     const interiorTile =
       targetX >= 0 &&
       targetX < room.width &&
       targetY >= 0 &&
       targetY < room.height &&
-      targetZ < room.depth
+      targetZ <= maxInteriorZ
         ? room.voxels[targetZ]?.[targetY]?.[targetX]
         : null;
     const hasBlockingInteriorTile = interiorTile && interiorTile.id !== "minecraft:air";

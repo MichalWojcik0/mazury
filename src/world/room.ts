@@ -93,7 +93,7 @@ export function createTinyCompactMachineRoom(id: string = "room_tiny_1", parentR
   const depth = 3;
 
   const voxels: Tile[][][] = [];
-  for (let z = 0; z < depth; z++) {
+  for (let z = 0; z <= depth; z++) {
     voxels[z] = [];
     for (let y = 0; y < height; y++) {
       voxels[z][y] = [];
@@ -259,13 +259,37 @@ export function resolveTargetCoord(player: Player, slot: 1 | 2 | 3 | 4 | 5 | 6 |
 }
 
 /**
+ * Returns the maximum valid interior Z coordinate for placing/interacting with voxels in a room.
+ * Rooms with discrete boundary faces (e.g. Compact Machines) have their DOWN floor at z=0 and
+ * `depth` interior air layers above it (z = 1..depth), so z === room.depth is still interior.
+ */
+export function getMaxInteriorZ(room: Room): number {
+  return room.faces ? room.depth : room.depth - 1;
+}
+
+/**
+ * Returns true if `coord` lies within the room's interior voxel grid.
+ */
+export function isInteriorCoord(room: Room, coord: Vec3): boolean {
+  return (
+    coord.x >= 0 &&
+    coord.x < room.width &&
+    coord.y >= 0 &&
+    coord.y < room.height &&
+    coord.z >= 0 &&
+    coord.z <= getMaxInteriorZ(room)
+  );
+}
+
+/**
  * Iterates over every non-null voxel in a room's 3D grid.
  */
 export function forEachRoomVoxel(
   room: Room,
   visitor: (coord: Vec3, tile: Tile) => void
 ): void {
-  for (let z = 0; z < room.depth; z++) {
+  const maxZ = getMaxInteriorZ(room);
+  for (let z = 0; z <= maxZ; z++) {
     for (let y = 0; y < room.height; y++) {
       for (let x = 0; x < room.width; x++) {
         const tile = room.voxels[z]?.[y]?.[x];
